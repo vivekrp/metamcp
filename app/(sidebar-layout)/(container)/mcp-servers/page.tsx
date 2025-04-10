@@ -1,5 +1,11 @@
 'use client';
 
+import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import {
+  SSEClientTransport,
+  SseError,
+} from "@modelcontextprotocol/sdk/client/sse.js";
 import {
   createColumnHelper,
   flexRender,
@@ -45,8 +51,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { McpServerStatus, McpServerType } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
+import { authProvider } from "@/lib/auth";
+import { SESSION_KEYS } from "@/lib/constants";
+import packageJson from "@/package.json";
 import { McpServer } from '@/types/mcp-server';
+
 
 const columnHelper = createColumnHelper<McpServer>();
 
@@ -249,6 +259,67 @@ export default function MCPServersPage() {
       description: `Downloaded ${servers.length} MCP server${servers.length !== 1 ? 's' : ''} configuration.`,
       variant: 'default',
     });
+  };
+
+  const handleAuthError = async (sseUrl: string, error: unknown) => {
+    if (error instanceof SseError && error.code === 401) {
+      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
+
+      const result = await auth(authProvider, { serverUrl: sseUrl });
+      return result === "AUTHORIZED";
+    }
+
+    return false;
+  };
+
+  const connectToMcpServer = async (_e?: unknown, retryCount: number = 0) => {
+    const client = new Client(
+      {
+        name: "metamcp-app",
+        version: packageJson.version,
+      },
+      {
+        capabilities: {
+          tools: {}
+        },
+      },
+    );
+
+    const headers: HeadersInit = {};
+
+    // Use manually provided bearer token if available, otherwise use OAuth tokens
+    const token = (await authProvider.tokens())?.access_token || '';
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const clientTransport = new SSEClientTransport(new URL(form.getValues('url') || 'http://localhost:8787/sse'), {
+      eventSourceInit: {
+        fetch: (url, init) => fetch(url, { ...init, headers }),
+      },
+      requestInit: {
+        headers,
+      },
+    });
+
+    try {
+      await client.connect(clientTransport);
+    } catch (error) {
+      console.error(
+        `Failed to connect to MCP Server`,
+        error,
+      );
+      const shouldRetry = await handleAuthError(form.getValues('url') || 'http://localhost:8787/sse', error);
+      if (shouldRetry) {
+        return connectToMcpServer(undefined, retryCount + 1);
+      }
+
+      if (error instanceof SseError && error.code === 401) {
+        // Don't set error state if we're about to redirect for auth
+        return;
+      }
+      throw error;
+    }
   };
 
   return (
@@ -720,6 +791,11 @@ export default function MCPServersPage() {
                         )}
                       />
                       <div className='flex justify-end space-x-2'>
+                        <Button
+                          type='button'
+                          onClick={connectToMcpServer}>
+                          Test Connection
+                        </Button>
                         <Button
                           type='button'
                           variant='outline'

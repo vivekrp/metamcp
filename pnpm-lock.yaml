@@ -89,6 +89,9 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.13.1
+      pkce-challenge:
+        specifier: ^5.0.0
+        version: 5.0.0
       prism-react-renderer:
         specifier: ^2.4.1
         version: 2.4.1(react@19.0.0)
@@ -2938,6 +2941,10 @@ packages:
 
   pkce-challenge@4.1.0:
     resolution: {integrity: sha512-ZBmhE1C9LcPoH9XZSdwiPtbPHZROwAnMy+kIFQVrnMCxY4Cudlz3gBOpzilgc0jOgRaiT3sIWfpMomW2ar2orQ==}
+    engines: {node: '>=16.20.0'}
+
+  pkce-challenge@5.0.0:
+    resolution: {integrity: sha512-ueGLflrrnvwB3xuo/uGob5pd5FN7l0MsLf0Z87o/UQmRtwjvfylfc9MurIxRAWywCYTgrvpXBcqjV4OfCYGCIQ==}
     engines: {node: '>=16.20.0'}
 
   playwright-core@1.49.1:
@@ -6247,6 +6254,8 @@ snapshots:
   pirates@4.0.6: {}
 
   pkce-challenge@4.1.0: {}
+
+  pkce-challenge@5.0.0: {}
 
   playwright-core@1.49.1:
     optional: true
