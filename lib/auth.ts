@@ -6,18 +6,19 @@ import {
   OAuthTokensSchema,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 
-import { createMcpServer, getMcpServerByUuid } from '@/app/actions/mcp-servers';
+import { getMcpServerByUuid } from '@/app/actions/mcp-servers';
 import { getOAuthSession, saveOAuthSession } from '@/app/actions/oauth';
-import { McpServerType } from '@/db/schema';
 
 // OAuth client provider that works with a specific MCP server
 class DbOAuthClientProvider implements OAuthClientProvider {
   private mcpServerUuid: string;
   private profileUuid?: string;
+  private storagePrefix: string;
 
   constructor(mcpServerUuid: string, profileUuid?: string) {
     this.mcpServerUuid = mcpServerUuid;
     this.profileUuid = profileUuid;
+    this.storagePrefix = `oauth_${this.mcpServerUuid}_`;
   }
 
   get redirectUrl() {
@@ -35,38 +36,46 @@ class DbOAuthClientProvider implements OAuthClientProvider {
     };
   }
 
-  // Ensure MCP server exists before proceeding with OAuth
-  private async ensureMcpServerExists() {
-    if (!this.profileUuid) return;
+  // Check if the server exists in the database
+  private async serverExists() {
+    if (!this.profileUuid) return false;
 
     const server = await getMcpServerByUuid(
       this.profileUuid,
       this.mcpServerUuid
     );
-    if (!server) {
-      // Create a placeholder MCP server if it doesn't exist
-      await createMcpServer(this.profileUuid, {
-        name: 'OAuth MCP Server',
-        description: 'Automatically created for OAuth authentication',
-        args: [],
-        env: {},
-        type: McpServerType.SSE,
-        url: 'https://placeholder-url.com', // Will be updated later
-      });
-    }
+
+    return !!server;
   }
 
+  // During OAuth flow, we use sessionStorage for temporary data
+  // After successful authentication, we'll save to the database
   async clientInformation() {
     try {
-      await this.ensureMcpServerExists();
-      const session = await getOAuthSession(this.mcpServerUuid);
-      if (!session?.client_information) {
-        return undefined;
+      // Check if server exists in the database
+      const exists = await this.serverExists();
+
+      if (exists) {
+        // Get from database if server exists
+        const session = await getOAuthSession(this.mcpServerUuid);
+        if (session?.client_information) {
+          return await OAuthClientInformationSchema.parseAsync(
+            session.client_information
+          );
+        }
+      } else {
+        // Get from session storage during OAuth flow
+        const storedInfo = sessionStorage.getItem(
+          `${this.storagePrefix}client_information`
+        );
+        if (storedInfo) {
+          return await OAuthClientInformationSchema.parseAsync(
+            JSON.parse(storedInfo)
+          );
+        }
       }
 
-      return await OAuthClientInformationSchema.parseAsync(
-        session.client_information
-      );
+      return undefined;
     } catch (error) {
       console.error('Error retrieving client information:', error);
       return undefined;
@@ -74,22 +83,43 @@ class DbOAuthClientProvider implements OAuthClientProvider {
   }
 
   async saveClientInformation(clientInformation: OAuthClientInformation) {
-    await this.ensureMcpServerExists();
-    await saveOAuthSession({
-      mcpServerUuid: this.mcpServerUuid,
-      clientInformation,
-    });
+    // Save to session storage during OAuth flow
+    sessionStorage.setItem(
+      `${this.storagePrefix}client_information`,
+      JSON.stringify(clientInformation)
+    );
+
+    // If server exists, also save to database
+    if (await this.serverExists()) {
+      await saveOAuthSession({
+        mcpServerUuid: this.mcpServerUuid,
+        clientInformation,
+      });
+    }
   }
 
   async tokens() {
     try {
-      await this.ensureMcpServerExists();
-      const session = await getOAuthSession(this.mcpServerUuid);
-      if (!session?.tokens) {
-        return undefined;
+      // Check if server exists in the database
+      const exists = await this.serverExists();
+
+      if (exists) {
+        // Get from database if server exists
+        const session = await getOAuthSession(this.mcpServerUuid);
+        if (session?.tokens) {
+          return await OAuthTokensSchema.parseAsync(session.tokens);
+        }
+      } else {
+        // Get from session storage during OAuth flow
+        const storedTokens = sessionStorage.getItem(
+          `${this.storagePrefix}tokens`
+        );
+        if (storedTokens) {
+          return await OAuthTokensSchema.parseAsync(JSON.parse(storedTokens));
+        }
       }
 
-      return await OAuthTokensSchema.parseAsync(session.tokens);
+      return undefined;
     } catch (error) {
       console.error('Error retrieving tokens:', error);
       return undefined;
@@ -97,11 +127,19 @@ class DbOAuthClientProvider implements OAuthClientProvider {
   }
 
   async saveTokens(tokens: OAuthTokens) {
-    await this.ensureMcpServerExists();
-    await saveOAuthSession({
-      mcpServerUuid: this.mcpServerUuid,
-      tokens,
-    });
+    // Save to session storage during OAuth flow
+    sessionStorage.setItem(
+      `${this.storagePrefix}tokens`,
+      JSON.stringify(tokens)
+    );
+
+    // If server exists, also save to database
+    if (await this.serverExists()) {
+      await saveOAuthSession({
+        mcpServerUuid: this.mcpServerUuid,
+        tokens,
+      });
+    }
   }
 
   redirectToAuthorization(authorizationUrl: URL) {
@@ -109,21 +147,39 @@ class DbOAuthClientProvider implements OAuthClientProvider {
   }
 
   async saveCodeVerifier(codeVerifier: string) {
-    await this.ensureMcpServerExists();
-    await saveOAuthSession({
-      mcpServerUuid: this.mcpServerUuid,
-      codeVerifier,
-    });
+    // Save to session storage during OAuth flow
+    sessionStorage.setItem(`${this.storagePrefix}code_verifier`, codeVerifier);
+
+    // If server exists, also save to database
+    if (await this.serverExists()) {
+      await saveOAuthSession({
+        mcpServerUuid: this.mcpServerUuid,
+        codeVerifier,
+      });
+    }
   }
 
   async codeVerifier() {
-    await this.ensureMcpServerExists();
-    const session = await getOAuthSession(this.mcpServerUuid);
-    if (!session?.code_verifier) {
+    // Check if server exists in the database
+    const exists = await this.serverExists();
+
+    if (exists) {
+      // Get from database if server exists
+      const session = await getOAuthSession(this.mcpServerUuid);
+      if (session?.code_verifier) {
+        return session.code_verifier;
+      }
+    }
+
+    // Get from session storage during OAuth flow
+    const codeVerifier = sessionStorage.getItem(
+      `${this.storagePrefix}code_verifier`
+    );
+    if (!codeVerifier) {
       throw new Error('No code verifier saved for session');
     }
 
-    return session.code_verifier;
+    return codeVerifier;
   }
 }
 

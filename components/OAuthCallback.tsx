@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
 import { createMcpServer } from "@/app/actions/mcp-servers";
+import { saveOAuthSession } from "@/app/actions/oauth";
 
 import { createAuthProvider } from "../lib/auth";
 import { SESSION_KEYS } from "../lib/constants";
@@ -58,17 +59,42 @@ const OAuthCallback = () => {
               command: undefined,
             };
 
-            await createMcpServer(pendingServer.profileUuid, processedData);
+            // Create the MCP server now that we have successful authorization
+            const createdServer = await createMcpServer(pendingServer.profileUuid, processedData);
             console.log("Created MCP server after OAuth flow");
 
-            // Clear the pending server data
+            // Transfer OAuth data from session storage to database
+            const storagePrefix = `oauth_${serverUuid}_`;
+            const clientInformation = sessionStorage.getItem(`${storagePrefix}client_information`);
+            const tokens = sessionStorage.getItem(`${storagePrefix}tokens`);
+            const codeVerifier = sessionStorage.getItem(`${storagePrefix}code_verifier`);
+            
+            // Save OAuth session in database
+            await saveOAuthSession({
+              mcpServerUuid: serverUuid,
+              clientInformation: clientInformation ? JSON.parse(clientInformation) : undefined,
+              tokens: tokens ? JSON.parse(tokens) : undefined,
+              codeVerifier: codeVerifier || undefined,
+            });
+
+            // Clean up session storage
+            sessionStorage.removeItem(`${storagePrefix}client_information`);
+            sessionStorage.removeItem(`${storagePrefix}tokens`);
+            sessionStorage.removeItem(`${storagePrefix}code_verifier`);
             sessionStorage.removeItem(SESSION_KEYS.PENDING_MCP_SERVER);
+            sessionStorage.removeItem(SESSION_KEYS.SERVER_URL);
+            
+            // Redirect to the specific MCP server page using the UUID
+            if (createdServer && createdServer.uuid) {
+              window.location.href = `/mcp-servers/${createdServer.uuid}`;
+              return;
+            }
           } catch (error) {
             console.error("Failed to create MCP server after OAuth:", error);
           }
         }
 
-        // Redirect back to the MCP servers page
+        // Fallback: Redirect to the MCP servers page if something went wrong with the server creation
         window.location.href = "/mcp-servers";
       } catch (error) {
         console.error("OAuth callback error:", error);

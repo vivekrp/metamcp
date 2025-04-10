@@ -287,6 +287,7 @@ export default function MCPServersPage() {
       };
       sessionStorage.setItem(SESSION_KEYS.PENDING_MCP_SERVER, JSON.stringify(pendingServer));
 
+      // Start the OAuth flow - server will be created after successful authentication in the callback
       const authProvider = createAuthProvider(serverUuid, currentProfile?.uuid);
       const result = await auth(authProvider, { serverUrl: sseUrl });
       return result === "AUTHORIZED";
@@ -832,33 +833,54 @@ export default function MCPServersPage() {
                           onClick={async (e) => {
                             e.preventDefault();
                             try {
+                              setIsSubmitting(true);
+                              
+                              // For SSE servers, try to connect first before creating
                               await connectToMcpServer();
-                              form.handleSubmit(async (data) => {
-                                if (!currentProfile?.uuid) return;
-                                setIsSubmitting(true);
-                                try {
-                                  const processedData = {
-                                    ...data,
-                                    type: McpServerType.SSE,
-                                    args: [],
-                                    env: {},
-                                    status: McpServerStatus.ACTIVE,
-                                    command: undefined,
-                                  };
+                              
+                              // If it's an SSE server and requires OAuth, the connectToMcpServer function 
+                              // will store the pending server data and redirect to the OAuth flow.
+                              // The server will be created after successful OAuth in the callback.
+                              
+                              // If no OAuth was needed, create the server now
+                              if (!sessionStorage.getItem(SESSION_KEYS.PENDING_MCP_SERVER)) {
+                                form.handleSubmit(async (data) => {
+                                  if (!currentProfile?.uuid) return;
+                                  try {
+                                    const processedData = {
+                                      ...data,
+                                      type: McpServerType.SSE,
+                                      args: [],
+                                      env: {},
+                                      status: McpServerStatus.ACTIVE,
+                                      command: undefined,
+                                    };
 
-                                  await createMcpServer(
-                                    currentProfile.uuid,
-                                    processedData
-                                  );
-                                  await mutate();
-                                  setOpen(false);
-                                  form.reset();
-                                } catch (error) {
-                                  console.error('Error creating MCP server:', error);
-                                } finally {
-                                  setIsSubmitting(false);
-                                }
-                              })();
+                                    const createdServer = await createMcpServer(
+                                      currentProfile.uuid,
+                                      processedData
+                                    );
+                                    
+                                    await mutate();
+                                    setOpen(false);
+                                    form.reset();
+                                    
+                                    // Redirect to the specific server page
+                                    if (createdServer && createdServer.uuid) {
+                                      window.location.href = `/mcp-servers/${createdServer.uuid}`;
+                                    }
+                                  } catch (error) {
+                                    console.error('Error creating MCP server:', error);
+                                    toast({
+                                      title: 'Creation Failed',
+                                      description: 'Failed to create the MCP server.',
+                                      variant: 'destructive',
+                                    });
+                                  } finally {
+                                    setIsSubmitting(false);
+                                  }
+                                })();
+                              }
                             } catch (error) {
                               console.error('Error connecting to MCP server:', error);
                               toast({
@@ -866,6 +888,7 @@ export default function MCPServersPage() {
                                 description: 'Failed to connect to the MCP server. Please check the URL and try again.',
                                 variant: 'destructive',
                               });
+                              setIsSubmitting(false);
                             }
                           }}>
                           {isSubmitting ? 'Connecting...' : 'Connect and Create'}
