@@ -49,6 +49,7 @@ const OAuthCallback = () => {
           try {
             // Process server data to match expected format
             const processedData = {
+              uuid: serverUuid,
               name: pendingServer.name,
               description: pendingServer.description,
               url: pendingServer.url,
