@@ -269,23 +269,25 @@ export default function MCPServersPage() {
   };
 
   const handleAuthError = async (sseUrl: string, error: unknown) => {
+    // Handle OAuth authentication if needed
     if (error instanceof SseError && error.code === 401) {
+      // Store server URL for OAuth callback
       sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
-
-      // Store current form data for post-OAuth server creation
-      const formData = form.getValues();
+      
+      // Store pending server creation data for after auth
+      const serverUuid = uuidv4();
       const pendingServer = {
-        name: formData.name,
-        description: formData.description,
-        url: formData.url || sseUrl,
+        uuid: serverUuid,
+        name: form.getValues().name,
+        description: form.getValues().description || '',
+        url: form.getValues().url || sseUrl,
         type: McpServerType.SSE,
         status: McpServerStatus.ACTIVE,
         profileUuid: currentProfile?.uuid,
       };
       sessionStorage.setItem(SESSION_KEYS.PENDING_MCP_SERVER, JSON.stringify(pendingServer));
 
-      const serverUuid = uuidv4();
-      const authProvider = createAuthProvider(serverUuid);
+      const authProvider = createAuthProvider(serverUuid, currentProfile?.uuid);
       const result = await auth(authProvider, { serverUrl: sseUrl });
       return result === "AUTHORIZED";
     }
@@ -310,7 +312,7 @@ export default function MCPServersPage() {
 
     // Use manually provided bearer token if available, otherwise use OAuth tokens
     const serverUuid = uuidv4();
-    const authProvider = createAuthProvider(serverUuid);
+    const authProvider = createAuthProvider(serverUuid, currentProfile?.uuid);
     const token = (await authProvider.tokens())?.access_token || '';
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;

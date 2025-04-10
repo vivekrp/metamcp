@@ -32,7 +32,7 @@ const OAuthCallback = () => {
 
       try {
         const serverUuid = pendingServer?.uuid || uuidv4();
-        const authProvider = createAuthProvider(serverUuid);
+        const authProvider = createAuthProvider(serverUuid, pendingServer?.profileUuid);
         const result = await auth(authProvider, {
           serverUrl,
           authorizationCode: code,
