@@ -5,10 +5,68 @@ import {
   OAuthTokens,
   OAuthTokensSchema,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
+import { eq } from 'drizzle-orm';
 
-import { SESSION_KEYS } from './constants';
+import { db } from '@/db';
+import { oauthSessionsTable } from '@/db/schema';
 
-class InspectorOAuthClientProvider implements OAuthClientProvider {
+// Server actions for OAuth session management
+export async function saveOAuthSession({
+  mcpServerUuid,
+  clientInformation,
+  tokens,
+  codeVerifier,
+}: {
+  mcpServerUuid: string;
+  clientInformation?: OAuthClientInformation;
+  tokens?: OAuthTokens;
+  codeVerifier?: string;
+}) {
+  'use server';
+
+  // Check if session exists
+  const existingSession = await db.query.oauthSessionsTable.findFirst({
+    where: eq(oauthSessionsTable.mcp_server_uuid, mcpServerUuid),
+  });
+
+  if (existingSession) {
+    // Update existing session
+    await db
+      .update(oauthSessionsTable)
+      .set({
+        ...(clientInformation && { client_information: clientInformation }),
+        ...(tokens && { tokens }),
+        ...(codeVerifier && { code_verifier: codeVerifier }),
+        updated_at: new Date(),
+      })
+      .where(eq(oauthSessionsTable.mcp_server_uuid, mcpServerUuid));
+  } else if (clientInformation) {
+    // Create new session (require client_information for creation)
+    await db.insert(oauthSessionsTable).values({
+      mcp_server_uuid: mcpServerUuid,
+      client_information: clientInformation,
+      ...(tokens && { tokens }),
+      ...(codeVerifier && { code_verifier: codeVerifier }),
+    });
+  }
+}
+
+export async function getOAuthSession(mcpServerUuid: string) {
+  'use server';
+
+  return await db.query.oauthSessionsTable.findFirst({
+    where: eq(oauthSessionsTable.mcp_server_uuid, mcpServerUuid),
+  });
+}
+
+// OAuth client provider that works with a specific MCP server
+class DbOAuthClientProvider implements OAuthClientProvider {
+  private mcpServerUuid: string;
+
+  constructor(mcpServerUuid: string) {
+    this.mcpServerUuid = mcpServerUuid;
+  }
+
   get redirectUrl() {
     return window.location.origin + '/oauth/callback';
   }
@@ -25,50 +83,71 @@ class InspectorOAuthClientProvider implements OAuthClientProvider {
   }
 
   async clientInformation() {
-    const value = sessionStorage.getItem(SESSION_KEYS.CLIENT_INFORMATION);
-    if (!value) {
+    try {
+      const session = await getOAuthSession(this.mcpServerUuid);
+      if (!session?.client_information) {
+        return undefined;
+      }
+
+      return await OAuthClientInformationSchema.parseAsync(
+        session.client_information
+      );
+    } catch (error) {
+      console.error('Error retrieving client information:', error);
       return undefined;
     }
-
-    return await OAuthClientInformationSchema.parseAsync(JSON.parse(value));
   }
 
-  saveClientInformation(clientInformation: OAuthClientInformation) {
-    sessionStorage.setItem(
-      SESSION_KEYS.CLIENT_INFORMATION,
-      JSON.stringify(clientInformation)
-    );
+  async saveClientInformation(clientInformation: OAuthClientInformation) {
+    await saveOAuthSession({
+      mcpServerUuid: this.mcpServerUuid,
+      clientInformation,
+    });
   }
 
   async tokens() {
-    const tokens = sessionStorage.getItem(SESSION_KEYS.TOKENS);
-    if (!tokens) {
+    try {
+      const session = await getOAuthSession(this.mcpServerUuid);
+      if (!session?.tokens) {
+        return undefined;
+      }
+
+      return await OAuthTokensSchema.parseAsync(session.tokens);
+    } catch (error) {
+      console.error('Error retrieving tokens:', error);
       return undefined;
     }
-
-    return await OAuthTokensSchema.parseAsync(JSON.parse(tokens));
   }
 
-  saveTokens(tokens: OAuthTokens) {
-    sessionStorage.setItem(SESSION_KEYS.TOKENS, JSON.stringify(tokens));
+  async saveTokens(tokens: OAuthTokens) {
+    await saveOAuthSession({
+      mcpServerUuid: this.mcpServerUuid,
+      tokens,
+    });
   }
 
   redirectToAuthorization(authorizationUrl: URL) {
     window.location.href = authorizationUrl.href;
   }
 
-  saveCodeVerifier(codeVerifier: string) {
-    sessionStorage.setItem(SESSION_KEYS.CODE_VERIFIER, codeVerifier);
+  async saveCodeVerifier(codeVerifier: string) {
+    await saveOAuthSession({
+      mcpServerUuid: this.mcpServerUuid,
+      codeVerifier,
+    });
   }
 
-  codeVerifier() {
-    const verifier = sessionStorage.getItem(SESSION_KEYS.CODE_VERIFIER);
-    if (!verifier) {
+  async codeVerifier() {
+    const session = await getOAuthSession(this.mcpServerUuid);
+    if (!session?.code_verifier) {
       throw new Error('No code verifier saved for session');
     }
 
-    return verifier;
+    return session.code_verifier;
   }
 }
 
-export const authProvider = new InspectorOAuthClientProvider();
+// Factory function to create an OAuth provider for a specific MCP server
+export function createAuthProvider(mcpServerUuid: string): OAuthClientProvider {
+  return new DbOAuthClientProvider(mcpServerUuid);
+}

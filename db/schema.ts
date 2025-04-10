@@ -1,3 +1,7 @@
+import {
+  OAuthClientInformation,
+  OAuthTokens,
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 import { sql } from 'drizzle-orm';
 import {
   AnyPgColumn,
@@ -251,5 +255,30 @@ export const toolExecutionLogsTable = pgTable(
     index('tool_execution_logs_mcp_server_uuid_idx').on(table.mcp_server_uuid),
     index('tool_execution_logs_tool_name_idx').on(table.tool_name),
     index('tool_execution_logs_created_at_idx').on(table.created_at),
+  ]
+);
+
+export const oauthSessionsTable = pgTable(
+  'oauth_sessions',
+  {
+    uuid: uuid('uuid').primaryKey().defaultRandom(),
+    mcp_server_uuid: uuid('mcp_server_uuid')
+      .notNull()
+      .references(() => mcpServersTable.uuid, { onDelete: 'cascade' }),
+    client_information: jsonb('client_information')
+      .$type<OAuthClientInformation>()
+      .notNull(),
+    tokens: jsonb('tokens').$type<OAuthTokens>(),
+    code_verifier: text('code_verifier'),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('oauth_sessions_mcp_server_uuid_idx').on(table.mcp_server_uuid),
+    unique('oauth_sessions_unique_per_server_idx').on(table.mcp_server_uuid),
   ]
 );

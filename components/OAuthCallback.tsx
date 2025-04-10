@@ -1,9 +1,10 @@
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { useEffect, useRef } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 import { createMcpServer } from "@/app/actions/mcp-servers";
 
-import { authProvider } from "../lib/auth";
+import { createAuthProvider } from "../lib/auth";
 import { SESSION_KEYS } from "../lib/constants";
 
 const OAuthCallback = () => {
@@ -30,6 +31,8 @@ const OAuthCallback = () => {
       }
 
       try {
+        const serverUuid = pendingServer?.uuid || uuidv4();
+        const authProvider = createAuthProvider(serverUuid);
         const result = await auth(authProvider, {
           serverUrl,
           authorizationCode: code,

@@ -1,5 +1,4 @@
 'use client';
-
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
@@ -20,6 +19,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   bulkImportMcpServers,
@@ -52,7 +52,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { McpServerStatus, McpServerType } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useToast } from "@/hooks/use-toast";
-import { authProvider } from "@/lib/auth";
+import { createAuthProvider } from "@/lib/auth";
 import { SESSION_KEYS } from "@/lib/constants";
 import packageJson from "@/package.json";
 import { McpServer } from '@/types/mcp-server';
@@ -284,6 +284,8 @@ export default function MCPServersPage() {
       };
       sessionStorage.setItem(SESSION_KEYS.PENDING_MCP_SERVER, JSON.stringify(pendingServer));
 
+      const serverUuid = uuidv4();
+      const authProvider = createAuthProvider(serverUuid);
       const result = await auth(authProvider, { serverUrl: sseUrl });
       return result === "AUTHORIZED";
     }
@@ -307,6 +309,8 @@ export default function MCPServersPage() {
     const headers: HeadersInit = {};
 
     // Use manually provided bearer token if available, otherwise use OAuth tokens
+    const serverUuid = uuidv4();
+    const authProvider = createAuthProvider(serverUuid);
     const token = (await authProvider.tokens())?.access_token || '';
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
