@@ -1,6 +1,8 @@
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { useEffect, useRef } from "react";
 
+import { createMcpServer } from "@/app/actions/mcp-servers";
+
 import { authProvider } from "../lib/auth";
 import { SESSION_KEYS } from "../lib/constants";
 
@@ -18,6 +20,8 @@ const OAuthCallback = () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
       const serverUrl = sessionStorage.getItem(SESSION_KEYS.SERVER_URL);
+      const pendingServerJSON = sessionStorage.getItem(SESSION_KEYS.PENDING_MCP_SERVER);
+      const pendingServer = pendingServerJSON ? JSON.parse(pendingServerJSON) : null;
 
       if (!code || !serverUrl) {
         console.error("Missing code or server URL");
@@ -36,8 +40,33 @@ const OAuthCallback = () => {
           );
         }
 
-        // Redirect back to the main app with server URL to trigger auto-connect
-        window.location.href = `/?serverUrl=${encodeURIComponent(serverUrl)}`;
+        // If we have a pending MCP server to create, create it now
+        if (pendingServer && pendingServer.profileUuid) {
+          try {
+            // Process server data to match expected format
+            const processedData = {
+              name: pendingServer.name,
+              description: pendingServer.description,
+              url: pendingServer.url,
+              type: pendingServer.type,
+              args: [],
+              env: {},
+              status: pendingServer.status,
+              command: undefined,
+            };
+
+            await createMcpServer(pendingServer.profileUuid, processedData);
+            console.log("Created MCP server after OAuth flow");
+
+            // Clear the pending server data
+            sessionStorage.removeItem(SESSION_KEYS.PENDING_MCP_SERVER);
+          } catch (error) {
+            console.error("Failed to create MCP server after OAuth:", error);
+          }
+        }
+
+        // Redirect back to the MCP servers page
+        window.location.href = "/mcp-servers";
       } catch (error) {
         console.error("OAuth callback error:", error);
         window.location.href = "/";

@@ -4,4 +4,5 @@ export const SESSION_KEYS = {
   SERVER_URL: 'mcp_server_url',
   TOKENS: 'mcp_tokens',
   CLIENT_INFORMATION: 'mcp_client_information',
+  PENDING_MCP_SERVER: 'pending_mcp_server_creation',
 } as const;

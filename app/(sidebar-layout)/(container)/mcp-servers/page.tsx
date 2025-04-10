@@ -17,7 +17,7 @@ import {
 } from '@tanstack/react-table';
 import { Copy, Download, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 
@@ -90,6 +90,13 @@ export default function MCPServersPage() {
     currentProfile?.uuid ? `${currentProfile.uuid}/mcp-servers` : null,
     () => getMcpServers(currentProfile?.uuid || '')
   );
+
+  // Check for any pending MCP server creation that might have been interrupted by OAuth flow
+  useEffect(() => {
+    // Clean up any leftover pending MCP server data
+    // This is just a safety measure as the OAuth callback should have handled the creation
+    sessionStorage.removeItem(SESSION_KEYS.PENDING_MCP_SERVER);
+  }, []);
 
   const columns = [
     columnHelper.accessor('name', {
@@ -264,6 +271,18 @@ export default function MCPServersPage() {
   const handleAuthError = async (sseUrl: string, error: unknown) => {
     if (error instanceof SseError && error.code === 401) {
       sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
+
+      // Store current form data for post-OAuth server creation
+      const formData = form.getValues();
+      const pendingServer = {
+        name: formData.name,
+        description: formData.description,
+        url: formData.url || sseUrl,
+        type: McpServerType.SSE,
+        status: McpServerStatus.ACTIVE,
+        profileUuid: currentProfile?.uuid,
+      };
+      sessionStorage.setItem(SESSION_KEYS.PENDING_MCP_SERVER, JSON.stringify(pendingServer));
 
       const result = await auth(authProvider, { serverUrl: sseUrl });
       return result === "AUTHORIZED";
@@ -793,11 +812,6 @@ export default function MCPServersPage() {
                       <div className='flex justify-end space-x-2'>
                         <Button
                           type='button'
-                          onClick={connectToMcpServer}>
-                          Test Connection
-                        </Button>
-                        <Button
-                          type='button'
                           variant='outline'
                           onClick={() => {
                             setOpen(false);
@@ -806,8 +820,49 @@ export default function MCPServersPage() {
                           disabled={isSubmitting}>
                           Cancel
                         </Button>
-                        <Button type='submit' disabled={isSubmitting}>
-                          {isSubmitting ? 'Creating...' : 'Create'}
+                        <Button
+                          type='submit'
+                          disabled={isSubmitting}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            try {
+                              await connectToMcpServer();
+                              form.handleSubmit(async (data) => {
+                                if (!currentProfile?.uuid) return;
+                                setIsSubmitting(true);
+                                try {
+                                  const processedData = {
+                                    ...data,
+                                    type: McpServerType.SSE,
+                                    args: [],
+                                    env: {},
+                                    status: McpServerStatus.ACTIVE,
+                                    command: undefined,
+                                  };
+
+                                  await createMcpServer(
+                                    currentProfile.uuid,
+                                    processedData
+                                  );
+                                  await mutate();
+                                  setOpen(false);
+                                  form.reset();
+                                } catch (error) {
+                                  console.error('Error creating MCP server:', error);
+                                } finally {
+                                  setIsSubmitting(false);
+                                }
+                              })();
+                            } catch (error) {
+                              console.error('Error connecting to MCP server:', error);
+                              toast({
+                                title: 'Connection Failed',
+                                description: 'Failed to connect to the MCP server. Please check the URL and try again.',
+                                variant: 'destructive',
+                              });
+                            }
+                          }}>
+                          {isSubmitting ? 'Connecting...' : 'Connect and Create'}
                         </Button>
                       </div>
                     </form>
