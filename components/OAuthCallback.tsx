@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { createMcpServer } from "@/app/actions/mcp-servers";
 import { saveOAuthSession } from "@/app/actions/oauth";
 
-import { createAuthProvider } from "../lib/auth";
 import { SESSION_KEYS } from "../lib/constants";
+import { createAuthProvider } from "../lib/oauth-provider";
 
 const OAuthCallback = () => {
   const hasProcessedRef = useRef(false);
@@ -69,7 +69,7 @@ const OAuthCallback = () => {
             const clientInformation = sessionStorage.getItem(`${storagePrefix}client_information`);
             const tokens = sessionStorage.getItem(`${storagePrefix}tokens`);
             const codeVerifier = sessionStorage.getItem(`${storagePrefix}code_verifier`);
-            
+
             // Save OAuth session in database
             await saveOAuthSession({
               mcpServerUuid: serverUuid,
@@ -84,7 +84,7 @@ const OAuthCallback = () => {
             sessionStorage.removeItem(`${storagePrefix}code_verifier`);
             sessionStorage.removeItem(SESSION_KEYS.PENDING_MCP_SERVER);
             sessionStorage.removeItem(SESSION_KEYS.SERVER_URL);
-            
+
             // Redirect to the specific MCP server page using the UUID
             if (createdServer && createdServer.uuid) {
               window.location.href = `/mcp-servers/${createdServer.uuid}`;

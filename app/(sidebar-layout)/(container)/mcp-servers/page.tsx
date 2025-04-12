@@ -52,8 +52,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { McpServerStatus, McpServerType } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useToast } from "@/hooks/use-toast";
-import { createAuthProvider } from "@/lib/auth";
 import { SESSION_KEYS } from "@/lib/constants";
+import { createAuthProvider } from "@/lib/oauth-provider";
 import packageJson from "@/package.json";
 import { McpServer } from '@/types/mcp-server';
 
@@ -273,7 +273,7 @@ export default function MCPServersPage() {
     if (error instanceof SseError && error.code === 401) {
       // Store server URL for OAuth callback
       sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
-      
+
       // Store pending server creation data for after auth
       const serverUuid = uuidv4();
       const pendingServer = {
@@ -834,14 +834,14 @@ export default function MCPServersPage() {
                             e.preventDefault();
                             try {
                               setIsSubmitting(true);
-                              
+
                               // For SSE servers, try to connect first before creating
                               await connectToMcpServer();
-                              
+
                               // If it's an SSE server and requires OAuth, the connectToMcpServer function 
                               // will store the pending server data and redirect to the OAuth flow.
                               // The server will be created after successful OAuth in the callback.
-                              
+
                               // If no OAuth was needed, create the server now
                               if (!sessionStorage.getItem(SESSION_KEYS.PENDING_MCP_SERVER)) {
                                 form.handleSubmit(async (data) => {
@@ -860,11 +860,11 @@ export default function MCPServersPage() {
                                       currentProfile.uuid,
                                       processedData
                                     );
-                                    
+
                                     await mutate();
                                     setOpen(false);
                                     form.reset();
-                                    
+
                                     // Redirect to the specific server page
                                     if (createdServer && createdServer.uuid) {
                                       window.location.href = `/mcp-servers/${createdServer.uuid}`;
