@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.8.0",
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:next\" \"pnpm run dev:remote-hosting\" --kill-others --names \"NEXT,REMOTE\" --prefix-colors \"blue,green\"",
+    "dev": "concurrently \"pnpm run dev:next\" \"pnpm run dev:remote-hosting\" --kill-others --names \"App,Remote Hosting\" --prefix-colors \"blue,green\"",
     "dev:next": "next dev --turbopack --port=12005",
     "dev:remote-hosting": "cd remote-hosting && pnpm run dev",
     "build": "next build && pnpm run build:remote-hosting",
