@@ -1,36 +1,37 @@
-FROM node:20-alpine AS base
+# Use the official uv image as base
+FROM ghcr.io/astral-sh/uv:debian
+
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.8.0 --activate
 
-# Install dependencies only when needed
-FROM base AS deps
+# Set working directory
 WORKDIR /app
 
-# Files needed for pnpm install
+# Copy package files
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the application
 COPY . .
 
+# Build the application
 RUN pnpm build
 
-# Production image, copy all the files and run the Express app
-FROM base AS runner
-WORKDIR /app
+# Set environment variables
+ENV NODE_ENV=production
 
-ENV NODE_ENV production
-
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressjs
-
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/build ./build
 
 USER expressjs
 
