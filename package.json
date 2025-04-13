@@ -10,6 +10,8 @@
     "build": "next build && pnpm run build:remote-hosting",
     "build:remote-hosting": "cd remote-hosting && pnpm run build",
     "start": "next start",
+    "start:all": "concurrently \"pnpm run start\" \"pnpm run start:remote-hosting\" --kill-others --names \"App,Remote Hosting\" --prefix-colors \"blue,green\"",
+    "start:remote-hosting": "cd remote-hosting && pnpm run start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate"

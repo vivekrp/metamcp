@@ -11,6 +11,14 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
+# Build remote-hosting
+FROM base AS remote-hosting-builder
+WORKDIR /app/remote-hosting
+COPY remote-hosting/package.json remote-hosting/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+COPY remote-hosting ./
+RUN pnpm build
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
