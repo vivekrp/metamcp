@@ -37,7 +37,14 @@ const { values } = parseArgs({
 const app = express();
 app.use(cors());
 
-const webAppTransports: SSEServerTransport[] = [];
+// Map to store connections by UUID
+const connections = new Map<
+  string,
+  {
+    webAppTransport: SSEServerTransport;
+    backingServerTransport: Transport;
+  }
+>();
 
 const createTransport = async (req: express.Request): Promise<Transport> => {
   const query = req.query;
@@ -101,14 +108,14 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
   }
 };
 
-let backingServerTransport: Transport | undefined;
-
+// Support for legacy /sse endpoint
 app.get('/sse', async (req, res) => {
   try {
-    console.log('New SSE connection');
+    console.log('New SSE connection (legacy endpoint)');
+
+    let backingServerTransport: Transport;
 
     try {
-      await backingServerTransport?.close();
       backingServerTransport = await createTransport(req);
     } catch (error) {
       if (error instanceof SseError && error.code === 401) {
@@ -126,9 +133,6 @@ app.get('/sse', async (req, res) => {
     console.log('Connected MCP client to backing server transport');
 
     const webAppTransport = new SSEServerTransport('/message', res);
-    console.log('Created web app transport');
-
-    webAppTransports.push(webAppTransport);
     console.log('Created web app transport');
 
     await webAppTransport.start();
@@ -157,12 +161,124 @@ app.get('/sse', async (req, res) => {
   }
 });
 
+// New UUID-based SSE endpoint
+app.get('/:uuid/sse', async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    console.log(`New SSE connection for UUID: ${uuid}`);
+
+    // Clean up existing connection with the same UUID
+    if (connections.has(uuid)) {
+      const existingConnection = connections.get(uuid)!;
+      try {
+        await existingConnection.backingServerTransport.close();
+        await existingConnection.webAppTransport.close();
+      } catch (error) {
+        console.error(
+          `Error closing existing connection for UUID ${uuid}:`,
+          error
+        );
+      }
+      connections.delete(uuid);
+    }
+
+    let backingServerTransport: Transport;
+
+    try {
+      backingServerTransport = await createTransport(req);
+    } catch (error) {
+      if (error instanceof SseError && error.code === 401) {
+        console.error(
+          'Received 401 Unauthorized from MCP server:',
+          error.message
+        );
+        res.status(401).json(error);
+        return;
+      }
+
+      throw error;
+    }
+
+    console.log(
+      `Connected MCP client to backing server transport for UUID ${uuid}`
+    );
+
+    const webAppTransport = new SSEServerTransport(`/${uuid}/message`, res);
+    console.log(`Created web app transport for UUID ${uuid}`);
+
+    await webAppTransport.start();
+
+    if (backingServerTransport instanceof StdioClientTransport) {
+      backingServerTransport.stderr!.on('data', (chunk) => {
+        webAppTransport.send({
+          jsonrpc: '2.0',
+          method: 'notifications/stderr',
+          params: {
+            content: chunk.toString(),
+          },
+        });
+      });
+    }
+
+    connections.set(uuid, {
+      webAppTransport,
+      backingServerTransport,
+    });
+
+    mcpProxy({
+      transportToClient: webAppTransport,
+      transportToServer: backingServerTransport,
+    });
+
+    // Handle cleanup when connection closes
+    res.on('close', () => {
+      console.log(`Connection closed for UUID ${uuid}`);
+      connections.delete(uuid);
+    });
+
+    console.log(`Set up MCP proxy for UUID ${uuid}`);
+  } catch (error) {
+    console.error(`Error in /${req.params.uuid}/sse route:`, error);
+    res.status(500).json(error);
+  }
+});
+
+// New UUID-based message endpoint
+app.post('/:uuid/message', async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    console.log(`Received message for UUID ${uuid}`);
+
+    const connection = connections.get(uuid);
+    if (!connection) {
+      res.status(404).end('Session not found');
+      return;
+    }
+    await connection.webAppTransport.handlePostMessage(req, res);
+  } catch (error) {
+    console.error(`Error in /${req.params.uuid}/message route:`, error);
+    res.status(500).json(error);
+  }
+});
+
+// Legacy message endpoint
 app.post('/message', async (req, res) => {
   try {
     const sessionId = req.query.sessionId;
     console.log(`Received message for sessionId ${sessionId}`);
 
-    const transport = webAppTransports.find((t) => t.sessionId === sessionId);
+    // For backward compatibility
+    if (connections.has(sessionId as string)) {
+      const connection = connections.get(sessionId as string);
+      await connection!.webAppTransport.handlePostMessage(req, res);
+      return;
+    }
+
+    // Legacy way of finding the transport
+    const transport = Array.from(connections.values())
+      .map((conn) => conn.webAppTransport)
+      .find((t) => t.sessionId === sessionId);
+
     if (!transport) {
       res.status(404).end('Session not found');
       return;
@@ -177,6 +293,7 @@ app.post('/message', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
+    connections: Array.from(connections.keys()),
   });
 });
 
