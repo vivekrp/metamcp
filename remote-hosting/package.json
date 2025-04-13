@@ -1,0 +1,39 @@
+{
+  "name": "@metamcp/remote-hosting",
+  "version": "0.0.1",
+  "description": "Remote hosting express server for MetaMCP",
+  "license": "AGPL-3.0-only",
+  "author": "James Zhang",
+  "homepage": "https://github.com/metatool-ai/metatool-app",
+  "bugs": "https://github.com/metatool-ai/metatool-app/issues",
+  "type": "module",
+  "bin": {
+    "metamcp-remote-hosting": "build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "dev:windows": "tsx watch --clear-screen=false src/index.ts < NUL"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/shell-quote": "^1.7.5",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "shell-quote": "^1.8.2",
+    "spawn-rx": "^5.1.2",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  }
+}
