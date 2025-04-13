@@ -319,7 +319,7 @@ export default function MCPServersPage() {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const clientTransport = new SSEClientTransport(new URL(form.getValues('url') || 'http://localhost:8787/sse'), {
+    const clientTransport = new SSEClientTransport(new URL(form.getValues('url')), {
       eventSourceInit: {
         fetch: (url, init) => fetch(url, { ...init, headers }),
       },
@@ -335,7 +335,7 @@ export default function MCPServersPage() {
         `Failed to connect to MCP Server`,
         error,
       );
-      const shouldRetry = await handleAuthError(form.getValues('url') || 'http://localhost:8787/sse', error);
+      const shouldRetry = await handleAuthError(form.getValues('url'), error);
       if (shouldRetry) {
         return connectToMcpServer(undefined, retryCount + 1);
       }
