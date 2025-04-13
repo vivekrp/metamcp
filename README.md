@@ -103,5 +103,5 @@ sequenceDiagram
 GNU AGPL v3
 
 ## Credits
-
+- Used some oauth codes in https://github.com/modelcontextprotocol/inspector
 - (Deprecated) Demo video uses MCP Client [5ire](https://5ire.app/)
