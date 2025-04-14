@@ -1,9 +1,11 @@
+import { ClientRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { Copy, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import useSWR from "swr";
+import { z } from "zod";
 
-import { refreshSseTools } from "@/app/actions/refresh-sse-tools";
-import { getToolsByMcpServerUuid } from "@/app/actions/tools";
+import { getToolsByMcpServerUuid, saveToolsToDatabase } from "@/app/actions/tools";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,15 +24,52 @@ interface ToolManagementProps {
     apiKey?: {
         api_key: string;
     } | null;
+    makeRequest: (request: ClientRequest, schema: z.ZodType) => Promise<any>;
 }
 
-export default function ToolManagement({ mcpServer, hasToolsManagement, apiKey }: ToolManagementProps) {
+export default function ToolManagement({ mcpServer, hasToolsManagement, apiKey, makeRequest }: ToolManagementProps) {
     const router = useRouter();
     const { toast } = useToast();
     const { mutate: mutateTools } = useSWR(
         mcpServer.uuid ? ['getToolsByMcpServerUuid', mcpServer.uuid] : null,
         () => getToolsByMcpServerUuid(mcpServer.uuid)
     );
+
+    // Add missing state definitions
+    // eslint-disable-next-line unused-imports/no-unused-vars
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Add clearError function
+    const clearError = (key: keyof typeof errors) => {
+        setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[key];
+            return newErrors;
+        });
+    };
+
+    const sendMCPRequest = async <T extends z.ZodType>(
+        request: ClientRequest,
+        schema: T,
+        tabKey?: keyof typeof errors,
+    ) => {
+        try {
+            const response = await makeRequest(request, schema);
+            if (tabKey !== undefined) {
+                clearError(tabKey);
+            }
+            return response;
+        } catch (e) {
+            const errorString = (e as Error).message ?? String(e);
+            if (tabKey !== undefined) {
+                setErrors((prev) => ({
+                    ...prev,
+                    [tabKey]: errorString,
+                }));
+            }
+            throw e;
+        }
+    };
 
     if (!hasToolsManagement) {
         return (
@@ -102,13 +141,29 @@ export default function ToolManagement({ mcpServer, hasToolsManagement, apiKey }
                 ) : (
                     <Button size="sm" onClick={async () => {
                         try {
-                            await refreshSseTools(mcpServer.uuid);
-                            await mutateTools();
-                            toast({
-                                description: "SSE tools refreshed successfully"
-                            });
+                            const response = await sendMCPRequest(
+                                {
+                                    method: "tools/list" as const,
+                                    params: {}
+                                },
+                                ListToolsResultSchema,
+                                "tools"
+                            );
+
+                            if (response.tools.length > 0) {
+                                await saveToolsToDatabase(mcpServer.uuid, response.tools);
+                                await mutateTools();
+
+                                toast({
+                                    description: `${response.tools.length} tools refreshed successfully`
+                                });
+                            } else {
+                                toast({
+                                    description: "No tools found to refresh"
+                                });
+                            }
                         } catch (error) {
-                            console.error("Error refreshing SSE tools:", error);
+                            console.error("Error refreshing tools:", error);
                             toast({
                                 variant: "destructive",
                                 title: "Error refreshing tools",

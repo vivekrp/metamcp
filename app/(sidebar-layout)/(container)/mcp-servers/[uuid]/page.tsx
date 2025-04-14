@@ -96,6 +96,7 @@ export default function McpServerDetailPage({
     connectionStatus,
     connect,
     disconnect,
+    makeRequest
   } = useConnection({
     mcpServerUuid: uuid,
     currentProfileUuid: currentProfile?.uuid,
@@ -595,6 +596,7 @@ export default function McpServerDetailPage({
         mcpServer={mcpServer}
         hasToolsManagement={hasToolsManagement || false}
         apiKey={apiKey}
+        makeRequest={makeRequest}
       />
 
       {/* Server Notifications Section */}
