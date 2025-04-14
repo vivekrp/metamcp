@@ -27,8 +27,11 @@ import {
   ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { useState } from 'react';
+import useSWR from 'swr';
 import { z } from 'zod';
 
+import { getMcpServerByUuid } from '@/app/actions/mcp-servers';
+import { McpServerType } from '@/db/schema';
 import { useToast } from '@/hooks/use-toast';
 import { ConnectionStatus, SESSION_KEYS } from '@/lib/constants';
 import {
@@ -37,33 +40,22 @@ import {
 } from '@/lib/notificationTypes';
 import { createAuthProvider } from '@/lib/oauth-provider';
 import packageJson from '@/package.json';
+import { McpServer } from '@/types/mcp-server';
 
 interface UseConnectionOptions {
   mcpServerUuid: string;
   currentProfileUuid?: string;
-  transportType: 'stdio' | 'sse';
-  command: string;
-  args: string;
-  sseUrl: string;
-  env: Record<string, string>;
   bearerToken?: string;
   onNotification?: (notification: Notification) => void;
   onStdErrNotification?: (notification: Notification) => void;
-
   onPendingRequest?: (request: any, resolve: any, reject: any) => void;
-
   getRoots?: () => any[];
 }
 
 export function useConnection({
   mcpServerUuid,
   currentProfileUuid,
-  transportType,
-  command,
-  args,
-  sseUrl,
-  env,
-  bearerToken,
+  bearerToken: providedBearerToken,
   onNotification,
   onStdErrNotification,
   onPendingRequest,
@@ -80,6 +72,14 @@ export function useConnection({
     { request: string; response?: string }[]
   >([]);
   const [completionsSupported, setCompletionsSupported] = useState(true);
+
+  // Fetch MCP server data using SWR
+  const { data: mcpServer } = useSWR<McpServer | undefined>(
+    mcpServerUuid && currentProfileUuid
+      ? ['getMcpServerByUuid', mcpServerUuid, currentProfileUuid]
+      : null,
+    () => getMcpServerByUuid(currentProfileUuid || '', mcpServerUuid)
+  );
 
   const pushHistory = (request: object, response?: object) => {
     setRequestHistory((prev) => [
@@ -240,9 +240,11 @@ export function useConnection({
 
   const handleAuthError = async (error: unknown) => {
     if (error instanceof SseError && error.code === 401) {
-      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
+      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, mcpServer?.url || '');
 
-      const result = await auth(authProvider, { serverUrl: sseUrl });
+      const result = await auth(authProvider, {
+        serverUrl: mcpServer?.url || '',
+      });
       return result === 'AUTHORIZED';
     }
 
@@ -250,6 +252,16 @@ export function useConnection({
   };
 
   const connect = async (_e?: unknown, retryCount: number = 0) => {
+    if (!mcpServer) {
+      toast({
+        title: 'Error',
+        description: 'MCP server data not available',
+        variant: 'destructive',
+      });
+      setConnectionStatus('error');
+      return;
+    }
+
     const client = new Client<Request, Notification, Result>(
       {
         name: 'mcp-inspector',
@@ -274,13 +286,16 @@ export function useConnection({
     const mcpProxyServerUrl = new URL(
       `http://localhost:12007/${mcpServerUuid}/sse`
     );
-    mcpProxyServerUrl.searchParams.append('transportType', transportType);
-    if (transportType === 'stdio') {
-      mcpProxyServerUrl.searchParams.append('command', command);
-      mcpProxyServerUrl.searchParams.append('args', args);
-      mcpProxyServerUrl.searchParams.append('env', JSON.stringify(env));
+    mcpProxyServerUrl.searchParams.append('transportType', mcpServer.type);
+    if (mcpServer.type === McpServerType.STDIO) {
+      mcpProxyServerUrl.searchParams.append('command', mcpServer.command || '');
+      mcpProxyServerUrl.searchParams.append('args', mcpServer.args.join(' '));
+      mcpProxyServerUrl.searchParams.append(
+        'env',
+        JSON.stringify(mcpServer.env)
+      );
     } else {
-      mcpProxyServerUrl.searchParams.append('url', sseUrl);
+      mcpProxyServerUrl.searchParams.append('url', mcpServer.url || '');
     }
 
     try {
@@ -289,7 +304,8 @@ export function useConnection({
       const headers: HeadersInit = {};
 
       // Use manually provided bearer token if available, otherwise use OAuth tokens
-      const token = bearerToken || (await authProvider.tokens())?.access_token;
+      const token =
+        providedBearerToken || (await authProvider.tokens())?.access_token;
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
