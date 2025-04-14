@@ -6,3 +6,9 @@ export const SESSION_KEYS = {
   CLIENT_INFORMATION: 'mcp_client_information',
   PENDING_MCP_SERVER: 'pending_mcp_server_creation',
 } as const;
+
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connected'
+  | 'error'
+  | 'error-connecting-to-proxy';
