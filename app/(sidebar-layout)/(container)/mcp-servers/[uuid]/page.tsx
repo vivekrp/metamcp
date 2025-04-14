@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { ArrowLeft, Copy, Pencil, PlayCircle, RefreshCw, StopCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, PlayCircle, StopCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 import { useEffect, useState } from 'react';
@@ -20,8 +14,7 @@ import {
   toggleMcpServerStatus,
   updateMcpServer,
 } from '@/app/actions/mcp-servers';
-import { refreshSseTools } from '@/app/actions/refresh-sse-tools';
-import { getToolsByMcpServerUuid, toggleToolStatus } from '@/app/actions/tools';
+import { getToolsByMcpServerUuid } from '@/app/actions/tools';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -47,13 +40,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { McpServerStatus, McpServerType, ProfileCapability, ToggleStatus } from '@/db/schema';
+import { McpServerStatus, McpServerType, ProfileCapability } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
 import { useConnection } from '@/hooks/useConnection';
 import { ConnectionStatus } from '@/lib/constants';
 import { McpServer } from '@/types/mcp-server';
+
+import ServerNotifications from "./ServerNotifications";
+import ToolManagement from "./ToolManagement";
 
 
 export default function McpServerDetailPage({
@@ -589,213 +585,19 @@ export default function McpServerDetailPage({
         </Card>
       </div>
 
-      {hasToolsManagement ? (
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Tools</h2>
-            {mcpServer.type === McpServerType.STDIO ? (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="w-full max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>Refresh Tools</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <p className="mb-4">
-                      Command-based MCP servers need to run locally. On next time you run MetaMCP MCP server, it will automatically refresh tools. To refresh tools manually for all installed MCP servers, run the following command:
-                    </p>
-                    <div className="relative">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="absolute top-2 right-2 z-10"
-                        onClick={() => {
-                          const command = `npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key=${apiKey?.api_key ?? '<create an api key first>'} --metamcp-api-base-url http://localhost:12005 --report`;
-                          navigator.clipboard.writeText(command);
-                          toast({
-                            description: "Command copied to clipboard"
-                          });
-                        }}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <div className="overflow-x-auto max-w-full">
-                        <pre className="bg-[#f6f8fa] text-[#24292f] p-4 rounded-md whitespace-pre-wrap break-words">
-                          {`npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key=${apiKey?.api_key ?? '<create an api key first>'} --metamcp-api-base-url http://localhost:12005 --report`}
-                        </pre>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      After running the command, your tools will be refreshed.
-                    </p>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ) : (
-              <Button size="sm" onClick={async () => {
-                try {
-                  await refreshSseTools(mcpServer.uuid);
-                  await mutateTools();
-                  toast({
-                    description: "SSE tools refreshed successfully"
-                  });
-                } catch (error) {
-                  console.error("Error refreshing SSE tools:", error);
-                  toast({
-                    variant: "destructive",
-                    title: "Error refreshing tools",
-                    description: error instanceof Error ? error.message : "An unknown error occurred"
-                  });
-                }
-              }}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-            )}
-          </div>
-          <ToolsList mcpServerUuid={mcpServer.uuid} />
-        </div>
-      ) : (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Tool Management</CardTitle>
-            <CardDescription>
-              Tool management is currently disabled. To enable this feature and manage tools for your MCP servers, please visit the Tool Management tab in your profile settings.
-            </CardDescription>
-            <Button
-              variant="outline"
-              className="mt-4 w-fit"
-              onClick={() => router.push('/tool-management')}
-            >
-              Go to Tool Management
-            </Button>
-          </CardHeader>
-        </Card>
-      )}
+      {/* Tool Management Section */}
+      <ToolManagement
+        mcpServer={mcpServer}
+        hasToolsManagement={hasToolsManagement || false}
+        apiKey={apiKey}
+      />
 
-      {/* Notifications Section */}
-      {connectionStatus === 'connected' && (
-        <Card className="mt-8">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold">Server Notifications</CardTitle>
-              <CardDescription>
-                Real-time notifications from the MCP server connection
-              </CardDescription>
-            </div>
-            {notifications.length > 0 && (
-              <Button variant="outline" size="sm" onClick={clearNotifications}>
-                Clear All
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {notifications.length === 0 ? (
-              <p className="text-muted-foreground">No notifications received yet.</p>
-            ) : (
-              <div className="h-64 overflow-y-auto border rounded-md p-4">
-                {notifications.slice().reverse().map((notification, index) => (
-                  <div key={index} className="mb-3 p-2 bg-secondary rounded-md">
-                    <div className="font-semibold">{notification.method}</div>
-                    <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-words mt-1">
-                      {JSON.stringify(notification.params, null, 2)}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function ToolsList({ mcpServerUuid }: { mcpServerUuid: string }) {
-  const { data: tools, error, mutate } = useSWR(
-    mcpServerUuid ? ['getToolsByMcpServerUuid', mcpServerUuid] : null,
-    () => getToolsByMcpServerUuid(mcpServerUuid)
-  );
-
-  const columnHelper = createColumnHelper<any>();
-
-  const columns = [
-    columnHelper.accessor('name', {
-      cell: (info) => info.getValue(),
-      header: 'Name',
-    }),
-    columnHelper.accessor('description', {
-      cell: (info) => info.getValue() || '-',
-      header: 'Description',
-    }),
-    columnHelper.accessor('status', {
-      cell: (info) => (
-        <Switch
-          checked={info.getValue() === ToggleStatus.ACTIVE}
-          onCheckedChange={async (checked) => {
-            await toggleToolStatus(
-              info.row.original.uuid,
-              checked ? ToggleStatus.ACTIVE : ToggleStatus.INACTIVE
-            );
-            mutate();
-          }}
-        />
-      ),
-      header: 'Status',
-    }),
-    columnHelper.accessor('created_at', {
-      cell: (info) => new Date(info.getValue()).toLocaleString(),
-      header: 'Reported At',
-    }),
-  ];
-
-  const table = useReactTable({
-    data: tools || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  if (error) return <div>Failed to load tools</div>;
-  if (!tools) return <div>Loading tools...</div>;
-  if (tools.length === 0) return <div>No tools found for this MCP server, you may need to refresh tools for this MCP server manually.</div>;
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-300">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="py-2 px-4 border-b text-left font-semibold bg-gray-100"
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="py-2 px-4 border-b">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Server Notifications Section */}
+      <ServerNotifications
+        connectionStatus={connectionStatus}
+        notifications={notifications}
+        clearNotifications={clearNotifications}
+      />
     </div>
   );
 }
