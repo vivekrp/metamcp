@@ -14,7 +14,6 @@ import {
   toggleMcpServerStatus,
   updateMcpServer,
 } from '@/app/actions/mcp-servers';
-import { getToolsByMcpServerUuid } from '@/app/actions/tools';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -82,11 +81,6 @@ export default function McpServerDetailPage({
   const { data: apiKey } = useSWR(
     currentProject?.uuid ? `${currentProject?.uuid}/api-keys/getFirst` : null,
     () => getFirstApiKey(currentProject?.uuid || '')
-  );
-
-  const { mutate: mutateTools } = useSWR(
-    uuid ? ['getToolsByMcpServerUuid', uuid] : null,
-    () => getToolsByMcpServerUuid(uuid)
   );
 
   const handleNotification = (notification: any) => {
