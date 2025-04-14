@@ -4,7 +4,8 @@ export const SESSION_KEYS = {
   SERVER_URL: 'mcp_server_url',
   TOKENS: 'mcp_tokens',
   CLIENT_INFORMATION: 'mcp_client_information',
-  PENDING_MCP_SERVER: 'pending_mcp_server_creation',
+  MCP_SERVER_UUID: 'mcp_server_uuid',
+  PROFILE_UUID: 'profile_uuid',
 } as const;
 
 export type ConnectionStatus =

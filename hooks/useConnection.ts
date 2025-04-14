@@ -241,6 +241,10 @@ export function useConnection({
   const handleAuthError = async (error: unknown) => {
     if (error instanceof SseError && error.code === 401) {
       sessionStorage.setItem(SESSION_KEYS.SERVER_URL, mcpServer?.url || '');
+      sessionStorage.setItem(SESSION_KEYS.MCP_SERVER_UUID, mcpServerUuid);
+      if (currentProfileUuid) {
+        sessionStorage.setItem(SESSION_KEYS.PROFILE_UUID, currentProfileUuid);
+      }
 
       const result = await auth(authProvider, {
         serverUrl: mcpServer?.url || '',
