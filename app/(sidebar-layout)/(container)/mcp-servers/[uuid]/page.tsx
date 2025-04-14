@@ -3,7 +3,7 @@
 import { ArrowLeft, Pencil, PlayCircle, StopCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 
@@ -64,6 +64,7 @@ export default function McpServerDetailPage({
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const connectionAttemptedRef = useRef(false);
 
   const hasToolsManagement = currentProfile?.enabled_capabilities?.includes(ProfileCapability.TOOLS_MANAGEMENT);
 
@@ -102,7 +103,7 @@ export default function McpServerDetailPage({
     onStdErrNotification: handleNotification,
   });
 
-  const handleConnect = async () => {
+  const handleConnect = useCallback(async () => {
     setConnectionError(null);
     try {
       await connect();
@@ -116,7 +117,7 @@ export default function McpServerDetailPage({
         variant: "destructive",
       });
     }
-  };
+  }, [connect, toast]);
 
   const handleDisconnect = async () => {
     try {
@@ -160,6 +161,16 @@ export default function McpServerDetailPage({
       });
     }
   }, [mcpServer, form]);
+
+  useEffect(() => {
+    if (mcpServer?.type === McpServerType.SSE &&
+      !connectionAttemptedRef.current &&
+      connectionStatus === 'disconnected' &&
+      mcpServer.status === McpServerStatus.ACTIVE) {
+      connectionAttemptedRef.current = true;
+      handleConnect();
+    }
+  }, [mcpServer, connectionStatus, handleConnect]);
 
   const onSubmit = async (data: {
     name: string;
