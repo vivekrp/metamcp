@@ -1,10 +1,5 @@
 'use client';
-import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import {
-  SSEClientTransport,
-  SseError,
-} from "@modelcontextprotocol/sdk/client/sse.js";
+
 import {
   createColumnHelper,
   flexRender,
@@ -16,10 +11,9 @@ import {
 } from '@tanstack/react-table';
 import { Copy, Download, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
-import { v4 as uuidv4 } from 'uuid';
 
 import {
   bulkImportMcpServers,
@@ -51,12 +45,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { McpServerStatus, McpServerType } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
-import { useToast } from "@/hooks/use-toast";
-import { SESSION_KEYS } from "@/lib/constants";
-import { createAuthProvider } from "@/lib/oauth-provider";
-import packageJson from "@/package.json";
+import { useToast } from '@/hooks/use-toast';
 import { McpServer } from '@/types/mcp-server';
-
 
 const columnHelper = createColumnHelper<McpServer>();
 
@@ -90,13 +80,6 @@ export default function MCPServersPage() {
     currentProfile?.uuid ? `${currentProfile.uuid}/mcp-servers` : null,
     () => getMcpServers(currentProfile?.uuid || '')
   );
-
-  // Check for any pending MCP server creation that might have been interrupted by OAuth flow
-  useEffect(() => {
-    // Clean up any leftover pending MCP server data
-    // This is just a safety measure as the OAuth callback should have handled the creation
-    sessionStorage.removeItem(SESSION_KEYS.PENDING_MCP_SERVER);
-  }, []);
 
   const columns = [
     columnHelper.accessor('name', {
@@ -266,86 +249,6 @@ export default function MCPServersPage() {
       description: `Downloaded ${servers.length} MCP server${servers.length !== 1 ? 's' : ''} configuration.`,
       variant: 'default',
     });
-  };
-
-  const handleAuthError = async (sseUrl: string, error: unknown) => {
-    // Handle OAuth authentication if needed
-    if (error instanceof SseError && error.code === 401) {
-      // Store server URL for OAuth callback
-      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, sseUrl);
-
-      // Store pending server creation data for after auth
-      const serverUuid = uuidv4();
-      const pendingServer = {
-        uuid: serverUuid,
-        name: form.getValues().name,
-        description: form.getValues().description || '',
-        url: form.getValues().url || sseUrl,
-        type: McpServerType.SSE,
-        status: McpServerStatus.ACTIVE,
-        profileUuid: currentProfile?.uuid,
-      };
-      sessionStorage.setItem(SESSION_KEYS.PENDING_MCP_SERVER, JSON.stringify(pendingServer));
-
-      // Start the OAuth flow - server will be created after successful authentication in the callback
-      const authProvider = createAuthProvider(serverUuid, currentProfile?.uuid);
-      const result = await auth(authProvider, { serverUrl: sseUrl });
-      return result === "AUTHORIZED";
-    }
-
-    return false;
-  };
-
-  const connectToMcpServer = async (_e?: unknown, retryCount: number = 0) => {
-    const client = new Client(
-      {
-        name: "metamcp-app",
-        version: packageJson.version,
-      },
-      {
-        capabilities: {
-          tools: {}
-        },
-      },
-    );
-
-    const headers: HeadersInit = {};
-
-    // Use manually provided bearer token if available, otherwise use OAuth tokens
-    const serverUuid = uuidv4();
-    const authProvider = createAuthProvider(serverUuid, currentProfile?.uuid);
-    const token = (await authProvider.tokens())?.access_token || '';
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const clientTransport = new SSEClientTransport(new URL(form.getValues('url')), {
-      eventSourceInit: {
-        fetch: (url, init) => fetch(url, { ...init, headers }),
-      },
-      requestInit: {
-        headers,
-      },
-    });
-
-    try {
-      await client.connect(clientTransport);
-    } catch (error) {
-      console.error(
-        `Failed to connect to MCP Server`,
-        error,
-      );
-      const shouldRetry = await handleAuthError(form.getValues('url'), error);
-      if (shouldRetry) {
-        return connectToMcpServer(undefined, retryCount + 1);
-      }
-
-      if (error instanceof SseError && error.code === 401) {
-        // Don't set error state if we're about to redirect for auth
-        return;
-      }
-      throw error;
-    }
   };
 
   return (
@@ -827,71 +730,8 @@ export default function MCPServersPage() {
                           disabled={isSubmitting}>
                           Cancel
                         </Button>
-                        <Button
-                          type='submit'
-                          disabled={isSubmitting}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            try {
-                              setIsSubmitting(true);
-
-                              // For SSE servers, try to connect first before creating
-                              await connectToMcpServer();
-
-                              // If it's an SSE server and requires OAuth, the connectToMcpServer function 
-                              // will store the pending server data and redirect to the OAuth flow.
-                              // The server will be created after successful OAuth in the callback.
-
-                              // If no OAuth was needed, create the server now
-                              if (!sessionStorage.getItem(SESSION_KEYS.PENDING_MCP_SERVER)) {
-                                form.handleSubmit(async (data) => {
-                                  if (!currentProfile?.uuid) return;
-                                  try {
-                                    const processedData = {
-                                      ...data,
-                                      type: McpServerType.SSE,
-                                      args: [],
-                                      env: {},
-                                      status: McpServerStatus.ACTIVE,
-                                      command: undefined,
-                                    };
-
-                                    const createdServer = await createMcpServer(
-                                      currentProfile.uuid,
-                                      processedData
-                                    );
-
-                                    await mutate();
-                                    setOpen(false);
-                                    form.reset();
-
-                                    // Redirect to the specific server page
-                                    if (createdServer && createdServer.uuid) {
-                                      window.location.href = `/mcp-servers/${createdServer.uuid}`;
-                                    }
-                                  } catch (error) {
-                                    console.error('Error creating MCP server:', error);
-                                    toast({
-                                      title: 'Creation Failed',
-                                      description: 'Failed to create the MCP server.',
-                                      variant: 'destructive',
-                                    });
-                                  } finally {
-                                    setIsSubmitting(false);
-                                  }
-                                })();
-                              }
-                            } catch (error) {
-                              console.error('Error connecting to MCP server:', error);
-                              toast({
-                                title: 'Connection Failed',
-                                description: 'Failed to connect to the MCP server. Please check the URL and try again.',
-                                variant: 'destructive',
-                              });
-                              setIsSubmitting(false);
-                            }
-                          }}>
-                          {isSubmitting ? 'Connecting...' : 'Connect and Create'}
+                        <Button type='submit' disabled={isSubmitting}>
+                          {isSubmitting ? 'Creating...' : 'Create'}
                         </Button>
                       </div>
                     </form>
