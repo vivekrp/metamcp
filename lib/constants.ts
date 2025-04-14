@@ -8,6 +8,7 @@ export const SESSION_KEYS = {
 } as const;
 
 export type ConnectionStatus =
+  | 'connecting'
   | 'disconnected'
   | 'connected'
   | 'error'

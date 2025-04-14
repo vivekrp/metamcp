@@ -286,7 +286,10 @@ export function useConnection({
     const mcpProxyServerUrl = new URL(
       `http://localhost:12007/${mcpServerUuid}/sse`
     );
-    mcpProxyServerUrl.searchParams.append('transportType', mcpServer.type);
+    mcpProxyServerUrl.searchParams.append(
+      'transportType',
+      mcpServer.type.toLowerCase()
+    );
     if (mcpServer.type === McpServerType.STDIO) {
       mcpProxyServerUrl.searchParams.append('command', mcpServer.command || '');
       mcpProxyServerUrl.searchParams.append('args', mcpServer.args.join(' '));

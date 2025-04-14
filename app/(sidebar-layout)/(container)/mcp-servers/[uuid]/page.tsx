@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowLeft, Copy, Pencil, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Pencil, PlayCircle, RefreshCw, StopCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 import { useEffect, useState } from 'react';
@@ -51,6 +51,8 @@ import { McpServerStatus, McpServerType, ProfileCapability, ToggleStatus } from 
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
+import { useConnection } from '@/hooks/useConnection';
+import { ConnectionStatus } from '@/lib/constants';
 import { McpServer } from '@/types/mcp-server';
 
 
@@ -65,6 +67,8 @@ export default function McpServerDetailPage({
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const hasToolsManagement = currentProfile?.enabled_capabilities?.includes(ProfileCapability.TOOLS_MANAGEMENT);
 
@@ -88,6 +92,56 @@ export default function McpServerDetailPage({
     uuid ? ['getToolsByMcpServerUuid', uuid] : null,
     () => getToolsByMcpServerUuid(uuid)
   );
+
+  const handleNotification = (notification: any) => {
+    setNotifications((prev) => [...prev, notification]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const {
+    connectionStatus,
+    connect,
+    disconnect,
+  } = useConnection({
+    mcpServerUuid: uuid,
+    currentProfileUuid: currentProfile?.uuid,
+    onNotification: handleNotification,
+    onStdErrNotification: handleNotification,
+  });
+
+  const handleConnect = async () => {
+    setConnectionError(null);
+    try {
+      await connect();
+    } catch (error) {
+      console.error("Connection error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to connect to the MCP server";
+      setConnectionError(errorMessage);
+      toast({
+        title: "Connection Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      clearNotifications();
+      setConnectionError(null);
+    } catch (error) {
+      console.error("Disconnection error:", error);
+      toast({
+        title: "Disconnection Error",
+        description: error instanceof Error ? error.message : "Failed to disconnect from the MCP server",
+        variant: "destructive",
+      });
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -168,6 +222,39 @@ export default function McpServerDetailPage({
   if (error) return <div>Failed to load MCP server</div>;
   if (!mcpServer) return <div>Loading...</div>;
 
+  const getConnectionStatusText = (status: ConnectionStatus) => {
+    switch (status) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting...';
+      case 'disconnected':
+        return 'Disconnected';
+      case 'error':
+        return 'Connection Error';
+      case 'error-connecting-to-proxy':
+        return 'Proxy Connection Error';
+      default:
+        return 'Unknown Status';
+    }
+  };
+
+  const getConnectionStatusColor = (status: ConnectionStatus) => {
+    switch (status) {
+      case 'connected':
+        return 'text-green-500';
+      case 'connecting':
+        return 'text-yellow-500';
+      case 'disconnected':
+        return 'text-gray-500';
+      case 'error':
+      case 'error-connecting-to-proxy':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 max-w-4xl">
       <div className='flex justify-between items-center mb-8 pt-6'>
@@ -186,6 +273,40 @@ export default function McpServerDetailPage({
         </Button>
 
         <div className='flex gap-2'>
+          {connectionStatus === 'connected' ? (
+            <Button
+              variant='outline'
+              onClick={handleDisconnect}
+              className='flex items-center'
+            >
+              <StopCircle className='mr-2' size={16} />
+              Disconnect
+              {notifications.length > 0 && (
+                <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                  {notifications.length}
+                </span>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant='outline'
+              onClick={handleConnect}
+              className='flex items-center'
+              disabled={connectionStatus === 'connecting'}
+            >
+              {connectionStatus === 'connecting' ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <PlayCircle className='mr-2' size={16} />
+                  Connect
+                </>
+              )}
+            </Button>
+          )}
           <Dialog open={isEditing} onOpenChange={setIsEditing}>
             <DialogTrigger asChild>
               <Button variant='outline'>
@@ -354,6 +475,23 @@ export default function McpServerDetailPage({
         </div>
       </div>
 
+      {/* Connection Error Alert */}
+      {connectionError && connectionStatus !== 'connected' && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium">Connection Error</h3>
+              <div className="mt-2 text-sm">{connectionError}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="mb-12 border-none shadow-none">
         <CardHeader className="text-center pb-0">
           <CardTitle className="text-4xl font-bold">{mcpServer.name}</CardTitle>
@@ -387,6 +525,13 @@ export default function McpServerDetailPage({
                   mutateMcpServer();
                 }}
               />
+            </p>
+
+            <p className='mb-3'>
+              <strong>Connection Status:</strong>{' '}
+              <span className={getConnectionStatusColor(connectionStatus)}>
+                {getConnectionStatusText(connectionStatus)}
+              </span>
             </p>
 
             <p className='mb-3'>
@@ -530,6 +675,41 @@ export default function McpServerDetailPage({
               Go to Tool Management
             </Button>
           </CardHeader>
+        </Card>
+      )}
+
+      {/* Notifications Section */}
+      {connectionStatus === 'connected' && (
+        <Card className="mt-8">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-bold">Server Notifications</CardTitle>
+              <CardDescription>
+                Real-time notifications from the MCP server connection
+              </CardDescription>
+            </div>
+            {notifications.length > 0 && (
+              <Button variant="outline" size="sm" onClick={clearNotifications}>
+                Clear All
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {notifications.length === 0 ? (
+              <p className="text-muted-foreground">No notifications received yet.</p>
+            ) : (
+              <div className="h-64 overflow-y-auto border rounded-md p-4">
+                {notifications.slice().reverse().map((notification, index) => (
+                  <div key={index} className="mb-3 p-2 bg-secondary rounded-md">
+                    <div className="font-semibold">{notification.method}</div>
+                    <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-words mt-1">
+                      {JSON.stringify(notification.params, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
     </div>
