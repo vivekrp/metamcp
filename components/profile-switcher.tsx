@@ -213,7 +213,7 @@ export function ProfileSwitcher() {
                     <Label htmlFor="default-mode">Default Mode</Label>
                   </div>
                   <div className="text-sm text-muted-foreground ml-6 -mt-1">
-                    Mcp servers are hosted with MetaMCP App remotely (in docker)
+                    Mcp servers are hosted with MetaMCP App remotely, easy to setup/manage and supports OAuth Mcp servers.
                   </div>
 
                   <div className="flex items-center space-x-2 mt-2">
