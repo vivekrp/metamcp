@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
+import { Check, ChevronsUpDown, Info, PlusCircle } from 'lucide-react';
 import * as React from 'react';
 
 import { createProfile, setProfileActive } from '@/app/actions/profiles';
@@ -30,6 +30,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { WorkspaceMode } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
@@ -180,6 +187,22 @@ export function ProfileSwitcher() {
               ? 'Activating...'
               : 'Activate this Workspace'}
       </Button>
+      {currentProfile && (
+        <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+          Mode: {currentProfile.workspace_mode === WorkspaceMode.LOCAL ? 'Compatibility (Local)' : 'Default (Remote)'}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 cursor-help opacity-70" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[300px] p-3">
+                <p>This workspace is set to {currentProfile.workspace_mode === WorkspaceMode.LOCAL ? 'Compatibility' : 'Default'} mode.</p>
+                <p className="mt-2">Workspace mode cannot be changed after creation. To use a different mode, create a new workspace and select the desired mode.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
       <Dialog
         open={showNewProfileDialog}
         onOpenChange={setShowNewProfileDialog}>
