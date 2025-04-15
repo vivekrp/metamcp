@@ -3,15 +3,31 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/db';
-import { ProfileCapability, profilesTable } from '@/db/schema';
+import { ProfileCapability, profilesTable, WorkspaceMode } from '@/db/schema';
 import { projectsTable } from '@/db/schema';
 
-export async function createProfile(currentProjectUuid: string, name: string) {
+export async function createProfile(
+  currentProjectUuid: string,
+  name: string,
+  mode: string = 'default'
+) {
+  // Set capabilities based on mode
+  const capabilities =
+    mode === 'compatibility'
+      ? [ProfileCapability.TOOLS_MANAGEMENT, ProfileCapability.TOOL_LOGS]
+      : [];
+
+  // Map the mode string to WorkspaceMode enum
+  const workspaceMode =
+    mode === 'compatibility' ? WorkspaceMode.LOCAL : WorkspaceMode.REMOTE;
+
   const profile = await db
     .insert(profilesTable)
     .values({
       name,
       project_uuid: currentProjectUuid,
+      enabled_capabilities: capabilities,
+      workspaceMode,
     })
     .returning();
 
@@ -89,6 +105,7 @@ export async function getProjectActiveProfile(currentProjectUuid: string) {
     .values({
       name: 'Default Workspace',
       project_uuid: currentProjectUuid,
+      enabled_capabilities: [], // Default mode has no special capabilities
     })
     .returning();
 

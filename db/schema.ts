@@ -40,6 +40,11 @@ export enum ProfileCapability {
   TOOL_LOGS = 'TOOL_LOGS',
 }
 
+export enum WorkspaceMode {
+  REMOTE = 'REMOTE',
+  LOCAL = 'LOCAL',
+}
+
 export enum ToolExecutionStatus {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
@@ -64,6 +69,11 @@ export const mcpServerTypeEnum = pgEnum(
 export const profileCapabilityEnum = pgEnum(
   'profile_capability',
   enumToPgEnum(ProfileCapability)
+);
+
+export const workspaceModeEnum = pgEnum(
+  'workspace_mode',
+  enumToPgEnum(WorkspaceMode)
 );
 
 export const toolExecutionStatusEnum = pgEnum(
@@ -96,6 +106,9 @@ export const profilesTable = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::profile_capability[]`),
+    workspaceMode: workspaceModeEnum('workspace_mode')
+      .notNull()
+      .default(WorkspaceMode.LOCAL),
     created_at: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

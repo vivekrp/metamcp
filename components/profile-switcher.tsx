@@ -29,6 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,7 @@ export function ProfileSwitcher() {
   const [open, setOpen] = React.useState(false);
   const [showNewProfileDialog, setShowNewProfileDialog] = React.useState(false);
   const [newProfileName, setNewProfileName] = React.useState('');
+  const [profileMode, setProfileMode] = React.useState('default');
   const [isCreating, setIsCreating] = React.useState(false);
   const [isActivating, setIsActivating] = React.useState(false);
 
@@ -68,10 +70,12 @@ export function ProfileSwitcher() {
       setIsCreating(true);
       const profile = await createProfile(
         currentProject.uuid,
-        newProfileName.trim()
+        newProfileName.trim(),
+        profileMode
       );
       setCurrentProfile(profile);
       setNewProfileName('');
+      setProfileMode('default');
       setShowNewProfileDialog(false);
       toast({
         title: 'Success',
@@ -196,6 +200,30 @@ export function ProfileSwitcher() {
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
                 />
+              </div>
+              <div className='space-y-2'>
+                <Label>Workspace Mode</Label>
+                <RadioGroup
+                  value={profileMode}
+                  onValueChange={setProfileMode}
+                  className="flex flex-col space-y-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="default" id="default-mode" />
+                    <Label htmlFor="default-mode">Default Mode</Label>
+                  </div>
+                  <div className="text-sm text-muted-foreground ml-6 -mt-1">
+                    Mcp servers are hosted with MetaMCP App remotely (in docker)
+                  </div>
+
+                  <div className="flex items-center space-x-2 mt-2">
+                    <RadioGroupItem value="compatibility" id="compatibility-mode" />
+                    <Label htmlFor="compatibility-mode">Compatibility Mode</Label>
+                  </div>
+                  <div className="text-sm text-muted-foreground ml-6 -mt-1">
+                    Mcp servers are executed locally through proxy, so it has local access: <a href="https://github.com/metatool-ai/mcp-server-metamcp" className='underline text-blue-600 hover:text-blue-500' target="_blank" rel="noopener noreferrer">https://github.com/metatool-ai/mcp-server-metamcp</a>
+                  </div>
+                </RadioGroup>
               </div>
             </div>
           </div>

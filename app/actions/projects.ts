@@ -22,6 +22,7 @@ export async function createProject(name: string) {
       .values({
         name: 'Default Workspace',
         project_uuid: project.uuid,
+        enabled_capabilities: [], // Default mode has no special capabilities
       })
       .returning();
 
