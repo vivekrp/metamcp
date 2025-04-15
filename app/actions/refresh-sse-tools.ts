@@ -6,7 +6,11 @@ import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
 import { db } from '@/db';
-import { mcpServersTable, McpServerType } from '@/db/schema';
+import {
+  mcpServersTable,
+  McpServerType,
+  oauthSessionsTable,
+} from '@/db/schema';
 import { toolsTable } from '@/db/schema';
 
 // Helper function to transform localhost URLs for Docker
@@ -37,8 +41,27 @@ export async function refreshSseTools(mcpServerUuid: string) {
     throw new Error('MCP server URL is not set');
   }
 
+  // Get OAuth session if available
+  const oauthSession = await db.query.oauthSessionsTable.findFirst({
+    where: eq(oauthSessionsTable.mcp_server_uuid, mcpServerUuid),
+  });
+
   const transformedUrl = transformUrlForDocker(mcpServer.url);
-  const transport = new SSEClientTransport(new URL(transformedUrl));
+
+  // Prepare headers if OAuth tokens are available
+  const headers: Record<string, string> = {};
+  if (oauthSession?.tokens?.access_token) {
+    headers['Authorization'] = `Bearer ${oauthSession.tokens.access_token}`;
+  }
+
+  const transport = new SSEClientTransport(new URL(transformedUrl), {
+    eventSourceInit: {
+      fetch: (url, init) => fetch(url, { ...init, headers }),
+    },
+    requestInit: {
+      headers,
+    },
+  });
 
   const client = new Client(
     {
