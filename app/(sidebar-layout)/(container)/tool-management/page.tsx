@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-table';
 import { Copy, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 
 import { getFirstApiKey } from '@/app/actions/api-keys';
 import { getMcpServers } from '@/app/actions/mcp-servers';
@@ -44,6 +44,7 @@ export default function ToolsManagementPage() {
     const { toast } = useToast();
     const [expandedServers, setExpandedServers] = useState<Set<string>>(new Set());
     const [refreshingServers, setRefreshingServers] = useState<Set<string>>(new Set());
+    const { mutate: globalMutate } = useSWRConfig();
 
     const {
         connectionStatuses,
@@ -113,8 +114,11 @@ export default function ToolsManagementPage() {
             if (response.tools.length > 0) {
                 await saveToolsToDatabase(serverUuid, response.tools);
 
-                // Force refresh data
+                // Force refresh data in the database
                 await getToolsByMcpServerUuid(serverUuid);
+
+                // Refresh the UI by mutating the SWR cache for this server's tools
+                globalMutate(['getToolsByMcpServerUuid', serverUuid]);
 
                 toast({
                     description: `${response.tools.length} tools refreshed successfully`
@@ -123,6 +127,9 @@ export default function ToolsManagementPage() {
                 toast({
                     description: "No tools found to refresh"
                 });
+
+                // Still refresh the UI in case tools were removed
+                globalMutate(['getToolsByMcpServerUuid', serverUuid]);
             }
         } catch (error) {
             console.error("Error refreshing SSE tools:", error);
