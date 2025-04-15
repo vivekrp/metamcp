@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { McpServerStatus, ProfileCapability, ToggleStatus } from '@/db/schema';
+import { McpServerStatus, ProfileCapability, ToggleStatus, WorkspaceMode } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
@@ -215,7 +215,7 @@ export default function ToolsManagementPage() {
                                         <CardDescription>{server.description || 'No description'}</CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {server.type === 'SSE' ? (
+                                        {server.type === 'SSE' || (currentProfile?.workspace_mode === WorkspaceMode.REMOTE) ? (
                                             <Button
                                                 size="sm"
                                                 onClick={() => refreshSseTools(server.uuid)}
@@ -250,7 +250,7 @@ export default function ToolsManagementPage() {
                                                     </DialogHeader>
                                                     <div className="py-4">
                                                         <p className="mb-4">
-                                                            Command-based MCP servers need to run locally. On next time you run MetaMCP MCP server, it will automatically refresh tools. To refresh tools manually for all installed MCP servers, run the following command:
+                                                            In <b>Compatibility (Local) mode</b>, Command-based MCP servers need to run locally. On next time you run MetaMCP MCP server, it will automatically refresh tools. To refresh tools manually for all installed MCP servers, run the following command:
                                                         </p>
                                                         <div className="relative">
                                                             <Button
