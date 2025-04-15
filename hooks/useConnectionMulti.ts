@@ -374,9 +374,12 @@ export function useConnectionMulti({
 
   // Clean up on unmount
   useEffect(() => {
+    // Capture the current ref value inside the effect
+    const currentClients = clientsRef.current;
+
     return () => {
-      // Disconnect all clients when component unmounts
-      Object.entries(clientsRef.current).forEach(([_, client]) => {
+      // Use the captured value in the cleanup function
+      Object.entries(currentClients).forEach(([_, client]) => {
         if (client) {
           client.close().catch(console.error);
         }
