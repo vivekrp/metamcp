@@ -106,7 +106,7 @@ export const profilesTable = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::profile_capability[]`),
-    workspaceMode: workspaceModeEnum('workspace_mode')
+    workspace_mode: workspaceModeEnum('workspace_mode')
       .notNull()
       .default(WorkspaceMode.LOCAL),
     created_at: timestamp('created_at', { withTimezone: true })

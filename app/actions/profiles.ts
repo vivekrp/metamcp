@@ -27,7 +27,7 @@ export async function createProfile(
       name,
       project_uuid: currentProjectUuid,
       enabled_capabilities: capabilities,
-      workspaceMode,
+      workspace_mode: workspaceMode,
     })
     .returning();
 
