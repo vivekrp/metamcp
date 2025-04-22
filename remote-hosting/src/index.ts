@@ -46,6 +46,15 @@ const connections = new Map<
   }
 >();
 
+// Map to store connections by API key
+const metaMcpConnections = new Map<
+  string,
+  {
+    webAppTransport: SSEServerTransport;
+    backingServerTransport: Transport;
+  }
+>();
+
 const createTransport = async (req: express.Request): Promise<Transport> => {
   const query = req.query;
   console.log('Query parameters:', query);
@@ -108,58 +117,36 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
   }
 };
 
-// Support for legacy /sse endpoint
-app.get('/sse', async (req, res) => {
-  try {
-    console.log('New SSE connection (legacy endpoint)');
+const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
+  console.log('Creating MetaMCP transport');
 
-    let backingServerTransport: Transport;
+  const command = 'npx';
+  const origArgs = shellParseArgs(
+    '-y @metamcp/mcp-server-metamcp@latest'
+  ) as string[];
+  const env = {
+    ...process.env,
+    ...defaultEnvironment,
+    METAMCP_API_KEY: apiKey,
+    METAMCP_API_BASE_URL: 'http://localhost:12005',
+  };
 
-    try {
-      backingServerTransport = await createTransport(req);
-    } catch (error) {
-      if (error instanceof SseError && error.code === 401) {
-        console.error(
-          'Received 401 Unauthorized from MCP server:',
-          error.message
-        );
-        res.status(401).json(error);
-        return;
-      }
+  const { cmd, args } = findActualExecutable(command, origArgs);
 
-      throw error;
-    }
+  console.log(`Stdio transport: command=${cmd}, args=${args}`);
 
-    console.log('Connected MCP client to backing server transport');
+  const transport = new StdioClientTransport({
+    command: cmd,
+    args,
+    env,
+    stderr: 'pipe',
+  });
 
-    const webAppTransport = new SSEServerTransport('/message', res);
-    console.log('Created web app transport');
+  await transport.start();
 
-    await webAppTransport.start();
-
-    if (backingServerTransport instanceof StdioClientTransport) {
-      backingServerTransport.stderr!.on('data', (chunk) => {
-        webAppTransport.send({
-          jsonrpc: '2.0',
-          method: 'notifications/stderr',
-          params: {
-            content: chunk.toString(),
-          },
-        });
-      });
-    }
-
-    mcpProxy({
-      transportToClient: webAppTransport,
-      transportToServer: backingServerTransport,
-    });
-
-    console.log('Set up MCP proxy');
-  } catch (error) {
-    console.error('Error in /sse route:', error);
-    res.status(500).json(error);
-  }
-});
+  console.log('Spawned MetaMCP transport');
+  return transport;
+};
 
 // New UUID-based SSE endpoint
 app.get('/server/:uuid/sse', async (req, res) => {
@@ -264,31 +251,122 @@ app.post('/server/:uuid/message', async (req, res) => {
   }
 });
 
-// Legacy message endpoint
-app.post('/message', async (req, res) => {
+// New ApiKey-based SSE endpoint
+app.get('/sse', async (req, res) => {
   try {
-    const sessionId = req.query.sessionId;
-    console.log(`Received message for sessionId ${sessionId}`);
+    console.log('Request query:', req.query);
 
-    // For backward compatibility
-    if (connections.has(sessionId as string)) {
-      const connection = connections.get(sessionId as string);
-      await connection!.webAppTransport.handlePostMessage(req, res);
+    // Extract API key from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res
+        .status(401)
+        .json({ error: 'Missing or invalid Authorization header' });
       return;
     }
 
-    // Legacy way of finding the transport
-    const transport = Array.from(connections.values())
-      .map((conn) => conn.webAppTransport)
-      .find((t) => t.sessionId === sessionId);
+    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log(`New SSE connection for API key: ${apiKey}`);
 
-    if (!transport) {
+    // Clean up existing connection with the same API key
+    if (metaMcpConnections.has(apiKey)) {
+      const existingConnection = metaMcpConnections.get(apiKey)!;
+      try {
+        console.log('Cleaning up existing connection for API key', apiKey);
+        await existingConnection.backingServerTransport.close();
+        await existingConnection.webAppTransport.close();
+      } catch (error) {
+        console.error(
+          `Error closing existing connection for API key ${apiKey}:`,
+          error
+        );
+      }
+      metaMcpConnections.delete(apiKey);
+    }
+
+    let backingServerTransport: Transport;
+
+    try {
+      backingServerTransport = await createMetaMcpTransport(apiKey);
+    } catch (error) {
+      if (error instanceof SseError && error.code === 401) {
+        console.error(
+          'Received 401 Unauthorized from MCP server:',
+          error.message
+        );
+        res.status(401).json(error);
+        return;
+      }
+
+      throw error;
+    }
+
+    console.log(
+      `Connected MCP client to backing server transport for API key ${apiKey}`
+    );
+
+    const webAppTransport = new SSEServerTransport(`/message`, res);
+    console.log(`Created web app transport for API key ${apiKey}`);
+
+    await webAppTransport.start();
+
+    if (backingServerTransport instanceof StdioClientTransport) {
+      backingServerTransport.stderr!.on('data', (chunk) => {
+        webAppTransport.send({
+          jsonrpc: '2.0',
+          method: 'notifications/stderr',
+          params: {
+            content: chunk.toString(),
+          },
+        });
+      });
+    }
+
+    metaMcpConnections.set(apiKey, {
+      webAppTransport,
+      backingServerTransport,
+    });
+
+    mcpProxy({
+      transportToClient: webAppTransport,
+      transportToServer: backingServerTransport,
+    });
+
+    // Handle cleanup when connection closes
+    res.on('close', () => {
+      console.log(`Connection closed for API key ${apiKey}`);
+      metaMcpConnections.delete(apiKey);
+    });
+
+    console.log(`Set up MCP proxy for API key ${apiKey}`);
+  } catch (error) {
+    console.error(`Error in /api/sse route:`, error);
+    res.status(500).json(error);
+  }
+});
+
+app.post('/message', async (req, res) => {
+  try {
+    // Extract API key from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res
+        .status(401)
+        .json({ error: 'Missing or invalid Authorization header' });
+      return;
+    }
+
+    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log(`Received message for API key ${apiKey}`);
+
+    const connection = metaMcpConnections.get(apiKey);
+    if (!connection) {
       res.status(404).end('Session not found');
       return;
     }
-    await transport.handlePostMessage(req, res);
+    await connection.webAppTransport.handlePostMessage(req, res);
   } catch (error) {
-    console.error('Error in /message route:', error);
+    console.error(`Error in /api/message route:`, error);
     res.status(500).json(error);
   }
 });
