@@ -156,7 +156,7 @@ export function useConnectionMulti({
 
     // Create proxy URL
     const mcpProxyServerUrl = new URL(
-      `http://localhost:12007/${serverUuid}/sse`
+      `http://localhost:12007/server/${serverUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(
       'transportType',

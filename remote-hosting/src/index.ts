@@ -162,7 +162,7 @@ app.get('/sse', async (req, res) => {
 });
 
 // New UUID-based SSE endpoint
-app.get('/:uuid/sse', async (req, res) => {
+app.get('/server/:uuid/sse', async (req, res) => {
   try {
     const uuid = req.params.uuid;
     console.log(`New SSE connection for UUID: ${uuid}`);
@@ -203,7 +203,10 @@ app.get('/:uuid/sse', async (req, res) => {
       `Connected MCP client to backing server transport for UUID ${uuid}`
     );
 
-    const webAppTransport = new SSEServerTransport(`/${uuid}/message`, res);
+    const webAppTransport = new SSEServerTransport(
+      `/server/${uuid}/message`,
+      res
+    );
     console.log(`Created web app transport for UUID ${uuid}`);
 
     await webAppTransport.start();
@@ -244,7 +247,7 @@ app.get('/:uuid/sse', async (req, res) => {
 });
 
 // New UUID-based message endpoint
-app.post('/:uuid/message', async (req, res) => {
+app.post('/server/:uuid/message', async (req, res) => {
   try {
     const uuid = req.params.uuid;
     console.log(`Received message for UUID ${uuid}`);

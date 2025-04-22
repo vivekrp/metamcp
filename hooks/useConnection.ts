@@ -288,7 +288,7 @@ export function useConnection({
       return;
     }
     const mcpProxyServerUrl = new URL(
-      `http://localhost:12007/${mcpServerUuid}/sse`
+      `http://localhost:12007/server/${mcpServerUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(
       'transportType',
