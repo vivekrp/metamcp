@@ -2,7 +2,11 @@ import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/db';
-import { mcpServersTable, McpServerStatus } from '@/db/schema';
+import {
+  mcpServersTable,
+  McpServerStatus,
+  oauthSessionsTable,
+} from '@/db/schema';
 
 import { authenticateApiKey } from '../auth';
 
@@ -12,15 +16,29 @@ export async function GET(request: Request) {
     if (auth.error) return auth.error;
 
     const activeMcpServers = await db
-      .select()
+      .select({
+        server: mcpServersTable,
+        tokens: oauthSessionsTable.tokens,
+      })
       .from(mcpServersTable)
+      .leftJoin(
+        oauthSessionsTable,
+        eq(mcpServersTable.uuid, oauthSessionsTable.mcp_server_uuid)
+      )
       .where(
         and(
           eq(mcpServersTable.status, McpServerStatus.ACTIVE),
           eq(mcpServersTable.profile_uuid, auth.activeProfile.uuid)
         )
       );
-    return NextResponse.json(activeMcpServers);
+
+    // Map the result to include tokens if they exist
+    const result = activeMcpServers.map(({ server, tokens }) => ({
+      ...server,
+      oauth_tokens: tokens || null,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error(error);
     return NextResponse.json(
