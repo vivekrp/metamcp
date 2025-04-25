@@ -60,7 +60,11 @@ export function useConnectionMulti({
   // Utility function to check if the MCP proxy is healthy
   const checkProxyHealth = async () => {
     try {
-      const proxyHealthUrl = new URL(`http://localhost:12007/health`);
+      const proxyHealthUrl = new URL(
+        process.env.USE_DOCKER_HOST === 'true'
+          ? `http://metatool-remote-hosting:12007/health`
+          : `http://localhost:12007/health`
+      );
       const proxyHealthResponse = await fetch(proxyHealthUrl);
       const proxyHealth = await proxyHealthResponse.json();
       if (proxyHealth?.status !== 'ok') {
@@ -156,7 +160,9 @@ export function useConnectionMulti({
 
     // Create proxy URL
     const mcpProxyServerUrl = new URL(
-      `http://localhost:12007/server/${serverUuid}/sse`
+      process.env.USE_DOCKER_HOST === 'true'
+        ? `http://metatool-remote-hosting:12007/server/${serverUuid}/sse`
+        : `http://localhost:12007/server/${serverUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(
       'transportType',

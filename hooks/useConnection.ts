@@ -226,7 +226,11 @@ export function useConnection({
 
   const checkProxyHealth = async () => {
     try {
-      const proxyHealthUrl = new URL(`http://localhost:12007/health`);
+      const proxyHealthUrl = new URL(
+        process.env.USE_DOCKER_HOST === 'true'
+          ? `http://metatool-remote-hosting:12007/health`
+          : `http://localhost:12007/health`
+      );
       const proxyHealthResponse = await fetch(proxyHealthUrl);
       const proxyHealth = await proxyHealthResponse.json();
       if (proxyHealth?.status !== 'ok') {
@@ -288,7 +292,9 @@ export function useConnection({
       return;
     }
     const mcpProxyServerUrl = new URL(
-      `http://localhost:12007/server/${mcpServerUuid}/sse`
+      process.env.USE_DOCKER_HOST === 'true'
+        ? `http://metatool-remote-hosting:12007/server/${mcpServerUuid}/sse`
+        : `http://localhost:12007/server/${mcpServerUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(
       'transportType',
