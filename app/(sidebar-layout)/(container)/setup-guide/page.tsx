@@ -55,7 +55,48 @@ export default function SetupGuidePage() {
       </section>
 
       <section className='mb-8'>
-        <h2 className='text-2xl font-semibold mb-4'>Installation Methods</h2>
+        <h2 className='text-2xl font-semibold mb-4'>Installation</h2>
+        <div className='p-4 bg-gray-50 rounded-lg'>
+          <h3 className='font-medium mb-2'>Remote API Access</h3>
+          <p className='mb-4'>
+            You can access the API directly via SSE endpoint:
+          </p>
+
+          <div className='relative'>
+            <button
+              onClick={() => {
+                const endpoint = `http://localhost:12007/sse with Authorization: Bearer ${apiKey?.api_key ?? '<create an api key first>'}`;
+                navigator.clipboard.writeText(endpoint);
+                toast({
+                  description: 'API endpoint copied to clipboard',
+                });
+              }}
+              className='absolute top-2 right-2 p-2 text-gray-400 hover:text-white rounded-md hover:bg-gray-700 transition-colors'
+              title='Copy to clipboard'>
+              <Copy className='w-5 h-5' />
+            </button>
+            <Highlight
+              theme={themes.github}
+              code={`http://localhost:12007/sse with Authorization: Bearer ${apiKey?.api_key ?? '<create an api key first>'}`}
+              language='bash'>
+              {({ tokens, getLineProps, getTokenProps }) => (
+                <pre className='bg-[#f6f8fa] text-[#24292f] p-4 rounded-md overflow-x-auto'>
+                  {tokens.map((line, i) => (
+                    <div key={i} {...getLineProps({ line })}>
+                      {line.map((token, key) => (
+                        <span key={key} {...getTokenProps({ token })} />
+                      ))}
+                    </div>
+                  ))}
+                </pre>
+              )}
+            </Highlight>
+          </div>
+        </div>
+      </section>
+
+      <section className='mb-8'>
+        <h2 className='text-2xl font-semibold mb-4'>Legacy Installation Methods (for local access)</h2>
 
         <div className='space-y-6'>
           <div className='p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg'>
