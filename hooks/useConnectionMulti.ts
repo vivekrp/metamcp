@@ -161,7 +161,7 @@ export function useConnectionMulti({
     // Create proxy URL
     const mcpProxyServerUrl = new URL(
       process.env.USE_DOCKER_HOST === 'true'
-        ? `http://metatool-remote-hosting:12007/server/${serverUuid}/sse`
+        ? `http://host.docker.internal:12007/server/${serverUuid}/sse`
         : `http://localhost:12007/server/${serverUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(

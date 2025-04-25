@@ -97,9 +97,18 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
       headers[key] = Array.isArray(value) ? value[value.length - 1] : value;
     }
 
-    console.log(`SSE transport: url=${url}, headers=${Object.keys(headers)}`);
+    // Replace localhost with host.docker.internal if using Docker
+    let sseUrl = url;
+    if (process.env.USE_DOCKER_HOST === 'true' && url.includes('localhost')) {
+      sseUrl = url.replace(/localhost/g, 'host.docker.internal');
+      console.log(`Modified SSE URL: ${url} -> ${sseUrl}`);
+    }
 
-    const transport = new SSEClientTransport(new URL(url), {
+    console.log(
+      `SSE transport: url=${sseUrl}, headers=${Object.keys(headers)}`
+    );
+
+    const transport = new SSEClientTransport(new URL(sseUrl), {
       eventSourceInit: {
         fetch: (url, init) => fetch(url, { ...init, headers }),
       },
