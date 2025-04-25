@@ -371,6 +371,109 @@ app.post('/message', async (req, res) => {
   }
 });
 
+// New ApiKey-based SSE endpoint that doesn't require headers
+app.get('/api-key/:apiKey/sse', async (req, res) => {
+  try {
+    const apiKey = req.params.apiKey;
+    console.log(`New SSE connection for API key in URL: ${apiKey}`);
+
+    // Clean up existing connection with the same API key
+    if (metaMcpConnections.has(apiKey)) {
+      const existingConnection = metaMcpConnections.get(apiKey)!;
+      try {
+        console.log('Cleaning up existing connection for API key', apiKey);
+        await existingConnection.backingServerTransport.close();
+        await existingConnection.webAppTransport.close();
+      } catch (error) {
+        console.error(
+          `Error closing existing connection for API key ${apiKey}:`,
+          error
+        );
+      }
+      metaMcpConnections.delete(apiKey);
+    }
+
+    let backingServerTransport: Transport;
+
+    try {
+      backingServerTransport = await createMetaMcpTransport(apiKey);
+    } catch (error) {
+      if (error instanceof SseError && error.code === 401) {
+        console.error(
+          'Received 401 Unauthorized from MCP server:',
+          error.message
+        );
+        res.status(401).json(error);
+        return;
+      }
+
+      throw error;
+    }
+
+    console.log(
+      `Connected MCP client to backing server transport for API key ${apiKey}`
+    );
+
+    const webAppTransport = new SSEServerTransport(
+      `/api-key/${apiKey}/message`,
+      res
+    );
+    console.log(`Created web app transport for API key ${apiKey}`);
+
+    await webAppTransport.start();
+
+    if (backingServerTransport instanceof StdioClientTransport) {
+      backingServerTransport.stderr!.on('data', (chunk) => {
+        webAppTransport.send({
+          jsonrpc: '2.0',
+          method: 'notifications/stderr',
+          params: {
+            content: chunk.toString(),
+          },
+        });
+      });
+    }
+
+    metaMcpConnections.set(apiKey, {
+      webAppTransport,
+      backingServerTransport,
+    });
+
+    mcpProxy({
+      transportToClient: webAppTransport,
+      transportToServer: backingServerTransport,
+    });
+
+    // Handle cleanup when connection closes
+    res.on('close', () => {
+      console.log(`Connection closed for API key ${apiKey}`);
+      metaMcpConnections.delete(apiKey);
+    });
+
+    console.log(`Set up MCP proxy for API key ${apiKey}`);
+  } catch (error) {
+    console.error(`Error in /api-key/:apiKey/sse route:`, error);
+    res.status(500).json(error);
+  }
+});
+
+app.post('/api-key/:apiKey/message', async (req, res) => {
+  try {
+    const apiKey = req.params.apiKey;
+    console.log(`Received message for API key in URL: ${apiKey}`);
+
+    const connection = metaMcpConnections.get(apiKey);
+    if (!connection) {
+      res.status(404).end('Session not found');
+      return;
+    }
+    await connection.webAppTransport.handlePostMessage(req, res);
+  } catch (error) {
+    console.error(`Error in /api-key/:apiKey/message route:`, error);
+    res.status(500).json(error);
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',

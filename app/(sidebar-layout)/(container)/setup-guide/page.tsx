@@ -62,7 +62,7 @@ export default function SetupGuidePage() {
             You can access the API directly via SSE endpoint:
           </p>
 
-          <div className='relative'>
+          <div className='relative mb-6'>
             <button
               onClick={() => {
                 const endpoint = `http://localhost:12007/sse with Authorization: Bearer ${apiKey?.api_key ?? '<create an api key first>'}`;
@@ -78,6 +78,41 @@ export default function SetupGuidePage() {
             <Highlight
               theme={themes.github}
               code={`http://localhost:12007/sse with Authorization: Bearer ${apiKey?.api_key ?? '<create an api key first>'}`}
+              language='bash'>
+              {({ tokens, getLineProps, getTokenProps }) => (
+                <pre className='bg-[#f6f8fa] text-[#24292f] p-4 rounded-md overflow-x-auto'>
+                  {tokens.map((line, i) => (
+                    <div key={i} {...getLineProps({ line })}>
+                      {line.map((token, key) => (
+                        <span key={key} {...getTokenProps({ token })} />
+                      ))}
+                    </div>
+                  ))}
+                </pre>
+              )}
+            </Highlight>
+          </div>
+
+          <p className='mb-4'>
+            Alternatively, if you cannot set headers, you can use this URL-based endpoint:
+          </p>
+
+          <div className='relative'>
+            <button
+              onClick={() => {
+                const endpoint = `http://localhost:12007/api-key/${apiKey?.api_key ?? '<create an api key first>'}/sse`;
+                navigator.clipboard.writeText(endpoint);
+                toast({
+                  description: 'URL-based API endpoint copied to clipboard',
+                });
+              }}
+              className='absolute top-2 right-2 p-2 text-gray-400 hover:text-white rounded-md hover:bg-gray-700 transition-colors'
+              title='Copy to clipboard'>
+              <Copy className='w-5 h-5' />
+            </button>
+            <Highlight
+              theme={themes.github}
+              code={`http://localhost:12007/api-key/${apiKey?.api_key ?? '<create an api key first>'}/sse`}
               language='bash'>
               {({ tokens, getLineProps, getTokenProps }) => (
                 <pre className='bg-[#f6f8fa] text-[#24292f] p-4 rounded-md overflow-x-auto'>
