@@ -22,7 +22,6 @@ services:
     build:
       context: ./remote-hosting
       dockerfile: Dockerfile
-      target: runner
     restart: always
     ports:
       - '12007:12007'
