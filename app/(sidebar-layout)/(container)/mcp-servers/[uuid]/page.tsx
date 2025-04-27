@@ -164,7 +164,7 @@ export default function McpServerDetailPage({
   }, [mcpServer, form]);
 
   useEffect(() => {
-    if (mcpServer?.type === McpServerType.SSE &&
+    if (mcpServer &&
       !connectionAttemptedRef.current &&
       connectionStatus === 'disconnected' &&
       mcpServer.status === McpServerStatus.ACTIVE) {
