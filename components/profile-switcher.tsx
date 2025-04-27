@@ -216,10 +216,10 @@ export function ProfileSwitcher() {
           <div>
             <div className='space-y-4 py-2 pb-4'>
               <div className='space-y-2'>
-                <Label htmlFor='name'>Profile name</Label>
+                <Label htmlFor='name'>Workspace name</Label>
                 <Input
                   id='name'
-                  placeholder='Enter profile name'
+                  placeholder='Enter workspace name'
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
                 />
@@ -236,7 +236,7 @@ export function ProfileSwitcher() {
                     <Label htmlFor="default-mode">Default Mode</Label>
                   </div>
                   <div className="text-sm text-muted-foreground ml-6 -mt-1">
-                    Mcp servers are hosted with MetaMCP App remotely, easy to setup/manage and supports OAuth Mcp servers.
+                    Mcp servers are hosted with MetaMCP App remotely, easy to setup/manage and supports OAuth Mcp servers. You can still use local proxy with it. (The default Dockerfile for remote hosting supports uvx and npx MCP servers, and you can customize it.)
                   </div>
 
                   <div className="flex items-center space-x-2 mt-2">
