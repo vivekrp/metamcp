@@ -9,7 +9,8 @@ import { getToolsByMcpServerUuid, saveToolsToDatabase } from "@/app/actions/tool
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { McpServerType } from "@/db/schema";
+import { McpServerType, WorkspaceMode } from "@/db/schema";
+import { useProfiles } from "@/hooks/use-profiles";
 import { useToast } from "@/hooks/use-toast";
 
 import ToolsList from "./ToolsList";
@@ -34,6 +35,9 @@ export default function ToolManagement({ mcpServer, hasToolsManagement, apiKey, 
         mcpServer.uuid ? ['getToolsByMcpServerUuid', mcpServer.uuid] : null,
         () => getToolsByMcpServerUuid(mcpServer.uuid)
     );
+
+    const { currentProfile } = useProfiles();
+    const currentProfileMode = currentProfile?.workspace_mode;
 
     // Add missing state definitions
     // eslint-disable-next-line unused-imports/no-unused-vars
@@ -95,7 +99,7 @@ export default function ToolManagement({ mcpServer, hasToolsManagement, apiKey, 
         <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Tools</h2>
-                {mcpServer.type === McpServerType.STDIO ? (
+                {mcpServer.type === McpServerType.STDIO && currentProfileMode === WorkspaceMode.LOCAL ? (
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button size="sm">
