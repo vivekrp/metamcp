@@ -57,9 +57,9 @@ export default function SetupGuidePage() {
       <section className='mb-8'>
         <h2 className='text-2xl font-semibold mb-4'>Installation</h2>
         <div className='p-4 bg-gray-50 rounded-lg'>
-          <h3 className='font-medium mb-2'>Remote API Access</h3>
+          <h3 className='font-medium mb-2'>Remote SSE Access</h3>
           <p className='mb-4'>
-            You can access the API directly via SSE endpoint:
+            You can access directly via SSE endpoint:
           </p>
 
           <div className='relative mb-6'>
@@ -131,7 +131,7 @@ export default function SetupGuidePage() {
       </section>
 
       <section className='mb-8'>
-        <h2 className='text-2xl font-semibold mb-4'>Legacy Installation Methods (for local access)</h2>
+        <h2 className='text-2xl font-semibold mb-4'>Legacy Installation Methods (for local access): you can still use this even if your workspace is in Default Remote Mode</h2>
 
         <div className='space-y-6'>
           <div className='p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg'>
