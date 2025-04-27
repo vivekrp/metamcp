@@ -26,12 +26,14 @@ COPY . .
 # Build the application
 RUN pnpm build
 
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --home /home/expressjs expressjs && \
+    mkdir -p /home/expressjs && chown expressjs:nodejs /home/expressjs
+
 # Set environment variables
 ENV NODE_ENV=production
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 expressjs
+ENV HOME=/home/expressjs
 
 USER expressjs
 
