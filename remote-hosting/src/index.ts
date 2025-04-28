@@ -139,7 +139,7 @@ const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
     METAMCP_API_KEY: apiKey,
     METAMCP_API_BASE_URL:
       process.env.USE_DOCKER_HOST === 'true'
-        ? 'http://metatool-remote-hosting:12005'
+        ? 'http://host.docker.internal:12005'
         : 'http://localhost:12005',
   };
 

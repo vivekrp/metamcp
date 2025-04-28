@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN npm i -g corepack@latest
+
+RUN npm i -g @metamcp/mcp-server-metamcp@latest
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.8.0 --activate
 

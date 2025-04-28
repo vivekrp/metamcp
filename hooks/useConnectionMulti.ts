@@ -62,7 +62,7 @@ export function useConnectionMulti({
     try {
       const proxyHealthUrl = new URL(
         process.env.USE_DOCKER_HOST === 'true'
-          ? `http://metatool-remote-hosting:12007/health`
+          ? `http://host.docker.internal:12007/health`
           : `http://localhost:12007/health`
       );
       const proxyHealthResponse = await fetch(proxyHealthUrl);

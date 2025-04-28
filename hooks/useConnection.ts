@@ -293,7 +293,7 @@ export function useConnection({
     }
     const mcpProxyServerUrl = new URL(
       process.env.USE_DOCKER_HOST === 'true'
-        ? `http://metatool-remote-hosting:12007/server/${mcpServerUuid}/sse`
+        ? `http://host.docker.internal:12007/server/${mcpServerUuid}/sse`
         : `http://localhost:12007/server/${mcpServerUuid}/sse`
     );
     mcpProxyServerUrl.searchParams.append(
