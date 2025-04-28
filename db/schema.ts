@@ -247,7 +247,7 @@ export const toolExecutionLogsTable = pgTable(
     id: serial('id').primaryKey(),
     mcp_server_uuid: uuid('mcp_server_uuid').references(
       () => mcpServersTable.uuid,
-      { onDelete: 'no action' }
+      { onDelete: 'cascade' }
     ),
     tool_name: text('tool_name').notNull(),
     payload: jsonb('payload')
