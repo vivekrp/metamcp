@@ -1,5 +1,7 @@
 FROM node:20-alpine AS base
 
+RUN npm i -g corepack@latest
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.8.0 --activate
 
