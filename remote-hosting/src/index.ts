@@ -141,6 +141,7 @@ const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
       process.env.USE_DOCKER_HOST === 'true'
         ? 'http://host.docker.internal:12005'
         : 'http://localhost:12005',
+    USE_DOCKER_HOST: process.env.USE_DOCKER_HOST,
   };
 
   const { cmd, args } = findActualExecutable(command, origArgs);
