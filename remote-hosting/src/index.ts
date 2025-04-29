@@ -100,7 +100,7 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
     // Replace localhost with host.docker.internal if using Docker
     let sseUrl = url;
     if (process.env.USE_DOCKER_HOST === 'true' && url.includes('localhost')) {
-      sseUrl = url.replace(/localhost/g, 'host.docker.internal');
+      sseUrl = url.replace(/localhost|127\.0\.0\.1/g, 'host.docker.internal');
       console.log(`Modified SSE URL: ${url} -> ${sseUrl}`);
     }
 
