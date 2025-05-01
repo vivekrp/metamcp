@@ -44,7 +44,29 @@ Then open http://localhost:12005 in your browser to open MetaMCP App.
 It is recommended to have npx (node.js based mcp) and uvx (python based mcp) installed globally.
 To install uv check: https://docs.astral.sh/uv/getting-started/installation/
 
-You also need a MCP Client to connect to `@metamcp/mcp-server-metamcp`. For example if you are using [Claude Desktop](https://modelcontextprotocol.io/quickstart/user), the config json may look like this:
+### Default Remote Mode SSE endpoint for MetaMCP
+
+The recommended way to connect to MetaMCP is via the SSE endpoint:
+
+```
+http://localhost:12007/sse with Authorization: Bearer <your-api-key>
+```
+
+Alternatively, if you cannot set headers, you can use this URL-based endpoint:
+
+```
+http://localhost:12007/api-key/<your-api-key>/sse
+```
+
+You can get the API key from the MetaMCP App's API Keys page.
+
+### For Local Access
+
+You can still use these methods even if your workspace is in Default Remote Mode.
+
+#### Claude Desktop Configuration
+
+For Claude Desktop, the config json should look like this:
 
 ```json
 {
@@ -61,13 +83,91 @@ You also need a MCP Client to connect to `@metamcp/mcp-server-metamcp`. For exam
 }
 ```
 
-For Cursor, env vars aren't easy to get typed in so you may use args instead
+#### Cursor Configuration
+
+For Cursor, env vars aren't easy to get typed in so you may use args instead:
 
 ```bash
-npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key <your-api-key> --metamcp-api-base-url <base-url>
+npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key <your-api-key> --metamcp-api-base-url http://localhost:12005
 ```
 
-You can get the API key from the MetaMCP App's API Keys page (self hosted available).
+#### Windows Configuration
+
+For Windows, you can use the following command for Cursor:
+
+```bash
+cmd /c npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key <your-api-key> --metamcp-api-base-url http://localhost:12005
+```
+
+Or configure it using json:
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@metamcp/mcp-server-metamcp@latest"
+      ],
+      "env": {
+        "METAMCP_API_KEY": "<your api key>",
+        "METAMCP_API_BASE_URL": "http://localhost:12005"
+      }
+    }
+  }
+}
+```
+
+#### Standalone SSE Server
+
+You can also use the following command to start a standalone SSE server:
+
+```bash
+mcp-server-metamcp --metamcp-api-key <your-api-key> --transport sse --port 12006
+```
+
+Then use following json configuration:
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12006"
+    }
+  }
+}
+```
+
+#### Smithery Windows Configuration
+
+You can also use Smithery to run MCPs in docker on cloud for max compatibility:
+
+```bash
+smithery run @metatool-ai/mcp-server-metamcp --config '{"metamcpApiKey":"<your api key>"}'
+```
+
+Or configure it in your Claude Desktop configuration file:
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "command": "smithery",
+      "args": [
+        "run",
+        "@metatool-ai/mcp-server-metamcp",
+        "--config",
+        "{\"metamcpApiKey\":\"<your api key>\"}"
+      ]
+    }
+  }
+}
+```
+
+You can get the API key from the MetaMCP App's API Keys page.
 
 ## Architecture Overview
 
