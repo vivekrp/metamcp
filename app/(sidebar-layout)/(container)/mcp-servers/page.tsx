@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { Copy, Download, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
@@ -53,6 +54,7 @@ const columnHelper = createColumnHelper<McpServer>();
 export default function MCPServersPage() {
   const { currentProfile } = useProfiles();
   const { toast } = useToast();
+  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [open, setOpen] = useState(false);
@@ -516,13 +518,18 @@ export default function MCPServersPage() {
                             url: undefined,
                           };
 
-                          await createMcpServer(
+                          const newServer = await createMcpServer(
                             currentProfile.uuid,
                             processedData
                           );
                           await mutate();
                           setOpen(false);
                           form.reset();
+
+                          // Redirect to the MCP server detail page
+                          if (newServer?.uuid) {
+                            router.push(`/mcp-servers/${newServer.uuid}`);
+                          }
                         } catch (error) {
                           console.error('Error creating MCP server:', error);
                         } finally {
@@ -651,13 +658,18 @@ export default function MCPServersPage() {
                             command: undefined,
                           };
 
-                          await createMcpServer(
+                          const newServer = await createMcpServer(
                             currentProfile.uuid,
                             processedData
                           );
                           await mutate();
                           setOpen(false);
                           form.reset();
+
+                          // Redirect to the MCP server detail page
+                          if (newServer?.uuid) {
+                            router.push(`/mcp-servers/${newServer.uuid}`);
+                          }
                         } catch (error) {
                           console.error('Error creating MCP server:', error);
                         } finally {

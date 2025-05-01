@@ -106,6 +106,7 @@ export async function updateMcpServer(
 export async function createMcpServer(
   profileUuid: string,
   data: {
+    uuid?: string;
     name: string;
     description: string;
     command?: string;
@@ -114,11 +115,16 @@ export async function createMcpServer(
     url?: string;
     type?: McpServerType;
   }
-): Promise<void> {
-  await db.insert(mcpServersTable).values({
-    ...data,
-    profile_uuid: profileUuid,
-  });
+): Promise<McpServer> {
+  const [server] = await db
+    .insert(mcpServersTable)
+    .values({
+      ...data,
+      profile_uuid: profileUuid,
+    })
+    .returning();
+
+  return server as McpServer;
 }
 
 export async function bulkImportMcpServers(

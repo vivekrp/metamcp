@@ -1,5 +1,6 @@
 'use client';
 
+import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 import {
     createColumnHelper,
     flexRender,
@@ -8,13 +9,12 @@ import {
 } from '@tanstack/react-table';
 import { Copy, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 
 import { getFirstApiKey } from '@/app/actions/api-keys';
 import { getMcpServers } from '@/app/actions/mcp-servers';
 import { updateProfileCapabilities } from '@/app/actions/profiles';
-import { refreshSseTools } from '@/app/actions/refresh-sse-tools';
-import { getToolsByMcpServerUuid, toggleToolStatus } from '@/app/actions/tools';
+import { getToolsByMcpServerUuid, saveToolsToDatabase, toggleToolStatus } from '@/app/actions/tools';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -32,16 +32,26 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { McpServerStatus, ProfileCapability, ToggleStatus } from '@/db/schema';
+import { McpServerStatus, ProfileCapability, ToggleStatus, WorkspaceMode } from '@/db/schema';
 import { useProfiles } from '@/hooks/use-profiles';
 import { useProjects } from '@/hooks/use-projects';
 import { useToast } from '@/hooks/use-toast';
+import { useConnectionMulti } from '@/hooks/useConnectionMulti';
 
 export default function ToolsManagementPage() {
     const { currentProfile, mutateActiveProfile } = useProfiles();
     const { currentProject } = useProjects();
     const { toast } = useToast();
     const [expandedServers, setExpandedServers] = useState<Set<string>>(new Set());
+    const [refreshingServers, setRefreshingServers] = useState<Set<string>>(new Set());
+    const { mutate: globalMutate } = useSWRConfig();
+
+    const {
+        connectionStatuses,
+        connect,
+        disconnect,
+        makeRequest
+    } = useConnectionMulti();
 
     const hasToolsManagement = currentProfile?.enabled_capabilities?.includes(ProfileCapability.TOOLS_MANAGEMENT);
 
@@ -70,6 +80,79 @@ export default function ToolsManagementPage() {
             newExpanded.add(serverUuid);
         }
         setExpandedServers(newExpanded);
+    };
+
+    // Function to refresh tools for a specific SSE server
+    const refreshSseTools = async (serverUuid: string) => {
+        if (!currentProfile?.uuid) {
+            toast({
+                title: "Error",
+                description: "Profile information is missing",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            // Mark this server as refreshing
+            setRefreshingServers(prev => new Set([...prev, serverUuid]));
+
+            // Connect to the server
+            await connect(serverUuid);
+
+            // Request the tool list
+            const response = await makeRequest(
+                serverUuid,
+                {
+                    method: "tools/list",
+                    params: {}
+                },
+                ListToolsResultSchema
+            );
+
+            // Save tools to the database
+            if (response.tools.length > 0) {
+                await saveToolsToDatabase(serverUuid, response.tools);
+
+                // Force refresh data in the database
+                await getToolsByMcpServerUuid(serverUuid);
+
+                // Refresh the UI by mutating the SWR cache for this server's tools
+                globalMutate(['getToolsByMcpServerUuid', serverUuid]);
+
+                toast({
+                    description: `${response.tools.length} tools refreshed successfully`
+                });
+            } else {
+                toast({
+                    description: "No tools found to refresh"
+                });
+
+                // Still refresh the UI in case tools were removed
+                globalMutate(['getToolsByMcpServerUuid', serverUuid]);
+            }
+        } catch (error) {
+            console.error("Error refreshing SSE tools:", error);
+            toast({
+                variant: "destructive",
+                title: "Error refreshing tools",
+                description: error instanceof Error ? error.message : "An unknown error occurred"
+            });
+        } finally {
+            // Disconnect from the server
+            try {
+                await disconnect(serverUuid);
+            } catch (disconnectError) {
+                console.error("Error disconnecting:", disconnectError);
+            }
+
+            // Mark this server as no longer refreshing
+            setRefreshingServers(prev => {
+                const next = new Set([...prev]);
+                next.delete(serverUuid);
+                return next;
+            });
+        }
     };
 
     const handleToggleToolsManagement = async (checked: boolean) => {
@@ -139,26 +222,26 @@ export default function ToolsManagementPage() {
                                         <CardDescription>{server.description || 'No description'}</CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {server.type === 'SSE' ? (
+                                        {server.type === 'SSE' || (currentProfile?.workspace_mode === WorkspaceMode.REMOTE) ? (
                                             <Button
                                                 size="sm"
-                                                onClick={async () => {
-                                                    try {
-                                                        await refreshSseTools(server.uuid);
-                                                        toast({
-                                                            description: "SSE tools refreshed successfully"
-                                                        });
-                                                    } catch (error) {
-                                                        console.error("Error refreshing SSE tools:", error);
-                                                        toast({
-                                                            variant: "destructive",
-                                                            title: "Error refreshing tools",
-                                                            description: error instanceof Error ? error.message : "An unknown error occurred"
-                                                        });
-                                                    }
-                                                }}>
-                                                <RefreshCw className="mr-2 h-4 w-4" />
-                                                Refresh
+                                                onClick={() => refreshSseTools(server.uuid)}
+                                                disabled={refreshingServers.has(server.uuid) ||
+                                                    connectionStatuses[server.uuid] === 'connecting'}>
+                                                {refreshingServers.has(server.uuid) ||
+                                                    connectionStatuses[server.uuid] === 'connecting' ? (
+                                                    <>
+                                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                        {connectionStatuses[server.uuid] === 'connecting'
+                                                            ? 'Connecting...'
+                                                            : 'Refreshing...'}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                                        Refresh
+                                                    </>
+                                                )}
                                             </Button>
                                         ) : (
                                             <Dialog>
@@ -174,7 +257,7 @@ export default function ToolsManagementPage() {
                                                     </DialogHeader>
                                                     <div className="py-4">
                                                         <p className="mb-4">
-                                                            Command-based MCP servers need to run locally. On next time you run MetaMCP MCP server, it will automatically refresh tools. To refresh tools manually for all installed MCP servers, run the following command:
+                                                            In <b>Compatibility (Local) mode</b>, Command-based MCP servers need to run locally. On next time you run MetaMCP MCP server, it will automatically refresh tools. To refresh tools manually for all installed MCP servers, run the following command:
                                                         </p>
                                                         <div className="relative">
                                                             <Button

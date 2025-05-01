@@ -1,3 +1,7 @@
+import {
+  OAuthClientInformation,
+  OAuthTokens,
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 import { sql } from 'drizzle-orm';
 import {
   AnyPgColumn,
@@ -36,6 +40,11 @@ export enum ProfileCapability {
   TOOL_LOGS = 'TOOL_LOGS',
 }
 
+export enum WorkspaceMode {
+  REMOTE = 'REMOTE',
+  LOCAL = 'LOCAL',
+}
+
 export enum ToolExecutionStatus {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
@@ -60,6 +69,11 @@ export const mcpServerTypeEnum = pgEnum(
 export const profileCapabilityEnum = pgEnum(
   'profile_capability',
   enumToPgEnum(ProfileCapability)
+);
+
+export const workspaceModeEnum = pgEnum(
+  'workspace_mode',
+  enumToPgEnum(WorkspaceMode)
 );
 
 export const toolExecutionStatusEnum = pgEnum(
@@ -92,6 +106,9 @@ export const profilesTable = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::profile_capability[]`),
+    workspace_mode: workspaceModeEnum('workspace_mode')
+      .notNull()
+      .default(WorkspaceMode.LOCAL),
     created_at: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -230,7 +247,7 @@ export const toolExecutionLogsTable = pgTable(
     id: serial('id').primaryKey(),
     mcp_server_uuid: uuid('mcp_server_uuid').references(
       () => mcpServersTable.uuid,
-      { onDelete: 'no action' }
+      { onDelete: 'cascade' }
     ),
     tool_name: text('tool_name').notNull(),
     payload: jsonb('payload')
@@ -251,5 +268,30 @@ export const toolExecutionLogsTable = pgTable(
     index('tool_execution_logs_mcp_server_uuid_idx').on(table.mcp_server_uuid),
     index('tool_execution_logs_tool_name_idx').on(table.tool_name),
     index('tool_execution_logs_created_at_idx').on(table.created_at),
+  ]
+);
+
+export const oauthSessionsTable = pgTable(
+  'oauth_sessions',
+  {
+    uuid: uuid('uuid').primaryKey().defaultRandom(),
+    mcp_server_uuid: uuid('mcp_server_uuid')
+      .notNull()
+      .references(() => mcpServersTable.uuid, { onDelete: 'cascade' }),
+    client_information: jsonb('client_information')
+      .$type<OAuthClientInformation>()
+      .notNull(),
+    tokens: jsonb('tokens').$type<OAuthTokens>(),
+    code_verifier: text('code_verifier'),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('oauth_sessions_mcp_server_uuid_idx').on(table.mcp_server_uuid),
+    unique('oauth_sessions_unique_per_server_idx').on(table.mcp_server_uuid),
   ]
 );

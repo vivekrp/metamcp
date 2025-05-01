@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     env_file:
       - .env
     restart: always
@@ -13,6 +14,21 @@ services:
       - NODE_ENV=production
     depends_on:
       - metatool-postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  metatool-remote-hosting:
+    container_name: metatool-remote-hosting
+    build:
+      context: ./remote-hosting
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - '12007:12007'
+    environment:
+      - NODE_ENV=production
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
