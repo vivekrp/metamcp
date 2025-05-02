@@ -20,8 +20,10 @@ RUN corepack enable && corepack prepare pnpm@10.8.0 --activate
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files from remote-hosting context
 COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies and explicitly install cors
 RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
