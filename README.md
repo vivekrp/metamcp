@@ -2,9 +2,7 @@
 
 [![](https://dcbadge.limes.pink/api/server/mNsyat7mFX)](https://discord.gg/mNsyat7mFX)
 
-https://metamcp.com (Cloud version online now and available for free)
-
-MetaMCP is "the One" middleware MCP to manage all your MCPs. It uses a GUI fullstack app (this repo) and a local MCP proxy to achieve this. (see our latest npm repo [mcp-server-metamcp](https://github.com/metatool-ai/mcp-server-metamcp))
+MetaMCP is the unified middleware MCP to manage all your MCPs. It uses a GUI fullstack app (this repo) and a local MCP proxy to achieve this. (see our latest npm repo [mcp-server-metamcp](https://github.com/metatool-ai/mcp-server-metamcp))
 
 A few feature highlights:
 
@@ -29,7 +27,6 @@ Check out demo videos at https://metamcp.com/. Here is an overview screenshot.
 
 ## Installation
 
-To get instantly started with cloud version visit https://metamcp.com/.
 To get started with this self hostable version of MetaMCP App, the eastiest way is to clone the repository and use Docker Compose to run it.
 
 ```bash
