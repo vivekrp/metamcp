@@ -58,14 +58,18 @@ const connections = new Map<
   }
 >();
 
-// Map to store connections by API key (for MetaMCP)
+// Map to store connections by API key for MetaMCP
 const metaMcpConnections = new Map<
   string,
   {
     webAppTransport: Transport;
     backingServerTransport: Transport;
+    sessionTransports?: Map<string, Transport>; // Optional to maintain compatibility with existing code
   }
 >();
+
+// Map to store session-specific transports by sessionId
+const sessionTransports = new Map<string, { apiKey: string, transport: Transport }>();
 
 // Map to store transports by sessionId for StreamableHTTP
 const webAppTransports = new Map<string, Transport>();
@@ -180,8 +184,8 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
   }
 };
 
-const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
-  console.log('Creating MetaMCP transport');
+const createMetaMcpTransport = async (apiKey: string, sessionId?: string): Promise<Transport> => {
+  console.log(`Creating MetaMCP transport${sessionId ? ` for session ${sessionId}` : ''}`);
 
   const command = 'npx';
   const origArgs = shellParseArgs(
@@ -198,6 +202,10 @@ const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
     USE_DOCKER_HOST: process.env.USE_DOCKER_HOST,
   };
 
+  if (sessionId) {
+    env.METAMCP_SESSION_ID = sessionId;
+  }
+
   const { cmd, args } = findActualExecutable(command, origArgs);
 
   console.log(`Stdio transport: command=${cmd}, args=${args}`);
@@ -211,7 +219,7 @@ const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
 
   await transport.start();
 
-  console.log('Spawned MetaMCP transport');
+  console.log(`Spawned MetaMCP transport${sessionId ? ` for session ${sessionId}` : ''}`);
   return transport;
 };
 
@@ -231,7 +239,9 @@ app.get('/mcp', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /mcp route:', error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -294,7 +304,9 @@ app.post('/mcp', async (req, res) => {
       );
     } catch (error) {
       console.error('Error in /mcp POST route:', error);
-      res.status(500).json(error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   } else {
     try {
@@ -311,7 +323,9 @@ app.post('/mcp', async (req, res) => {
       }
     } catch (error) {
       console.error('Error in /mcp route:', error);
-      res.status(500).json(error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 });
@@ -400,7 +414,9 @@ app.get('/server/:uuid/sse', async (req, res) => {
     console.log(`Set up MCP proxy for UUID ${uuid}`);
   } catch (error) {
     console.error(`Error in /${req.params.uuid}/sse route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -418,7 +434,9 @@ app.post('/server/:uuid/message', async (req, res) => {
     await connection.webAppTransport.handlePostMessage(req, res);
   } catch (error) {
     console.error(`Error in /${req.params.uuid}/message route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -456,6 +474,20 @@ app.get('/sse', async (req, res) => {
       metaMcpConnections.delete(apiKey);
     }
 
+    // Clean up any session transports for this API key
+    const sessionIds = Array.from(sessionTransports.keys()).filter(
+      id => sessionTransports.get(id)?.apiKey === apiKey
+    );
+    
+    for (const id of sessionIds) {
+      const sessionData = sessionTransports.get(id);
+      if (sessionData) {
+        console.log(`Closing session ${id} transport for API key ${apiKey}`);
+        await sessionData.transport.close();
+        sessionTransports.delete(id);
+      }
+    }
+
     let backingServerTransport: Transport;
 
     try {
@@ -466,7 +498,9 @@ app.get('/sse', async (req, res) => {
           'Received 401 Unauthorized from MCP server:',
           error.message
         );
-        res.status(401).json(error);
+        res.status(401).json({
+          error: error instanceof Error ? error.message : String(error)
+        });
         return;
       }
 
@@ -513,43 +547,13 @@ app.get('/sse', async (req, res) => {
     console.log(`Set up MCP proxy for API key ${apiKey}`);
   } catch (error) {
     console.error(`Error in /sse route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
-// MetaMCP with StreamableHTTP support
-app.get('/api/mcp', async (req, res) => {
-  try {
-    // Extract API key from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res
-        .status(401)
-        .json({ error: 'Missing or invalid Authorization header' });
-      return;
-    }
-
-    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const sessionId = req.headers['mcp-session-id'] as string;
-    console.log(`Received GET message for API key ${apiKey} and sessionId ${sessionId}`);
-
-    const connection = metaMcpConnections.get(apiKey);
-    if (!connection || !connection.webAppTransport) {
-      res.status(404).end('Session not found');
-      return;
-    }
-
-    if (connection.webAppTransport instanceof StreamableHTTPServerTransport) {
-      await connection.webAppTransport.handleRequest(req, res);
-    } else {
-      res.status(400).json({ error: 'Transport type not supported for this endpoint' });
-    }
-  } catch (error) {
-    console.error('Error in /api/mcp GET route:', error);
-    res.status(500).json(error);
-  }
-});
-
+// Modified MetaMCP endpoint with StreamableHTTP support
 app.post('/api/mcp', async (req, res) => {
   try {
     // Extract API key from Authorization header
@@ -576,6 +580,20 @@ app.post('/api/mcp', async (req, res) => {
           console.log('Cleaning up existing connection for API key', apiKey);
           await existingConnection.backingServerTransport.close();
           await existingConnection.webAppTransport.close();
+          
+          // Clean up any session transports for this API key
+          const sessionIds = Array.from(sessionTransports.keys()).filter(
+            id => sessionTransports.get(id)?.apiKey === apiKey
+          );
+          
+          for (const id of sessionIds) {
+            const sessionData = sessionTransports.get(id);
+            if (sessionData) {
+              console.log(`Closing session ${id} transport for API key ${apiKey}`);
+              await sessionData.transport.close();
+              sessionTransports.delete(id);
+            }
+          }
         } catch (error) {
           console.error(
             `Error closing existing connection for API key ${apiKey}:`,
@@ -588,6 +606,7 @@ app.post('/api/mcp', async (req, res) => {
       let backingServerTransport: Transport;
 
       try {
+        // Create initial backing server transport for main API key connection
         backingServerTransport = await createMetaMcpTransport(apiKey);
       } catch (error) {
         if (error instanceof SseError && error.code === 401) {
@@ -595,7 +614,9 @@ app.post('/api/mcp', async (req, res) => {
             'Received 401 Unauthorized from MCP server:',
             error.message
           );
-          res.status(401).json(error);
+          res.status(401).json({
+            error: error instanceof Error ? error.message : String(error)
+          });
           return;
         }
         throw error;
@@ -607,15 +628,53 @@ app.post('/api/mcp', async (req, res) => {
 
       const webAppTransport = new StreamableHTTPServerTransport({
         sessionIdGenerator: randomUUID,
-        onsessioninitialized: (sessionId) => {
-          console.log(`Created streamable web app transport ${sessionId} for API key ${apiKey}`);
+        onsessioninitialized: async (newSessionId) => {
+          console.log(`Created streamable web app transport ${newSessionId} for API key ${apiKey}`);
+          
+          // Create a session-specific transport for this new session
+          try {
+            // Create a new transport for this session
+            const sessionTransport = await createMetaMcpTransport(apiKey, newSessionId);
+            
+            // Store in our session transports map
+            sessionTransports.set(newSessionId, {
+              apiKey,
+              transport: sessionTransport
+            });
+            
+            console.log(`Set up session-specific transport for session ${newSessionId}`);
+            
+            // Set up stderr handling for this transport
+            if (sessionTransport instanceof StdioClientTransport && sessionTransport.stderr) {
+              sessionTransport.stderr.on('data', (chunk) => {
+                // Forward to web app transport
+                webAppTransport.send({
+                  jsonrpc: '2.0',
+                  method: 'notifications/stderr',
+                  params: {
+                    content: chunk.toString(),
+                    sessionId: newSessionId
+                  },
+                });
+              });
+            }
+            
+            // Create a dedicated proxy for this session transport
+            mcpProxy({
+              transportToClient: webAppTransport,
+              transportToServer: sessionTransport
+            });
+          } catch (error) {
+            console.error(`Error creating session transport for ${newSessionId}:`, error);
+          }
         },
       });
 
       await webAppTransport.start();
 
-      if (backingServerTransport instanceof StdioClientTransport) {
-        backingServerTransport.stderr!.on('data', (chunk) => {
+      // Handle stderr from the main backing transport 
+      if (backingServerTransport instanceof StdioClientTransport && backingServerTransport.stderr) {
+        backingServerTransport.stderr.on('data', (chunk) => {
           webAppTransport.send({
             jsonrpc: '2.0',
             method: 'notifications/stderr',
@@ -626,14 +685,17 @@ app.post('/api/mcp', async (req, res) => {
         });
       }
 
+      // Store connection
       metaMcpConnections.set(apiKey, {
         webAppTransport,
         backingServerTransport,
+        sessionTransports: new Map() // For compatibility
       });
 
+      // Set up main proxy for initial messages
       mcpProxy({
         transportToClient: webAppTransport,
-        transportToServer: backingServerTransport,
+        transportToServer: backingServerTransport
       });
 
       // Handle the first request
@@ -643,11 +705,58 @@ app.post('/api/mcp', async (req, res) => {
         req.body,
       );
     } else {
-      // Existing connection
+      // Existing connection with session ID
       const connection = metaMcpConnections.get(apiKey);
       if (!connection || !connection.webAppTransport) {
         res.status(404).end('Session not found');
         return;
+      }
+
+      // For requests with sessionIds, the StreamableHTTP transport knows 
+      // how to route them to the correct handler, we just have to make sure
+      // the correct session transport exists
+      
+      // Check if we need to create a session-specific transport
+      if (!sessionTransports.has(sessionId)) {
+        try {
+          console.log(`Creating new session transport for existing session ${sessionId}`);
+          const sessionTransport = await createMetaMcpTransport(apiKey, sessionId);
+          
+          // Store in our session transports map
+          sessionTransports.set(sessionId, {
+            apiKey,
+            transport: sessionTransport
+          });
+          
+          // Set up stderr handling for this transport
+          if (sessionTransport instanceof StdioClientTransport && sessionTransport.stderr) {
+            sessionTransport.stderr.on('data', (chunk) => {
+              // Forward to web app transport
+              connection.webAppTransport.send({
+                jsonrpc: '2.0',
+                method: 'notifications/stderr',
+                params: {
+                  content: chunk.toString(),
+                  sessionId: sessionId
+                },
+              });
+            });
+          }
+          
+          // Create a dedicated proxy for this session transport
+          mcpProxy({
+            transportToClient: connection.webAppTransport,
+            transportToServer: sessionTransport
+          });
+          
+          console.log(`Set up session-specific transport for session ${sessionId}`);
+        } catch (error) {
+          console.error(`Error creating session transport for ${sessionId}:`, error);
+          res.status(500).json({
+            error: error instanceof Error ? error.message : String(error)
+          });
+          return;
+        }
       }
 
       if (connection.webAppTransport instanceof StreamableHTTPServerTransport) {
@@ -658,7 +767,90 @@ app.post('/api/mcp', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /api/mcp POST route:', error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+app.get('/api/mcp', async (req, res) => {
+  try {
+    // Extract API key from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res
+        .status(401)
+        .json({ error: 'Missing or invalid Authorization header' });
+      return;
+    }
+
+    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const sessionId = req.headers['mcp-session-id'] as string;
+    console.log(`Received GET message for API key ${apiKey} and sessionId ${sessionId}`);
+
+    const connection = metaMcpConnections.get(apiKey);
+    if (!connection || !connection.webAppTransport) {
+      res.status(404).end('Session not found');
+      return;
+    }
+
+    // For requests with sessionIds, the StreamableHTTP transport knows 
+    // how to route them to the correct handler, we just have to make sure
+    // the correct session transport exists
+    
+    // Check if we need to create a session-specific transport
+    if (sessionId && !sessionTransports.has(sessionId)) {
+      try {
+        console.log(`Creating new session transport for session ${sessionId} on GET request`);
+        const sessionTransport = await createMetaMcpTransport(apiKey, sessionId);
+        
+        // Store in our session transports map
+        sessionTransports.set(sessionId, {
+          apiKey,
+          transport: sessionTransport
+        });
+        
+        // Set up stderr handling for this transport
+        if (sessionTransport instanceof StdioClientTransport && sessionTransport.stderr) {
+          sessionTransport.stderr.on('data', (chunk) => {
+            // Forward to web app transport
+            connection.webAppTransport.send({
+              jsonrpc: '2.0',
+              method: 'notifications/stderr',
+              params: {
+                content: chunk.toString(),
+                sessionId: sessionId
+              },
+            });
+          });
+        }
+        
+        // Create a dedicated proxy for this session transport
+        mcpProxy({
+          transportToClient: connection.webAppTransport,
+          transportToServer: sessionTransport
+        });
+        
+        console.log(`Set up session-specific transport for session ${sessionId}`);
+      } catch (error) {
+        console.error(`Error creating session transport for ${sessionId}:`, error);
+        res.status(500).json({
+          error: error instanceof Error ? error.message : String(error)
+        });
+        return;
+      }
+    }
+
+    if (connection.webAppTransport instanceof StreamableHTTPServerTransport) {
+      await connection.webAppTransport.handleRequest(req, res);
+    } else {
+      res.status(400).json({ error: 'Transport type not supported for this endpoint' });
+    }
+  } catch (error) {
+    console.error('Error in /api/mcp GET route:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -689,7 +881,9 @@ app.post('/message', async (req, res) => {
     }
   } catch (error) {
     console.error(`Error in /message route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -718,6 +912,20 @@ app.get('/api-key/:apiKey/sse', async (req, res) => {
       metaMcpConnections.delete(apiKey);
     }
 
+    // Clean up any session transports for this API key
+    const sessionIds = Array.from(sessionTransports.keys()).filter(
+      id => sessionTransports.get(id)?.apiKey === apiKey
+    );
+    
+    for (const id of sessionIds) {
+      const sessionData = sessionTransports.get(id);
+      if (sessionData) {
+        console.log(`Closing session ${id} transport for API key ${apiKey}`);
+        await sessionData.transport.close();
+        sessionTransports.delete(id);
+      }
+    }
+
     let backingServerTransport: Transport;
 
     try {
@@ -728,7 +936,9 @@ app.get('/api-key/:apiKey/sse', async (req, res) => {
           'Received 401 Unauthorized from MCP server:',
           error.message
         );
-        res.status(401).json(error);
+        res.status(401).json({
+          error: error instanceof Error ? error.message : String(error)
+        });
         return;
       }
 
@@ -773,12 +983,30 @@ app.get('/api-key/:apiKey/sse', async (req, res) => {
     res.on('close', () => {
       console.log(`Connection closed for API key ${apiKey}`);
       metaMcpConnections.delete(apiKey);
+
+      // Clean up any session transports for this API key
+      const sessionIds = Array.from(sessionTransports.keys()).filter(
+        id => sessionTransports.get(id)?.apiKey === apiKey
+      );
+      
+      for (const id of sessionIds) {
+        const sessionData = sessionTransports.get(id);
+        if (sessionData) {
+          console.log(`Closing session ${id} transport for API key ${apiKey}`);
+          sessionData.transport.close().catch(err => {
+            console.error(`Error closing session transport for ${id}:`, err);
+          });
+          sessionTransports.delete(id);
+        }
+      }
     });
 
     console.log(`Set up MCP proxy for API key ${apiKey}`);
   } catch (error) {
     console.error(`Error in /api-key/:apiKey/sse route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -800,7 +1028,9 @@ app.post('/api-key/:apiKey/message', async (req, res) => {
     }
   } catch (error) {
     console.error(`Error in /api-key/:apiKey/message route:`, error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -821,7 +1051,9 @@ app.get('/config', (req, res) => {
     });
   } catch (error) {
     console.error('Error in /config route:', error);
-    res.status(500).json(error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
