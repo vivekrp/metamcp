@@ -1,0 +1,27 @@
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+
+// Map to store connections by UUID (for legacy endpoints)
+export interface Connection {
+  webAppTransport: SSEServerTransport;
+  backingServerTransport: Transport;
+}
+
+// Map to store connections by API key for MetaMCP
+export interface MetaMcpConnection {
+  webAppTransport: Transport;
+  backingServerTransport: Transport;
+  sessionTransports?: Map<string, Transport>; // Optional to maintain compatibility with existing code
+}
+
+// Session transport information
+export interface SessionTransport {
+  apiKey: string;
+  transport: Transport;
+}
+
+// Export empty maps to be filled by the application
+export const connections = new Map<string, Connection>();
+export const metaMcpConnections = new Map<string, MetaMcpConnection>();
+export const sessionTransports = new Map<string, SessionTransport>();
+export const webAppTransports = new Map<string, Transport>(); 

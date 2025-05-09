@@ -8,16 +8,16 @@
   "bugs": "https://github.com/metatool-ai/metatool-app/issues",
   "type": "module",
   "bin": {
-    "metamcp-remote-hosting": "build/index.js"
+    "metamcp-remote-hosting": "build/server.js"
   },
   "files": [
     "build"
   ],
   "scripts": {
     "build": "tsc",
-    "start": "node build/index.js",
-    "dev": "tsx watch --clear-screen=false src/index.ts",
-    "dev:windows": "tsx watch --clear-screen=false src/index.ts < NUL"
+    "start": "node build/server.js",
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "dev:windows": "tsx watch --clear-screen=false src/server.ts < NUL"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
