@@ -13,11 +13,10 @@ import { metaMcpConnections, sessionTransports } from '../types.js';
 // Handler for /api-key/:apiKey/sse endpoint (deprecated)
 export const handleApiKeyUrlSse = async (req: express.Request, res: express.Response) => {
   try {
-    console.log('WARNING: The /api-key/:apiKey/sse endpoint is deprecated and should be replaced with /mcp');
+    console.log('WARNING: The /api-key/:apiKey/sse endpoint is deprecated and should be replaced with /api-key/:apiKey/mcp');
     
     const apiKey = req.params.apiKey;
     console.log(`New SSE connection for API key in URL: ${apiKey}`);
-    console.log(`Session ID: ${req.headers['mcp-session-id'] || 'not provided'}`);
 
     let backingServerTransport;
 
@@ -62,7 +61,7 @@ export const handleApiKeyUrlSse = async (req: express.Request, res: express.Resp
       });
     }
 
-    metaMcpConnections.set(apiKey, {
+    metaMcpConnections.set(webAppTransport.sessionId, {
       webAppTransport,
       backingServerTransport,
     });
@@ -74,11 +73,11 @@ export const handleApiKeyUrlSse = async (req: express.Request, res: express.Resp
 
     // Handle cleanup when connection closes
     res.on('close', () => {
-      console.log(`Connection closed for API key ${apiKey}`);
-      metaMcpConnections.delete(apiKey);
+      console.log(`Connection closed for session ${webAppTransport.sessionId}`);
+      metaMcpConnections.delete(webAppTransport.sessionId);
     });
 
-    console.log(`Set up MCP proxy for API key ${apiKey}`);
+    console.log(`Set up MCP proxy for session ${webAppTransport.sessionId} and API key ${apiKey}`);
   } catch (error) {
     console.error(`Error in /api-key/:apiKey/sse route:`, error);
     res.status(500).json({
@@ -92,18 +91,16 @@ export const handleApiKeyUrlMessage = async (req: express.Request, res: express.
   try {
     const apiKey = req.params.apiKey;
     console.log(`Received message for API key in URL: ${apiKey}`);
+    const sessionId = req.query.sessionId as string;
 
-    const connection = metaMcpConnections.get(apiKey);
+    const connection = metaMcpConnections.get(sessionId);
     if (!connection) {
-      res.status(404).end('Session not found');
+      res.status(404).end(`Session not found, sessionId: ${sessionId}`);
       return;
     }
-    
-    if (connection.webAppTransport instanceof SSEServerTransport) {
-      await connection.webAppTransport.handlePostMessage(req, res);
-    } else {
-      res.status(400).json({ error: 'Transport type not supported for this endpoint' });
-    }
+
+    const transport = connection.webAppTransport as SSEServerTransport;
+    await transport.handlePostMessage(req, res);
   } catch (error) {
     console.error(`Error in /api-key/:apiKey/message route:`, error);
     res.status(500).json({
