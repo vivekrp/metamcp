@@ -13,14 +13,6 @@ export interface MetaMcpConnection {
   backingServerTransport?: Transport;
 }
 
-// Session transport information
-export interface SessionTransport {
-  apiKey: string;
-  transport: Transport;
-}
-
 // Export empty maps to be filled by the application
 export const connections = new Map<string, Connection>();
 export const metaMcpConnections = new Map<string, MetaMcpConnection>();
-export const sessionTransports = new Map<string, SessionTransport>();
-export const webAppTransports = new Map<string, Transport>(); 

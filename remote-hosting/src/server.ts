@@ -8,8 +8,8 @@ import express from 'express';
 import { handleApiKeyUrlMessage,handleApiKeyUrlSse } from './routes/api-key/sse.js';
 import { handleApiKeyUrlMcpGet, handleApiKeyUrlMcpPost } from './routes/api-key/streamable-http.js';
 import { handleLegacyMessage, handleLegacySse } from './routes/legacy.js';
+import { handleMetaMcpMessage, handleMetaMcpSse } from './routes/metamcp/sse.js';
 // Import route handlers
-import { handleMetaMcpGet, handleMetaMcpMessage, handleMetaMcpPost, handleMetaMcpSse } from './routes/meta-mcp.js';
 import { handleConfig, handleHealth } from './routes/util.js';
 
 // Parse command line arguments
@@ -30,8 +30,8 @@ app.use((req, res, next) => {
 });
 
 // MetaMCP entrypoint
-app.get('/mcp', handleMetaMcpGet);
-app.post('/mcp', handleMetaMcpPost);
+// app.get('/mcp', handleMetaMcpGet);
+// app.post('/mcp', handleMetaMcpPost);
 app.get('/sse', handleMetaMcpSse);
 app.post('/message', handleMetaMcpMessage);
 
