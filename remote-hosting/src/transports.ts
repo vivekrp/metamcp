@@ -134,8 +134,8 @@ export const createTransport = async (req: express.Request): Promise<Transport> 
 };
 
 // Create a MetaMCP transport
-export const createMetaMcpTransport = async (apiKey: string, sessionId?: string): Promise<Transport> => {
-  console.log(`Creating MetaMCP transport${sessionId ? ` for session ${sessionId}` : ''}`);
+export const createMetaMcpTransport = async (apiKey: string): Promise<Transport> => {
+  console.log(`Creating MetaMCP transport for API key ${apiKey}`);
 
   const command = 'npx';
   const origArgs = shellParseArgs(
@@ -152,10 +152,6 @@ export const createMetaMcpTransport = async (apiKey: string, sessionId?: string)
     USE_DOCKER_HOST: process.env.USE_DOCKER_HOST,
   };
 
-  if (sessionId) {
-    env.METAMCP_SESSION_ID = sessionId;
-  }
-
   const { cmd, args } = findActualExecutable(command, origArgs);
 
   console.log(`Stdio transport: command=${cmd}, args=${args}`);
@@ -169,6 +165,6 @@ export const createMetaMcpTransport = async (apiKey: string, sessionId?: string)
 
   await transport.start();
 
-  console.log(`Spawned MetaMCP transport${sessionId ? ` for session ${sessionId}` : ''}`);
+  console.log(`Spawned MetaMCP transport for API key ${apiKey}`);
   return transport;
 }; 
