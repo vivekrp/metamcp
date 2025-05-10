@@ -10,8 +10,7 @@ export interface Connection {
 // Map to store connections by API key for MetaMCP
 export interface MetaMcpConnection {
   webAppTransport: Transport;
-  backingServerTransport: Transport;
-  sessionTransports?: Map<string, Transport>; // Optional to maintain compatibility with existing code
+  backingServerTransport?: Transport;
 }
 
 // Session transport information

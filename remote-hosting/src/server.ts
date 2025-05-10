@@ -5,7 +5,8 @@ import { parseArgs } from 'node:util';
 import cors from 'cors';
 import express from 'express';
 
-import { handleApiKeyUrlMcpGet, handleApiKeyUrlMcpPost,handleApiKeyUrlMessage, handleApiKeyUrlSse } from './routes/api-key.js';
+import { handleApiKeyUrlMessage,handleApiKeyUrlSse } from './routes/api-key/sse.js';
+import { handleApiKeyUrlMcpGet, handleApiKeyUrlMcpPost } from './routes/api-key/streamable-http.js';
 import { handleLegacyMessage, handleLegacySse } from './routes/legacy.js';
 // Import route handlers
 import { handleMetaMcpGet, handleMetaMcpMessage, handleMetaMcpPost, handleMetaMcpSse } from './routes/meta-mcp.js';
