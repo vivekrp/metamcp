@@ -9,6 +9,7 @@ import { handleApiKeyUrlMessage,handleApiKeyUrlSse } from './routes/api-key/sse.
 import { handleApiKeyUrlMcpGet, handleApiKeyUrlMcpPost } from './routes/api-key/streamable-http.js';
 import { handleLegacyMessage, handleLegacySse } from './routes/legacy.js';
 import { handleMetaMcpMessage, handleMetaMcpSse } from './routes/metamcp/sse.js';
+import { handleMetaMcpGet, handleMetaMcpPost } from './routes/metamcp/streamable-http.js';
 // Import route handlers
 import { handleConfig, handleHealth } from './routes/util.js';
 
@@ -30,8 +31,8 @@ app.use((req, res, next) => {
 });
 
 // MetaMCP entrypoint
-// app.get('/mcp', handleMetaMcpGet);
-// app.post('/mcp', handleMetaMcpPost);
+app.get('/mcp', handleMetaMcpGet);
+app.post('/mcp', handleMetaMcpPost);
 app.get('/sse', handleMetaMcpSse);
 app.post('/message', handleMetaMcpMessage);
 

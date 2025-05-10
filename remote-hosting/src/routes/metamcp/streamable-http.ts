@@ -11,7 +11,7 @@ import { metaMcpConnections } from '../../types.js';
 import { extractApiKey } from '../../utils.js';
 
 // Handler for /mcp POST
-export const handleMcpPost = async (req: express.Request, res: express.Response) => {
+export const handleMetaMcpPost = async (req: express.Request, res: express.Response) => {
   try {
     const apiKey = extractApiKey(req);
     if (!apiKey) {
@@ -139,7 +139,7 @@ export const handleMcpPost = async (req: express.Request, res: express.Response)
 };
 
 // Handler for /mcp GET
-export const handleMcpGet = async (req: express.Request, res: express.Response) => {
+export const handleMetaMcpGet = async (req: express.Request, res: express.Response) => {
   try {
     const apiKey = extractApiKey(req);
     if (!apiKey) {

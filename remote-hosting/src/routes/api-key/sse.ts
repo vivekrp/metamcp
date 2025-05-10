@@ -72,6 +72,8 @@ export const handleApiKeyUrlSse = async (req: express.Request, res: express.Resp
     res.on('close', () => {
       console.log(`Connection closed for session ${webAppTransport.sessionId}`);
       metaMcpConnections.delete(webAppTransport.sessionId);
+      webAppTransport.close();
+      backingServerTransport.close();
     });
 
     console.log(`Set up MCP proxy for session ${webAppTransport.sessionId} and API key ${apiKey}`);
