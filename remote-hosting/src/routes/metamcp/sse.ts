@@ -6,13 +6,13 @@ import express from 'express';
 import mcpProxy from '../../mcpProxy.js';
 import { createMetaMcpTransport } from '../../transports.js';
 import { metaMcpConnections } from '../../types.js';
+import { extractApiKey } from '../../utils.js';
 
 // Handler for /sse endpoint
 export const handleMetaMcpSse = async (req: express.Request, res: express.Response) => {
   try {
-    // Get API key from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const apiKey = extractApiKey(req);
+    if (!apiKey) {
       console.error('No Authorization Bearer token provided');
       res.status(401).json({
         error: 'Authorization Bearer token is required'
@@ -20,7 +20,6 @@ export const handleMetaMcpSse = async (req: express.Request, res: express.Respon
       return;
     }
 
-    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
     console.log(`New SSE connection for API key from Authorization header`);
 
     let backingServerTransport;
@@ -96,8 +95,8 @@ export const handleMetaMcpMessage = async (req: express.Request, res: express.Re
   try {
     // Get API key from Authorization header - though we don't actually use it for this endpoint
     // since we rely on the sessionId
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const apiKey = extractApiKey(req);
+    if (!apiKey) {
       console.error('No Authorization Bearer token provided');
       res.status(401).json({
         error: 'Authorization Bearer token is required'
