@@ -7,7 +7,7 @@ import express from 'express';
 
 import mcpProxy from '../../mcpProxy.js';
 import { createMetaMcpTransport } from '../../transports.js';
-import { metaMcpConnections, sessionTransports } from '../../types.js';
+import { metaMcpConnections } from '../../types.js';
 
 // Handler for /api-key/:apiKey/mcp POST
 export const handleApiKeyUrlMcpPost = async (req: express.Request, res: express.Response) => {
@@ -56,9 +56,9 @@ export const handleApiKeyUrlMcpPost = async (req: express.Request, res: express.
               const sessionTransport = await createMetaMcpTransport(apiKey);
               
               // Store in our session transports map
-              sessionTransports.set(newSessionId, {
-                apiKey,
-                transport: sessionTransport
+              metaMcpConnections.set(newSessionId, {
+                webAppTransport,
+                backingServerTransport: sessionTransport
               });
               
               // Set up stderr handling for this transport
@@ -102,12 +102,6 @@ export const handleApiKeyUrlMcpPost = async (req: express.Request, res: express.
           });
         }
   
-        // Store connection
-        metaMcpConnections.set(apiKey, {
-          webAppTransport,
-          backingServerTransport,
-        });
-  
         // Set up main proxy for initial messages
         mcpProxy({
           transportToClient: webAppTransport,
@@ -122,64 +116,14 @@ export const handleApiKeyUrlMcpPost = async (req: express.Request, res: express.
         );
       } else {
         // Existing connection with session ID
-        const connection = metaMcpConnections.get(apiKey);
+        const connection = metaMcpConnections.get(sessionId);
         if (!connection || !connection.webAppTransport) {
           res.status(404).end('Session not found');
           return;
         }
   
-        // For requests with sessionIds, the StreamableHTTP transport knows 
-        // how to route them to the correct handler, we just have to make sure
-        // the correct session transport exists
-        
-        // Check if we need to create a session-specific transport
-        if (!sessionTransports.has(sessionId)) {
-          try {
-            console.log(`Creating new session transport for existing session ${sessionId}`);
-            const sessionTransport = await createMetaMcpTransport(apiKey, sessionId);
-            
-            // Store in our session transports map
-            sessionTransports.set(sessionId, {
-              apiKey,
-              transport: sessionTransport
-            });
-            
-            // Set up stderr handling for this transport
-            if (sessionTransport instanceof StdioClientTransport && sessionTransport.stderr) {
-              sessionTransport.stderr.on('data', (chunk) => {
-                // Forward to web app transport
-                connection.webAppTransport.send({
-                  jsonrpc: '2.0',
-                  method: 'notifications/stderr',
-                  params: {
-                    content: chunk.toString(),
-                    sessionId: sessionId
-                  },
-                });
-              });
-            }
-            
-            // Create a dedicated proxy for this session transport
-            mcpProxy({
-              transportToClient: connection.webAppTransport,
-              transportToServer: sessionTransport
-            });
-            
-            console.log(`Set up session-specific transport for session ${sessionId}`);
-          } catch (error) {
-            console.error(`Error creating session transport for ${sessionId}:`, error);
-            res.status(500).json({
-              error: error instanceof Error ? error.message : String(error)
-            });
-            return;
-          }
-        }
-  
-        if (connection.webAppTransport instanceof StreamableHTTPServerTransport) {
-          await connection.webAppTransport.handleRequest(req, res);
-        } else {
-          res.status(400).json({ error: 'Transport type not supported for this endpoint' });
-        }
+        const transport = connection.webAppTransport as StreamableHTTPServerTransport;
+        await transport.handleRequest(req, res);
       }
     } catch (error) {
       console.error('Error in /api-key/:apiKey/mcp POST route:', error);
@@ -196,64 +140,14 @@ export const handleApiKeyUrlMcpPost = async (req: express.Request, res: express.
       const sessionId = req.headers['mcp-session-id'] as string;
       console.log(`Received GET message for API key in URL: ${apiKey} and sessionId ${sessionId}`);
   
-      const connection = metaMcpConnections.get(apiKey);
+      const connection = metaMcpConnections.get(sessionId);
       if (!connection || !connection.webAppTransport) {
         res.status(404).end('Session not found');
         return;
       }
   
-      // For requests with sessionIds, the StreamableHTTP transport knows 
-      // how to route them to the correct handler, we just have to make sure
-      // the correct session transport exists
-      
-      // Check if we need to create a session-specific transport
-      if (sessionId && !sessionTransports.has(sessionId)) {
-        try {
-          console.log(`Creating new session transport for session ${sessionId} on GET request`);
-          const sessionTransport = await createMetaMcpTransport(apiKey, sessionId);
-          
-          // Store in our session transports map
-          sessionTransports.set(sessionId, {
-            apiKey,
-            transport: sessionTransport
-          });
-          
-          // Set up stderr handling for this transport
-          if (sessionTransport instanceof StdioClientTransport && sessionTransport.stderr) {
-            sessionTransport.stderr.on('data', (chunk) => {
-              // Forward to web app transport
-              connection.webAppTransport.send({
-                jsonrpc: '2.0',
-                method: 'notifications/stderr',
-                params: {
-                  content: chunk.toString(),
-                  sessionId: sessionId
-                },
-              });
-            });
-          }
-          
-          // Create a dedicated proxy for this session transport
-          mcpProxy({
-            transportToClient: connection.webAppTransport,
-            transportToServer: sessionTransport
-          });
-          
-          console.log(`Set up session-specific transport for session ${sessionId}`);
-        } catch (error) {
-          console.error(`Error creating session transport for ${sessionId}:`, error);
-          res.status(500).json({
-            error: error instanceof Error ? error.message : String(error)
-          });
-          return;
-        }
-      }
-  
-      if (connection.webAppTransport instanceof StreamableHTTPServerTransport) {
-        await connection.webAppTransport.handleRequest(req, res);
-      } else {
-        res.status(400).json({ error: 'Transport type not supported for this endpoint' });
-      }
+      const transport = connection.webAppTransport as StreamableHTTPServerTransport;
+      await transport.handleRequest(req, res);
     } catch (error) {
       console.error('Error in /api-key/:apiKey/mcp GET route:', error);
       res.status(500).json({
