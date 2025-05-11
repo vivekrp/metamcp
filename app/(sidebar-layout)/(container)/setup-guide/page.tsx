@@ -180,6 +180,7 @@ export default function SetupGuidePage() {
                           env: {
                             METAMCP_API_KEY:
                               apiKey?.api_key ?? '<create an api key first>',
+                            METAMCP_API_BASE_URL: "http://localhost:12005"
                           },
                         },
                       },
