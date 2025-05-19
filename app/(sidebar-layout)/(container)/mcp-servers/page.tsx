@@ -289,6 +289,11 @@ export default function MCPServersPage() {
       "url": "https://example.com/sse",
       "description": "Optional description",
       "type": "sse" // optional, defaults to "stdio"
+    },
+    "StreamableHttpServerName": {
+      "url": "https://example.com/mcp",
+      "description": "Optional description",
+      "type": "streamable_http"
     }
   }
 }`}
@@ -353,12 +358,16 @@ export default function MCPServersPage() {
                         const processedJson = {
                           mcpServers: Object.entries(parsedJson.mcpServers).reduce((acc, [name, serverConfig]) => {
                             const config = serverConfig as any;
-                            const serverType = config.type?.toLowerCase() === 'sse'
-                              ? McpServerType.SSE
-                              : McpServerType.STDIO;
+                            let serverType = McpServerType.STDIO;
+                            
+                            if (config.type?.toLowerCase() === 'sse') {
+                              serverType = McpServerType.SSE;
+                            } else if (config.type?.toLowerCase() === 'streamable_http') {
+                              serverType = McpServerType.STREAMABLE_HTTP;
+                            }
 
                             // Create server config based on type
-                            if (serverType === McpServerType.SSE) {
+                            if (serverType === McpServerType.SSE || serverType === McpServerType.STREAMABLE_HTTP) {
                               acc[name] = {
                                 name,
                                 description: config.description || '',
@@ -483,12 +492,15 @@ export default function MCPServersPage() {
                 </DialogDescription>
               </DialogHeader>
               <Tabs defaultValue={McpServerType.STDIO} className='w-full'>
-                <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value={McpServerType.STDIO}>
-                    Command-based (STDIO)
+                <TabsList className='grid w-full grid-cols-3'>
+                  <TabsTrigger value={McpServerType.STDIO} className='px-2'>
+                    Stdio
                   </TabsTrigger>
-                  <TabsTrigger value={McpServerType.SSE}>
-                    URL-based (SSE)
+                  <TabsTrigger value={McpServerType.SSE} className='px-2'>
+                    SSE
+                  </TabsTrigger>
+                  <TabsTrigger value={McpServerType.STREAMABLE_HTTP} className='px-2'>
+                    Streamable HTTP
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value={McpServerType.STDIO}>
@@ -720,6 +732,113 @@ export default function MCPServersPage() {
                               <Input
                                 {...field}
                                 placeholder='http://localhost:3000/sse'
+                                required
+                                pattern='^(http|https)://[^\s/$.?#].[^\s]*$'
+                              />
+                            </FormControl>
+                            <p className='text-sm text-muted-foreground'>
+                              Must be a valid HTTP/HTTPS URL
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className='flex justify-end space-x-2'>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          onClick={() => {
+                            setOpen(false);
+                            form.reset();
+                          }}
+                          disabled={isSubmitting}>
+                          Cancel
+                        </Button>
+                        <Button type='submit' disabled={isSubmitting}>
+                          {isSubmitting ? 'Creating...' : 'Create'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </TabsContent>
+                <TabsContent value={McpServerType.STREAMABLE_HTTP}>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(async (data) => {
+                        if (!currentProfile?.uuid) return;
+                        setIsSubmitting(true);
+                        try {
+                          const processedData = {
+                            ...data,
+                            type: McpServerType.STREAMABLE_HTTP,
+                            args: [],
+                            env: {},
+                            status: McpServerStatus.ACTIVE,
+                            command: undefined,
+                          };
+
+                          const newServer = await createMcpServer(
+                            currentProfile.uuid,
+                            processedData
+                          );
+                          await mutate();
+                          setOpen(false);
+                          form.reset();
+
+                          // Redirect to the MCP server detail page
+                          if (newServer?.uuid) {
+                            router.push(`/mcp-servers/${newServer.uuid}`);
+                          }
+                        } catch (error) {
+                          console.error('Error creating MCP server:', error);
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      })}
+                      className='space-y-4'>
+                      <FormField
+                        control={form.control}
+                        name='name'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder='e.g., http-stream-server'
+                                required
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name='description'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder="(Optional) Brief description of the server's purpose"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name='url'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Server URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder='http://localhost:3000/mcp'
                                 required
                                 pattern='^(http|https)://[^\s/$.?#].[^\s]*$'
                               />
