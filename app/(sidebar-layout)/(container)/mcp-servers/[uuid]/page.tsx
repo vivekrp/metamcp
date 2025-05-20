@@ -589,7 +589,7 @@ export default function McpServerDetailPage({
                   {mcpServer.url}
                 </pre>
                 <p className='mt-2 text-sm text-muted-foreground'>
-                  {mcpServer.type === McpServerType.SSE ? 'SSE' : 'HTTP Stream'} endpoint
+                  {mcpServer.type === McpServerType.SSE ? 'SSE' : 'Streamable HTTP'} endpoint
                 </p>
               </div>
             )}
