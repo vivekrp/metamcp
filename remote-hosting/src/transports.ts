@@ -90,7 +90,7 @@ export const createTransport = async (req: express.Request): Promise<Transport> 
 
     console.log('Connected to SSE transport');
     return transport;
-  } else if (transportType === 'streamable-http') {
+  } else if (transportType === 'streamable_http') {
     const url = query.url as string;
     const headers: HeadersInit = {
       Accept: 'text/event-stream, application/json',

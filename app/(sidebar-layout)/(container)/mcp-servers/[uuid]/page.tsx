@@ -205,7 +205,7 @@ export default function McpServerDetailPage({
         ) || {}
         : {},
       command: data.type === McpServerType.STDIO ? data.command : undefined,
-      url: data.type === McpServerType.SSE ? data.url : undefined,
+      url: data.type === McpServerType.SSE || data.type === McpServerType.STREAMABLE_HTTP ? data.url : undefined,
     };
 
     await updateMcpServer(currentProfile.uuid, mcpServer.uuid, processedData);
@@ -366,8 +366,9 @@ export default function McpServerDetailPage({
                               form.setValue('command', '');
                               form.setValue('url', '');
                             }}>
-                            <option value={McpServerType.STDIO}>STDIO Server</option>
-                            <option value={McpServerType.SSE}>SSE Server</option>
+                            <option value={McpServerType.STDIO}>Stdio</option>
+                            <option value={McpServerType.SSE}>SSE</option>
+                            <option value={McpServerType.STREAMABLE_HTTP}>Streamable HTTP</option>
                           </select>
                         </FormControl>
                       </FormItem>
@@ -437,7 +438,9 @@ export default function McpServerDetailPage({
                             />
                           </FormControl>
                           <p className='text-sm text-muted-foreground'>
-                            Must be a valid HTTP/HTTPS URL
+                            {form.watch('type') === McpServerType.SSE 
+                              ? 'Must be a valid HTTP/HTTPS URL for SSE endpoint' 
+                              : 'Must be a valid HTTP/HTTPS URL for Streamable HTTP endpoint'}
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -585,6 +588,9 @@ export default function McpServerDetailPage({
                 <pre className='mt-2 p-2 bg-secondary rounded-md whitespace-pre-wrap break-words'>
                   {mcpServer.url}
                 </pre>
+                <p className='mt-2 text-sm text-muted-foreground'>
+                  {mcpServer.type === McpServerType.SSE ? 'SSE' : 'Streamable HTTP'} endpoint
+                </p>
               </div>
             )}
           </CardContent>
