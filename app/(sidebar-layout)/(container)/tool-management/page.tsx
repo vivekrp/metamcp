@@ -72,6 +72,31 @@ export default function ToolsManagementPage() {
         () => getFirstApiKey(currentProject?.uuid || '')
     );
 
+    // Fetch tools for all servers to calculate global aggregation
+    const allToolsQueries = mcpServers?.map(server => ({
+        key: ['getToolsByMcpServerUuid', server.uuid],
+        fetcher: () => getToolsByMcpServerUuid(server.uuid)
+    })) || [];
+
+    const allToolsData = useSWR(
+        mcpServers && mcpServers.length > 0 ? ['allTools', mcpServers.map(s => s.uuid)] : null,
+        async () => {
+            const results = await Promise.all(
+                mcpServers!.map(server => getToolsByMcpServerUuid(server.uuid))
+            );
+            return results.flat();
+        }
+    );
+
+    // Calculate global tool counts
+    const globalTotalTools = allToolsData.data?.length || 0;
+    const globalEnabledTools = allToolsData.data?.filter(tool => tool.status === ToggleStatus.ACTIVE).length || 0;
+
+    // Function to refresh global tools data
+    const refreshGlobalTools = () => {
+        allToolsData.mutate();
+    };
+
     const toggleServerExpansion = (serverUuid: string) => {
         const newExpanded = new Set(expandedServers);
         if (newExpanded.has(serverUuid)) {
@@ -190,6 +215,14 @@ export default function ToolsManagementPage() {
                     <p className="text-muted-foreground mt-2">
                         Manage all tools across your active MCP servers
                     </p>
+                    {hasToolsManagement && (
+                        <div className="mt-3 text-sm">
+                            <span className="font-medium text-green-600">{globalEnabledTools} enabled</span>
+                            <span className="mx-2 text-muted-foreground">•</span>
+                            <span className="font-medium text-foreground">{globalTotalTools} total tools</span>
+                            <span className="ml-2 text-muted-foreground">across all servers</span>
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center space-x-2">
                     <Switch
@@ -298,7 +331,7 @@ export default function ToolsManagementPage() {
                             </CardHeader>
                             {expandedServers.has(server.uuid) && (
                                 <CardContent>
-                                    <ToolsList mcpServerUuid={server.uuid} />
+                                    <ToolsList mcpServerUuid={server.uuid} onToolToggle={refreshGlobalTools} />
                                 </CardContent>
                             )}
                         </Card>
@@ -309,11 +342,15 @@ export default function ToolsManagementPage() {
     );
 }
 
-function ToolsList({ mcpServerUuid }: { mcpServerUuid: string }) {
+function ToolsList({ mcpServerUuid, onToolToggle }: { mcpServerUuid: string; onToolToggle?: () => void }) {
     const { data: tools, error, mutate } = useSWR(
         mcpServerUuid ? ['getToolsByMcpServerUuid', mcpServerUuid] : null,
         () => getToolsByMcpServerUuid(mcpServerUuid)
     );
+
+    // Calculate enabled vs total tools
+    const totalTools = tools?.length || 0;
+    const enabledTools = tools?.filter(tool => tool.status === ToggleStatus.ACTIVE).length || 0;
 
     const columnHelper = createColumnHelper<any>();
 
@@ -336,6 +373,7 @@ function ToolsList({ mcpServerUuid }: { mcpServerUuid: string }) {
                             checked ? ToggleStatus.ACTIVE : ToggleStatus.INACTIVE
                         );
                         mutate();
+                        onToolToggle?.();
                     }}
                 />
             ),
@@ -358,7 +396,15 @@ function ToolsList({ mcpServerUuid }: { mcpServerUuid: string }) {
     if (tools.length === 0) return <div>No tools found for this MCP server.</div>;
 
     return (
-        <div className="overflow-x-auto">
+        <div>
+            <div className="mb-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    <span className="font-medium text-green-600">{enabledTools} enabled</span>
+                    <span className="mx-2">•</span>
+                    <span className="font-medium">{totalTools} total tools</span>
+                </div>
+            </div>
+            <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-300">
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -389,6 +435,7 @@ function ToolsList({ mcpServerUuid }: { mcpServerUuid: string }) {
                     ))}
                 </tbody>
             </table>
+            </div>
         </div>
     );
 } 
