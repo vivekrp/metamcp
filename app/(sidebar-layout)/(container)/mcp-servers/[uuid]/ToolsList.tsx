@@ -16,6 +16,10 @@ export default function ToolsList({ mcpServerUuid }: ToolsListProps) {
         () => getToolsByMcpServerUuid(mcpServerUuid)
     );
 
+    // Calculate enabled vs total tools
+    const totalTools = tools?.length || 0;
+    const enabledTools = tools?.filter(tool => tool.status === ToggleStatus.ACTIVE).length || 0;
+
     const columnHelper = createColumnHelper<any>();
 
     const columns = [
@@ -59,7 +63,15 @@ export default function ToolsList({ mcpServerUuid }: ToolsListProps) {
     if (tools.length === 0) return <div>No tools found for this MCP server, you may need to refresh tools for this MCP server manually.</div>;
 
     return (
-        <div className="overflow-x-auto">
+        <div>
+            <div className="mb-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    <span className="font-medium text-green-600">{enabledTools} enabled</span>
+                    <span className="mx-2">•</span>
+                    <span className="font-medium">{totalTools} total tools</span>
+                </div>
+            </div>
+            <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-300">
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -90,6 +102,7 @@ export default function ToolsList({ mcpServerUuid }: ToolsListProps) {
                     ))}
                 </tbody>
             </table>
+            </div>
         </div>
     );
 } 
