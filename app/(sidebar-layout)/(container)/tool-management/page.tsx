@@ -72,12 +72,6 @@ export default function ToolsManagementPage() {
         () => getFirstApiKey(currentProject?.uuid || '')
     );
 
-    // Fetch tools for all servers to calculate global aggregation
-    const allToolsQueries = mcpServers?.map(server => ({
-        key: ['getToolsByMcpServerUuid', server.uuid],
-        fetcher: () => getToolsByMcpServerUuid(server.uuid)
-    })) || [];
-
     const allToolsData = useSWR(
         mcpServers && mcpServers.length > 0 ? ['allTools', mcpServers.map(s => s.uuid)] : null,
         async () => {
