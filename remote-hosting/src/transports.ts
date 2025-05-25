@@ -179,11 +179,11 @@ export const createMetaMcpTransport = async (apiKey: string): Promise<Transport>
   // Handle stderr output - pipe to console without blocking
   if (transport.stderr) {
     transport.stderr.on('data', (chunk) => {
-      console.error(`${chunk.toString().trim()}`);
+      console.error(`[MetaMCP's sub MCPs] ${chunk.toString().trim()}`);
     });
     
     transport.stderr.on('error', (error) => {
-      console.error(`Stderr error:`, error);
+      console.error(`[MetaMCP's sub MCPs] Stderr error:`, error);
     });
   }
 
