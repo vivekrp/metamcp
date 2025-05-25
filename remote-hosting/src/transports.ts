@@ -48,6 +48,17 @@ export const createTransport = async (req: express.Request): Promise<Transport> 
 
     await transport.start();
 
+    // Handle stderr output - pipe to console without blocking
+    if (transport.stderr) {
+      transport.stderr.on('data', (chunk) => {
+        console.error(`[${cmd}] ${chunk.toString().trim()}`);
+      });
+      
+      transport.stderr.on('error', (error) => {
+        console.error(`[${cmd}] stderr error:`, error);
+      });
+    }
+
     console.log('Spawned stdio transport');
     return transport;
   } else if (transportType === 'sse') {
@@ -139,7 +150,7 @@ export const createMetaMcpTransport = async (apiKey: string): Promise<Transport>
 
   const command = 'npx';
   const origArgs = shellParseArgs(
-    '-y @metamcp/mcp-server-metamcp@latest'
+    '-y @metamcp/mcp-server-metamcp@latest --stderr pipe'
   ) as string[];
   const env = {
     ...process.env,
@@ -164,6 +175,17 @@ export const createMetaMcpTransport = async (apiKey: string): Promise<Transport>
   });
 
   await transport.start();
+
+  // Handle stderr output - pipe to console without blocking
+  if (transport.stderr) {
+    transport.stderr.on('data', (chunk) => {
+      console.error(`[Sub MCP] ${chunk.toString().trim()}`);
+    });
+    
+    transport.stderr.on('error', (error) => {
+      console.error(`[Sub MCP] Stderr error:`, error);
+    });
+  }
 
   console.log(`Spawned MetaMCP transport for API key ${apiKey}`);
   return transport;
