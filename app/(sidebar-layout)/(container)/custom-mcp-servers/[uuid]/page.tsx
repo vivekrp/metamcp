@@ -14,6 +14,7 @@ import {
   toggleCustomMcpServerStatus,
   updateCustomMcpServer,
 } from '@/app/actions/custom-mcp-servers';
+import { getToolsByMcpServerUuid } from '@/app/actions/tools';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -46,7 +47,7 @@ import {
 } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { McpServerStatus } from '@/db/schema';
+import { McpServerStatus, ToggleStatus } from '@/db/schema';
 import { useCodes } from '@/hooks/use-codes';
 import { useProfiles } from '@/hooks/use-profiles';
 import { CustomMcpServer } from '@/types/custom-mcp-server';
@@ -84,6 +85,16 @@ export default function CustomMcpServerDetailPage({
       : null,
     () => getCustomMcpServerByUuid(currentProfile?.uuid || '', uuid!)
   );
+
+  // Fetch tools for this custom MCP server
+  const { data: tools } = useSWR(
+    uuid ? ['getToolsByMcpServerUuid', uuid] : null,
+    () => getToolsByMcpServerUuid(uuid!)
+  );
+
+  // Calculate tool counts
+  const totalTools = tools?.length || 0;
+  const enabledTools = tools?.filter(tool => tool.status === ToggleStatus.ACTIVE).length || 0;
 
   useEffect(() => {
     if (customMcpServer) {
