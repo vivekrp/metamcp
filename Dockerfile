@@ -1,18 +1,15 @@
 # Use the official uv image as base
 FROM ghcr.io/astral-sh/uv:debian AS base
 
-# Install Node.js and npm
+# Install Node.js and pnpm directly
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
+    && npm install -g pnpm@10.12.0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-RUN npm i -g corepack@latest
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@10.12.0 --activate
 
 # Install dependencies only when needed
 FROM base AS deps
