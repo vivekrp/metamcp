@@ -1,0 +1,22 @@
+import { DatabaseMcpServer, McpServer } from "@repo/zod-types";
+
+export class McpServersSerializer {
+  static serializeMcpServer(dbServer: DatabaseMcpServer): McpServer {
+    return {
+      uuid: dbServer.uuid,
+      name: dbServer.name,
+      description: dbServer.description,
+      type: dbServer.type,
+      command: dbServer.command,
+      args: dbServer.args,
+      env: dbServer.env,
+      url: dbServer.url,
+      created_at: dbServer.created_at.toISOString(),
+      bearerToken: dbServer.bearerToken,
+    };
+  }
+
+  static serializeMcpServerList(dbServers: DatabaseMcpServer[]): McpServer[] {
+    return dbServers.map(this.serializeMcpServer);
+  }
+}

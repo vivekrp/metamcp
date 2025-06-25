@@ -1,65 +1,101 @@
-FROM node:20-alpine AS base
+# Use the official uv image as base
+FROM ghcr.io/astral-sh/uv:debian AS base
+
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN npm i -g corepack@latest
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.8.0 --activate
+# Enable corepack for pnpm
+RUN corepack enable && corepack prepare pnpm@10.12.0 --activate
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Files needed for pnpm install
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Disable Next.js telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN pnpm build:next
+# Copy root package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY turbo.json ./
 
-# Migration stage
-FROM base AS migrator
+# Copy package.json files from all workspaces
+COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/backend/package.json ./apps/backend/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/trpc/package.json ./packages/trpc/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/zod-types/package.json ./packages/zod-types/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Builder stage
+FROM base AS builder
 WORKDIR /app
 
+# Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/frontend/node_modules ./apps/frontend/node_modules
+COPY --from=deps /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=deps /app/packages ./packages
+
+# Copy source code
 COPY . .
 
-ENV NODE_ENV production
-CMD ["pnpm", "drizzle-kit", "migrate"]
+# Build all packages and apps
+RUN pnpm build
 
-# Production image, copy all the files and run next
+# Production runner stage
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl postgresql-client && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user with proper home directory
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 --home /home/nextjs nextjs && \
+    mkdir -p /home/nextjs/.cache/node/corepack && \
+    chown -R nextjs:nodejs /home/nextjs
 
-COPY --from=builder /app/public ./public
+# Copy built applications
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next ./apps/frontend/.next
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/package.json ./apps/frontend/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder --chown=nextjs:nodejs /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/backend/drizzle ./apps/backend/drizzle
+COPY --from=builder --chown=nextjs:nodejs /app/apps/backend/drizzle.config.ts ./apps/backend/
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Copy built packages
+COPY --from=builder --chown=nextjs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-workspace.yaml ./
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Install production dependencies only
+RUN pnpm install --prod
+
+# Install drizzle-kit locally in backend for migrations
+RUN cd apps/backend && pnpm add drizzle-kit@0.31.1
+
+# Copy startup script
+COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 USER nextjs
 
-EXPOSE 3000
+# Expose frontend port (Next.js)
+EXPOSE 12008
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:12008/health || exit 1
 
-CMD ["node", "server.js"]
+# Start both backend and frontend
+CMD ["./docker-entrypoint.sh"] 
