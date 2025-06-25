@@ -236,10 +236,17 @@ export function useConnection({
 
   const checkProxyHealth = async () => {
     try {
+      console.log(
+        "process.env.NEXT_PUBLIC_APP_URL",
+        process.env.NEXT_PUBLIC_APP_URL,
+      );
+
       const proxyHealthUrl = new URL(
         `/mcp-proxy/server/health`,
         process.env.NEXT_PUBLIC_APP_URL,
       );
+
+      console.log("proxyHealthUrl", proxyHealthUrl);
 
       // Cookies will be sent automatically by the browser
       const proxyHealthResponse = await fetch(proxyHealthUrl, {
