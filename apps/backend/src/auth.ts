@@ -9,8 +9,12 @@ import { configService } from "./lib/config.service";
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error("BETTER_AUTH_SECRET environment variable is required");
 }
+if (!process.env.APP_URL) {
+  throw new Error("APP_URL environment variable is required");
+}
+
 const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET;
-const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || "http://localhost:12008";
+const BETTER_AUTH_URL = process.env.APP_URL;
 
 export const auth = betterAuth({
   secret: BETTER_AUTH_SECRET,

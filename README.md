@@ -90,6 +90,9 @@ Clone repo, prepare `.env`, and start with docker compose:
 git clone https://github.com/metatool-ai/metamcp.git
 cd metamcp
 cp example.env .env
+cd apps/frontend
+cp example.env .env # need to manually set NEXT_PUBLIC env vars o/w will be undefined in frontend
+cd -
 docker compose up --build -d
 ```
 

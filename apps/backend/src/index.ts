@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import express from "express";
 
 import { auth } from "./auth";
@@ -8,7 +6,6 @@ import publicEndpointsRouter from "./routers/public-metamcp";
 import trpcRouter from "./routers/trpc";
 
 const app = express();
-const PORT = process.env.PORT || 12009;
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -86,16 +83,16 @@ app.use("/mcp-proxy", mcpProxyRouter);
 // Mount tRPC routes
 app.use("/trpc", trpcRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Auth routes available at: http://localhost:${PORT}/api/auth`);
+app.listen(12009, () => {
+  console.log(`Server is running on port 12009`);
+  console.log(`Auth routes available at: http://localhost:12009/api/auth`);
   console.log(
-    `Public MetaMCP endpoints available at: http://localhost:${PORT}/metamcp`,
+    `Public MetaMCP endpoints available at: http://localhost:12009/metamcp`,
   );
   console.log(
-    `MCP Proxy routes available at: http://localhost:${PORT}/mcp-proxy`,
+    `MCP Proxy routes available at: http://localhost:12009/mcp-proxy`,
   );
-  console.log(`tRPC routes available at: http://localhost:${PORT}/trpc`);
+  console.log(`tRPC routes available at: http://localhost:12009/trpc`);
 });
 
 app.get("/health", (req, res) => {

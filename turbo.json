@@ -3,10 +3,9 @@
   "ui": "tui",
   "globalEnv": [
     "PORT",
-    "FRONTEND_URL",
+    "APP_URL",
     "DATABASE_URL",
     "BETTER_AUTH_SECRET",
-    "BETTER_AUTH_URL",
     "NEXT_PUBLIC_APP_URL",
     "TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL"
   ],

@@ -47,9 +47,7 @@ export const endpointsImplementations = {
           const mcpServerName = `${input.name}-endpoint`;
           const mcpServerDescription = `Auto-generated MCP server for endpoint "${input.name}"`;
 
-          // Use environment variable for base URL, fallback to localhost if not set
-          const baseUrl =
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:12008";
+          const baseUrl = process.env.APP_URL;
           const endpointUrl = `${baseUrl}/metamcp/${input.name}/mcp`;
 
           // Get or create API key for bearer token

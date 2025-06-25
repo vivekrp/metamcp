@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${FRONTEND_PORT:-12008}:12008"
+      - "12008:12008"
     environment:
       # Postgres connection details
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
@@ -17,14 +17,12 @@ services:
       # Database configuration (composed from above vars)
       DATABASE_URL: postgresql://${POSTGRES_USER:-metamcp_user}:${POSTGRES_PASSWORD:-m3t4mcp}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-metamcp_db}
       
-      # Backend configuration
-      PORT: ${PORT:-12009}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:12008}
+      # Application URL configuration
+      APP_URL: ${APP_URL:-http://localhost:12008}
+      NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:12008}
       
       # Auth configuration
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your-super-secret-key-change-this-in-production}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:12008}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:12008}
       
       # Docker networking fix
       TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL: ${TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL:-true}
