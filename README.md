@@ -122,6 +122,7 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 - 🛡️ **Better Auth** for frontend and backend (trpc procedures)
 - 🍪 **Session cookies** enforce internal MCP proxy connections  
 - 🔑 **API key auth** for external access via `Authorization: Bearer <api-key>` header
+- Note though: the repo is not designed for multi-tenancy and each org should self-host an instance for org wide. E.g., MCP server has no user_id association, so every account have access to every MCP server configs hosted on the instance.
 
 ## 🏗️ Architecture
 
