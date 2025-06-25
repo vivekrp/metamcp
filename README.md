@@ -10,6 +10,30 @@
 
 ![MetaMCP Diagram](metamcp.svg)
 
+
+## 📋 Table of Contents
+
+- [🎯 Use Cases](#-use-cases)
+- [📖 Concepts](#-concepts)
+  - [🖥️ MCP Server](#️-mcp-server)
+  - [🏷️ MetaMCP Namespace](#️-metamcp-namespace)
+  - [🌐 MetaMCP Endpoint](#-metamcp-endpoint)
+  - [⚙️ Middleware](#️-middleware)
+  - [🔍 Inspector](#-inspector)
+- [🚀 Quick Start](#-quick-start)
+  - [🐳 Run with Docker Compose (Recommended)](#-run-with-docker-compose-recommended)
+  - [💻 Local Development](#-local-development)
+- [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
+- [❄️ Cold Start Problem and Custom Dockerfile](#️-cold-start-problem-and-custom-dockerfile)
+- [🔐 Authentication](#-authentication)
+- [🏗️ Architecture](#️-architecture)
+  - [📊 Sequence Diagram](#-sequence-diagram)
+- [🗺️ Roadmap](#️-roadmap)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [🙏 Credits](#-credits)
+
+
 ## 🎯 Use Cases
 - 🔄 **One-click server switching** - Save and switch MCP server configs for Claude Desktop, Cursor, or custom agents
 - 🔍 **Enhanced MCP inspector** - Debug with saved server configurations  
