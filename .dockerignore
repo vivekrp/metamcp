@@ -17,6 +17,9 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Turborepo
+.turbo
+
 # IDE
 .vscode/
 .idea/
@@ -59,8 +62,7 @@ build/Release
 # Dependency directories
 jspm_packages/
 
-# TypeScript cache
-*.tsbuildinfo
+# TypeScript cache (already covered above)
 
 # Optional npm cache directory
 .npm
@@ -155,8 +157,6 @@ node_modules/
 dist/
 build/
 drizzle/migrations/
-apps/frontend/.next
-apps/backend/dist
 
 # Documentation
 *.md
