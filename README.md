@@ -20,6 +20,8 @@
 
 Generally developers can use MetaMCP as **infrastructure** to host dynamically composed MCP servers through a unified endpoint, and build agents on top of it.
 
+Quick demo video: https://youtu.be/Cf6jVd2saAs
+
 ![MetaMCP Screenshot](metamcp_screenshot.png)
 
 ## 📖 Concepts
