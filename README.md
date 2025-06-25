@@ -1,230 +1,160 @@
-# MetaMCP (Unified middleware MCP to manage all your MCPs)
+# 🚀 MetaMCP (Aggregate MCP servers & apply middlewares; host & emit unified MCP servers out)
+
+<div align="center">
 
 [![](https://dcbadge.limes.pink/api/server/mNsyat7mFX)](https://discord.gg/mNsyat7mFX)
 
-MetaMCP is the unified middleware MCP to manage all your MCPs. It uses a GUI fullstack app (this repo) and a local MCP proxy to achieve this. (see our latest npm repo [mcp-server-metamcp](https://github.com/metatool-ai/mcp-server-metamcp))
+</div>
 
-A few feature highlights:
+**MetaMCP** is a powerful MCP proxy that lets you dynamically aggregate MCP servers into a unified MCP server, and apply middlewares. MetaMCP itself is a MCP server so it can be easily plugged into **ANY** MCP clients.
 
-- GUI app to manage multiple MCP server integrations all together.
-- Support ANY MCP clients (e.g., Claude Desktop, Cursor, etc.) because MetaMCP is a MCP server.
-- Support prompts, resources, tools under MCP.
-- Support multi-workspace: e.g., activate a workspace of DB1 or switch to DB2 in another workspace, preventing polluting context of DB1 to your MCP Client.
-- Tool level toggle on/off
+![MetaMCP Diagram](metamcp.svg)
 
-The app is also self hostable, free and open source. There is also a cloud version. You can try how this app works using cloud version but I actually encourage you to self host if you are familiar with docker: it will provide unlimited access with lower latency, full private operations on your end.
+## 🎯 Use Cases
+- 🔄 **One-click server switching** - Save and switch MCP server configs for Claude Desktop, Cursor, or custom agents
+- 🔍 **Enhanced MCP inspector** - Debug with saved server configurations  
+- 🔗 **Unified server aggregation** - Join multiple servers for simplified agent development
+- ⚡ **Dynamic tool management** - Quick toggles to enable/disable servers and tools
+- 🛠️ **Middleware support** - Apply logging, error handling, and custom transformations
+- 🎯 **Dynamic search rules** - Apply search rules and return different toolsets for agent builders
 
-Check out demo videos at https://metamcp.com/. Here is an overview screenshot.
+Generally developers can use MetaMCP as **infrastructure** to host dynamically composed MCP servers through a unified endpoint, and build agents on top of it.
 
-![MetaMCP Overview Screenshot](screenshot.png)
-![MetaMCP Tool Management Screenshot](tool_management.png)
+Quick demo video: https://youtu.be/Cf6jVd2saAs
 
-## Verified Platform
+![MetaMCP Screenshot](metamcp_screenshot.png)
 
-- [x] Windows (after MCP official typescript SDK 1.8.0, which we updated accordingly, it works) https://github.com/metatool-ai/metatool-app/issues/15
-- [x] Mac
-- [x] Linux
+## 📖 Concepts
 
-## Installation
+### 🖥️ **MCP Server**
+A MCP server configuration that tells MetaMCP how to start a MCP server.
 
-To get started with this self hostable version of MetaMCP App, the eastiest way is to clone the repository and use Docker Compose to run it.
+```json
+"HackerNews": {
+  "type": "STDIO",
+  "command": "uvx",
+  "args": ["mcp-hn"]
+}
+```
+
+### 🏷️ **MetaMCP Namespace**
+- Group one or more MCP servers into a namespace
+- Enable/disable MCP servers or at tool level
+- Apply middlewares to MCP requests and responses
+
+### 🌐 **MetaMCP Endpoint**
+- Create endpoints and assign namespace to endpoints
+- Multiple MCP servers in the namespace will be aggregated and emitted as a MetaMCP endpoint
+- Choose auth level and strategy
+- Host through **SSE** or **Streamable HTTP** transports
+
+### ⚙️ **Middleware**
+- Intercepts and transforms MCP requests and responses at namespace level
+- **Built-in example**: "Filter inactive tools" - optimizes tool context for LLMs
+- **Future ideas**: tool logging, error traces, validation, scanning
+
+### 🔍 **Inspector**
+Similar to the official MCP inspector, but with **saved server configs** - MetaMCP automatically creates configurations so you can debug MetaMCP endpoints immediately.
+
+## 🚀 Quick Start
+
+### **🐳 Run with Docker Compose (Recommended)**
+
+Clone repo, prepare `.env`, and start with docker compose:
 
 ```bash
-git clone https://github.com/metatool-ai/metatool-app.git
-cd metatool-app
+git clone https://github.com/metatool-ai/metamcp.git
+cd metamcp
 cp example.env .env
 docker compose up --build -d
 ```
 
-Then open http://localhost:12005 in your browser to open MetaMCP App.
+### **💻 Local Development**
 
-It is recommended to have npx (node.js based mcp) and uvx (python based mcp) installed globally.
-To install uv check: https://docs.astral.sh/uv/getting-started/installation/
-
-### Default Remote Mode SSE endpoint for MetaMCP
-
-The recommended way to connect to MetaMCP is via the SSE endpoint:
-
-```
-http://localhost:12007/sse with Authorization: Bearer <your-api-key>
-```
-
-Alternatively, if you cannot set headers, you can use this URL-based endpoint:
-
-```
-http://localhost:12007/api-key/<your-api-key>/sse
-```
-
-You can get the API key from the MetaMCP App's API Keys page.
-
-### For Local Access
-
-You can still use these methods even if your workspace is in Default Remote Mode.
-
-#### Claude Desktop Configuration
-
-For Claude Desktop, the config json should look like this:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "command": "npx",
-      "args": ["-y", "@metamcp/mcp-server-metamcp@latest"],
-      "env": {
-        "METAMCP_API_KEY": "<your api key>",
-        "METAMCP_API_BASE_URL": "http://localhost:12005"
-      }
-    }
-  }
-}
-```
-
-#### Cursor Configuration
-
-For Cursor, env vars aren't easy to get typed in so you may use args instead:
+Still recommend running postgres through docker for easy setup:
 
 ```bash
-npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key <your-api-key> --metamcp-api-base-url http://localhost:12005
+pnpm install
+pnpm dev
 ```
 
-#### Windows Configuration
+## 🔌 MCP Protocol Compatibility
 
-For Windows, you can use the following command for Cursor:
+- ✅ **Tools, Resources, and Prompts** supported
+- ✅ **OAuth-enabled MCP servers** tested for 03-26 version
 
-```bash
-cmd /c npx -y @metamcp/mcp-server-metamcp@latest --metamcp-api-key <your-api-key> --metamcp-api-base-url http://localhost:12005
-```
+If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
-Or configure it using json:
+## ❄️ Cold Start Problem and Custom Dockerfile
 
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@metamcp/mcp-server-metamcp@latest"
-      ],
-      "env": {
-        "METAMCP_API_KEY": "<your api key>",
-        "METAMCP_API_BASE_URL": "http://localhost:12005"
-      }
-    }
-  }
-}
-```
+⚠️ **Cold start issue** for hosting `stdio` type MCP servers:
+- First run will be slow as package managers (uvx, npx) install dependencies
+- Happens again on docker restart
 
-#### Standalone SSE Server
+🛠️ **Solution**: Customize the Dockerfile to add dependencies or pre-install packages to reduce cold start time.
 
-You can also use the following command to start a standalone SSE server:
+## 🔐 Authentication
 
-```bash
-mcp-server-metamcp --metamcp-api-key <your-api-key> --transport sse --port 12006
-```
+- 🛡️ **Better Auth** for frontend and backend (trpc procedures)
+- 🍪 **Session cookies** enforce internal MCP proxy connections  
+- 🔑 **API key auth** for external access via `Authorization: Bearer <api-key>` header
 
-Then use following json configuration:
+## 🏗️ Architecture
 
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "url": "http://localhost:12006"
-    }
-  }
-}
-```
+- **Frontend**: Next.js
+- **Backend**: Express.js with tRPC, hosting MCPs through TS SDK and internal proxy
+- **Auth**: Better Auth
+- **Structure**: Standalone monorepo with Turborepo and Docker publishing
 
-#### Smithery Windows Configuration
+### 📊 Sequence Diagram
 
-You can also use Smithery to run MCPs in docker on cloud for max compatibility:
-
-```bash
-smithery run @metatool-ai/mcp-server-metamcp --config '{"metamcpApiKey":"<your api key>"}'
-```
-
-Or configure it in your Claude Desktop configuration file:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "command": "smithery",
-      "args": [
-        "run",
-        "@metatool-ai/mcp-server-metamcp",
-        "--config",
-        "{\"metamcpApiKey\":\"<your api key>\"}"
-      ]
-    }
-  }
-}
-```
-
-You can get the API key from the MetaMCP App's API Keys page.
-
-## Architecture Overview
-
-Note that prompts and resources are also covered similar to tools.
+*Note: Prompts and resources follow similar patterns to tools.*
 
 ```mermaid
 sequenceDiagram
     participant MCPClient as MCP Client (e.g., Claude Desktop)
-    participant MetaMCPMCP as MetaMCP MCP Server
-    participant MetaMCPApp as MetaMCP App
-    participant MCPServers as Installed MCP Servers in MetaMCP App
+    participant MetaMCP as MetaMCP Server
+    participant MCPServers as Installed MCP Servers
 
-    MCPClient ->> MetaMCPMCP: Request list tools
-    MetaMCPMCP ->> MetaMCPApp: Get tools configuration & status
-    MetaMCPApp ->> MetaMCPMCP: Return tools configuration & status
+    MCPClient ->> MetaMCP: Request list tools
 
     loop For each listed MCP Server
-        MetaMCPMCP ->> MCPServers: Request list_tools
-        MCPServers ->> MetaMCPMCP: Return list of tools
+        MetaMCP ->> MCPServers: Request list_tools
+        MCPServers ->> MetaMCP: Return list of tools
     end
 
-    MetaMCPMCP ->> MetaMCPMCP: Aggregate tool lists
-    MetaMCPMCP ->> MCPClient: Return aggregated list of tools
+    MetaMCP ->> MetaMCP: Aggregate tool lists & apply middleware
+    MetaMCP ->> MCPClient: Return aggregated list of tools
 
-    MCPClient ->> MetaMCPMCP: Call tool
-    MetaMCPMCP ->> MCPServers: call_tool to target MCP Server
-    MCPServers ->> MetaMCPMCP: Return tool response
-    MetaMCPMCP ->> MCPClient: Return tool response
+    MCPClient ->> MetaMCP: Call tool
+    MetaMCP ->> MCPServers: call_tool to target MCP Server
+    MCPServers ->> MetaMCP: Return tool response
+    MetaMCP ->> MCPClient: Return tool response
 ```
 
-## Basic HTTP Authentication (Optional)
+## 🗺️ Roadmap
 
-MetaMCP App includes optional basic HTTP authentication to protect your self-hosted instance. To enable it:
+**Potential next steps:**
 
-1. Set the following environment variables in your `.env` file:
-   ```bash
-   BASIC_AUTH_USERNAME=your-username
-   BASIC_AUTH_PASSWORD=your-secure-password
-   ```
+- [ ] 🔌 Headless Admin API access
+- [ ] 🔍 Dynamically apply search rules on MetaMCP endpoints
+- [ ] 🛠️ More middlewares
+- [ ] 💬 Chat/Agent Playground
+- [ ] 🧪 Testing & Evaluation for MCP tool selection optimization
+- [ ] ⚡ Dynamically generate MCP servers
 
-2. Restart your application:
-   ```bash
-   docker compose down
-   docker compose up --build -d
-   ```
+## 🤝 Contributing
 
-When enabled, all routes will require basic HTTP authentication except for:
-- Static assets (`/_next/static`, `/_next/image`, `/favicon.ico`)
-- API routes (`/api/*`) - these use their own API key authentication
-- Other public paths (you can customize this in `middleware.ts`)
+We welcome contributions! See details at **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
-If you don't set these environment variables, the authentication will be disabled and the app will work as before.
+## 📄 License
 
-**Security Note**: Make sure to use a strong password and consider using HTTPS in production environments.
+**MIT**
 
+Would appreciate if you mentioned with back links if your projects use the code.
 
-## License
+## 🙏 Credits
 
-GNU AGPL v3
-
-## Credits
-- Used some oauth codes in https://github.com/modelcontextprotocol/inspector
-- (Deprecated) Demo video uses MCP Client [5ire](https://5ire.app/)
+Some code inspired by:
+- [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
+- [MCP Proxy Server](https://github.com/adamwattis/mcp-proxy-server)
