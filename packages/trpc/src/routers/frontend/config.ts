@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, publicProcedure, router } from "../../trpc";
 
 export const createConfigRouter = (implementations: {
   getSignupDisabled: () => Promise<boolean>;
@@ -17,7 +17,7 @@ export const createConfigRouter = (implementations: {
   }) => Promise<{ success: boolean }>;
 }) =>
   router({
-    getSignupDisabled: protectedProcedure.query(async () => {
+    getSignupDisabled: publicProcedure.query(async () => {
       return await implementations.getSignupDisabled();
     }),
 
