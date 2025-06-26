@@ -41,7 +41,8 @@ export const createMetaMcpClient = (
   // Default to "STDIO" if type is undefined
   if (!serverParams.type || serverParams.type === "STDIO") {
     // Get stderr value from serverParams, environment variable, or default to "ignore"
-    const stderrValue: IOType = "pipe";
+    // TODO: improve error handling, piping and reporting
+    const _stderrValue: IOType = "pipe";
 
     const stdioParams: StdioServerParameters = {
       command: serverParams.command || "",
