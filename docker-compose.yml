@@ -1,7 +1,8 @@
 services:
   app:
     container_name: metamcp
-    build: .
+    image: ghcr.io/metatool-ai/metamcp:latest
+    pull_policy: always
     env_file:
       - .env
     ports:
