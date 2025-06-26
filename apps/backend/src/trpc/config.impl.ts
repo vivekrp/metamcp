@@ -1,4 +1,5 @@
 import { SetConfigRequest } from "@repo/zod-types";
+
 import { configService } from "../lib/config.service";
 
 export const configImplementations = {
@@ -20,11 +21,7 @@ export const configImplementations = {
   },
 
   setConfig: async (input: SetConfigRequest): Promise<{ success: boolean }> => {
-    await configService.setConfig(
-      input.key,
-      input.value,
-      input.description,
-    );
+    await configService.setConfig(input.key, input.value, input.description);
     return { success: true };
   },
 };
