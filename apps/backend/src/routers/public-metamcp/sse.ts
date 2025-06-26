@@ -23,7 +23,10 @@ const apiKeysRepository = new ApiKeysRepository();
 const webAppTransports: Map<string, Transport> = new Map<string, Transport>(); // Web app transports by sessionId
 const metamcpServers: Map<
   string,
-  { server: any; cleanup: () => Promise<void> }
+  {
+    server: Awaited<ReturnType<typeof createServer>>["server"];
+    cleanup: () => Promise<void>;
+  }
 > = new Map(); // MetaMCP servers by sessionId
 
 // Create a MetaMCP server instance

@@ -84,6 +84,8 @@ export function createFunctionalMiddleware<TRequest, TResponse>(options: {
 /**
  * Compose multiple middleware functions together
  */
+// TODO better typing for middleware design
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function compose<T extends (...args: any[]) => any>(
   ...middlewares: Array<(handler: T) => T>
 ): (handler: T) => T {
