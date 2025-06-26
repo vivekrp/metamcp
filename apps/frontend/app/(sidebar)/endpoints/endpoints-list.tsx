@@ -51,6 +51,8 @@ import {
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 
+import { getAppUrl } from "../../../lib/env";
+
 interface EndpointsListProps {
   onRefresh?: () => void;
 }
@@ -142,9 +144,9 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
           <div className="space-y-1 px-3 py-2">
             <div className="font-medium">{endpoint.name}</div>
             <div className="text-xs text-muted-foreground">
-              SSE: {process.env.NEXT_PUBLIC_APP_URL}/metamcp/{endpoint.name}/sse
+              SSE: {getAppUrl()}/metamcp/{endpoint.name}/sse
               <br />
-              Streamable HTTP: {process.env.NEXT_PUBLIC_APP_URL}/metamcp/
+              Streamable HTTP: {getAppUrl()}/metamcp/
               {endpoint.name}
               /mcp
             </div>
@@ -217,13 +219,13 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
         const endpoint = row.original;
 
         const copyFullSseUrl = () => {
-          const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/metamcp/${endpoint.name}/sse`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/sse`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("SSE URL copied to clipboard");
         };
 
         const copyFullShttpUrl = () => {
-          const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/metamcp/${endpoint.name}/mcp`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/mcp`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("SHTTP URL copied to clipboard");
         };
@@ -236,14 +238,14 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
 
         const copyFullSseUrlWithApiKey = () => {
           const apiKey = getApiKey();
-          const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/metamcp/${endpoint.name}/sse?api_key=${apiKey}`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/sse?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("SSE URL with API key parameter copied to clipboard");
         };
 
         const copyFullShttpUrlWithApiKey = () => {
           const apiKey = getApiKey();
-          const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/metamcp/${endpoint.name}/mcp?api_key=${apiKey}`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/mcp?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("SHTTP URL with API key parameter copied to clipboard");
         };
