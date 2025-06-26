@@ -133,8 +133,8 @@ export function useConnection({
       const mcpRequestOptions: RequestOptions = {
         signal: options?.signal ?? abortController.signal,
         resetTimeoutOnProgress: options?.resetTimeoutOnProgress ?? true,
-        timeout: options?.timeout ?? 10000,
-        maxTotalTimeout: options?.maxTotalTimeout ?? 10000,
+        timeout: options?.timeout ?? 60000,
+        maxTotalTimeout: options?.maxTotalTimeout ?? 60000,
       };
 
       // If progress notifications are enabled, add an onprogress hook to the MCP Client request options
