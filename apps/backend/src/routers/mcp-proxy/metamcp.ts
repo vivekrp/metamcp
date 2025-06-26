@@ -17,7 +17,10 @@ metamcpRouter.use(betterAuthMcpMiddleware);
 const webAppTransports: Map<string, Transport> = new Map<string, Transport>(); // Web app transports by sessionId
 const metamcpServers: Map<
   string,
-  { server: any; cleanup: () => Promise<void> }
+  {
+    server: Awaited<ReturnType<typeof createServer>>["server"];
+    cleanup: () => Promise<void>;
+  }
 > = new Map(); // MetaMCP servers by sessionId
 
 // Create a MetaMCP server instance
@@ -82,7 +85,10 @@ metamcpRouter.post("/:uuid/mcp", async (req, res) => {
   const namespaceUuid = req.params.uuid;
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   let mcpServerInstance:
-    | { server: any; cleanup: () => Promise<void> }
+    | {
+        server: Awaited<ReturnType<typeof createServer>>["server"];
+        cleanup: () => Promise<void>;
+      }
     | undefined;
 
   if (!sessionId) {
