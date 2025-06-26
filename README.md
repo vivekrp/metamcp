@@ -35,12 +35,10 @@
 
 
 ## 🎯 Use Cases
-- 🔄 **One-click server switching** - Save and switch MCP server configs for Claude Desktop, Cursor, or custom agents
-- 🔍 **Enhanced MCP inspector** - Debug with saved server configurations  
-- 🔗 **Unified server aggregation** - Join multiple servers for simplified agent development
-- ⚡ **Dynamic tool management** - Quick toggles to enable/disable servers and tools
-- 🛠️ **Middleware support** - Apply logging, error handling, and custom transformations
-- 🎯 **Dynamic search rules** - Apply search rules and return different toolsets for agent builders
+- 🏷️ **Group MCP servers into namespaces, host them as meta-MCPs, and assign public endpoints** (SSE or Streamable HTTP), with auth. One-click to switch a namespace for an endpoint.
+-  🎯 **Pick tools you only need when remixing MCP servers.** Apply other **pluggable middleware** around observability, security, etc. (coming soon)
+-  🔍 **Use as enhanced MCP inspector** with saved server configs, and inspect your MetaMCP endpoints in house to see if it works or not.
+-  🔍 **Use as Elasticsearch for MCP tool selection** (coming soon)
 
 Generally developers can use MetaMCP as **infrastructure** to host dynamically composed MCP servers through a unified endpoint, and build agents on top of it.
 
