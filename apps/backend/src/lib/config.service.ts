@@ -1,21 +1,18 @@
+import { ConfigKey, ConfigKeyEnum } from "@repo/zod-types";
+
 import { configRepo } from "../db/repositories/config.repo";
-
-// Configuration keys
-export const CONFIG_KEYS = {
-  DISABLE_SIGNUP: "disable_signup",
-} as const;
-
-export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];
 
 export const configService = {
   async isSignupDisabled(): Promise<boolean> {
-    const config = await configRepo.getConfig(CONFIG_KEYS.DISABLE_SIGNUP);
+    const config = await configRepo.getConfig(
+      ConfigKeyEnum.Enum.DISABLE_SIGNUP,
+    );
     return config?.value === "true";
   },
 
   async setSignupDisabled(disabled: boolean): Promise<void> {
     await configRepo.setConfig(
-      CONFIG_KEYS.DISABLE_SIGNUP,
+      ConfigKeyEnum.Enum.DISABLE_SIGNUP,
       disabled.toString(),
       "Whether new user signup is disabled",
     );

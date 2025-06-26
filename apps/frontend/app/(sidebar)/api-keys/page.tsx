@@ -93,7 +93,7 @@ export default function ApiKeysPage() {
   };
 
   const maskKey = (key: string) => {
-    return "•".repeat(32);
+    return "•".repeat(key.length);
   };
 
   return (

@@ -149,7 +149,10 @@ export const createServer = async (
   };
 
   // Original Call Tool Handler
-  const originalCallToolHandler: CallToolHandler = async (request, context) => {
+  const originalCallToolHandler: CallToolHandler = async (
+    request,
+    _context,
+  ) => {
     const { name, arguments: args } = request.params;
 
     // Extract the original tool name by removing the server prefix

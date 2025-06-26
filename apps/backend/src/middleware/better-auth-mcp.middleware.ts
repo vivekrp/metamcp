@@ -1,3 +1,5 @@
+// TODO resolve any issue with better-auth
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import express from "express";
 
 import { auth } from "../auth";

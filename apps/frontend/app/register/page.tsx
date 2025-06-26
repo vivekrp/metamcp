@@ -66,8 +66,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
       setIsLoading(false);
       return;
     }
@@ -81,40 +81,47 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        // Check if the error is related to disabled signup
-        if (
-          error.message?.includes("registration is currently disabled") ||
-          error.message?.includes("disabled") ||
-          error.status === 400 ||
-          error.status === 403
-        ) {
+        // Check if signup is actually disabled by checking the current status
+        const currentSignupStatus =
+          await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
+
+        if (currentSignupStatus) {
+          // Signup is actually disabled, show that message
           setError(
             "New user registration is currently disabled. Please contact an administrator.",
           );
-          // Refresh the signup status to update the UI
-          await checkSignupStatus();
+          setIsSignupDisabled(true);
         } else {
+          // Signup is enabled but registration failed for other reasons (validation, etc.)
+          // Show the actual error message from the backend
           setError(error.message || "Registration failed");
         }
       } else {
         router.push("/");
         router.refresh();
       }
-    } catch (err: any) {
+    } catch (err) {
       // Handle any other errors
-      if (
-        err?.message?.includes("registration is currently disabled") ||
-        err?.message?.includes("disabled")
-      ) {
-        setError(
-          "New user registration is currently disabled. Please contact an administrator.",
-        );
-        // Refresh the signup status to update the UI
-        await checkSignupStatus();
-      } else {
-        setError("An unexpected error occurred");
-      }
       console.error("Registration error:", err);
+
+      // Check if signup is actually disabled
+      try {
+        const currentSignupStatus =
+          await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
+
+        if (currentSignupStatus) {
+          setError(
+            "New user registration is currently disabled. Please contact an administrator.",
+          );
+          setIsSignupDisabled(true);
+        } else {
+          // Show the actual error message or a generic fallback
+          setError((err as Error)?.message || "An unexpected error occurred");
+        }
+      } catch (_statusCheckError) {
+        // If we can't check status, just show the original error
+        setError((err as Error)?.message || "An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +221,7 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (min. 6 characters)"
+                placeholder="Password (min. 8 characters)"
                 disabled={isLoading}
               />
             </div>

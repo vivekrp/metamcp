@@ -393,42 +393,42 @@ export default function McpServerDetailPage({
               <h3 className="text-lg font-semibold mb-4">Configuration</h3>
               <div className="space-y-4">
                 {server.command && (
-                  <div className="flex justify-between items-center">
+                  <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
                       Command:
                     </span>
-                    <p className="text-sm font-mono bg-gray-50 p-2 rounded flex-1 ml-6">
+                    <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.command}
                     </p>
                   </div>
                 )}
                 {server.args.length > 0 && (
-                  <div className="flex justify-between items-center">
+                  <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
                       Arguments:
                     </span>
-                    <p className="text-sm font-mono bg-gray-50 p-2 rounded flex-1 ml-6">
+                    <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.args.join(" ")}
                     </p>
                   </div>
                 )}
                 {server.url && (
-                  <div className="flex justify-between items-center">
+                  <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
                       URL:
                     </span>
-                    <p className="text-sm font-mono bg-gray-50 p-2 rounded flex-1 ml-6">
+                    <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.url}
                     </p>
                   </div>
                 )}
                 {server.bearerToken && (
-                  <div className="flex justify-between items-center">
+                  <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
                       Auth Bearer Token:
                     </span>
-                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded flex-1 ml-6">
-                      <span className="text-sm font-mono text-muted-foreground flex-1">
+                    <div className="flex items-start gap-2 bg-gray-50 p-2 rounded">
+                      <span className="text-sm font-mono text-muted-foreground flex-1 break-all">
                         {bearerTokenRevealed
                           ? server.bearerToken
                           : maskSensitiveValue(server.bearerToken)}
@@ -436,7 +436,7 @@ export default function McpServerDetailPage({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="h-6 w-6 p-0 flex-shrink-0"
                         onClick={() =>
                           setBearerTokenRevealed(!bearerTokenRevealed)
                         }
@@ -472,19 +472,16 @@ export default function McpServerDetailPage({
                     return (
                       <div
                         key={key}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                        className="p-3 bg-gray-50 rounded space-y-2"
                       >
-                        <span className="text-sm font-mono font-medium">
-                          {key}
-                        </span>
-                        <div className="flex items-center gap-3 flex-1 justify-end ml-6">
-                          <span className="text-sm font-mono text-muted-foreground">
-                            {displayValue}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-mono font-medium">
+                            {key}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 flex-shrink-0"
                             onClick={() => toggleEnvVarVisibility(key)}
                             title={isRevealed ? "Hide value" : "Show value"}
                           >
@@ -494,6 +491,9 @@ export default function McpServerDetailPage({
                               <Eye className="h-3 w-3" />
                             )}
                           </Button>
+                        </div>
+                        <div className="text-sm font-mono text-muted-foreground break-all">
+                          {displayValue}
                         </div>
                       </div>
                     );

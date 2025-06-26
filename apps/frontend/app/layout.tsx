@@ -2,6 +2,7 @@ import "./globals.css";
 
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { PublicEnvScript } from "next-runtime-env";
 import { Toaster } from "sonner";
 
 import { TRPCProvider } from "../components/providers/trpc-provider";
@@ -28,6 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <PublicEnvScript />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <TRPCProvider>
           {children}

@@ -4,9 +4,61 @@ import {
   McpServerUpdateInput,
 } from "@repo/zod-types";
 import { desc, eq } from "drizzle-orm";
+import { DatabaseError } from "pg";
 
 import { db } from "../index";
 import { mcpServersTable } from "../schema";
+
+// Helper function to handle PostgreSQL errors
+function handleDatabaseError(
+  error: unknown,
+  operation: string,
+  serverName?: string,
+): never {
+  console.error(`Database error in ${operation}:`, error);
+
+  // Extract the actual PostgreSQL error from Drizzle's error structure
+  let pgError: DatabaseError | undefined;
+
+  if (
+    error instanceof Error &&
+    "cause" in error &&
+    error.cause instanceof DatabaseError
+  ) {
+    // Drizzle wraps the PostgreSQL error in the cause property
+    pgError = error.cause;
+  } else if (error instanceof DatabaseError) {
+    // Direct PostgreSQL error
+    pgError = error;
+  }
+
+  if (pgError) {
+    // Handle unique constraint violation for server name
+    if (
+      pgError.code === "23505" &&
+      pgError.constraint === "mcp_servers_name_unique_idx"
+    ) {
+      throw new Error(
+        `Server name "${serverName}" already exists. Server names must be unique.`,
+      );
+    }
+
+    // Handle regex constraint violation for server name
+    if (
+      pgError.code === "23514" &&
+      pgError.constraint === "mcp_servers_name_regex_check"
+    ) {
+      throw new Error(
+        `Server name "${serverName}" is invalid. Server names must only contain letters, numbers, underscores, and hyphens.`,
+      );
+    }
+  }
+
+  // For any other database errors, throw a generic user-friendly message
+  throw new Error(
+    `Failed to ${operation} MCP server. Please check your input and try again.`,
+  );
+}
 
 export class McpServersRepository {
   async create(input: McpServerCreateInput): Promise<DatabaseMcpServer> {
@@ -17,40 +69,8 @@ export class McpServersRepository {
         .returning();
 
       return createdServer;
-    } catch (error: any) {
-      console.error("Database error in create:", error);
-
-      // Handle DrizzleQueryError structure - the actual PostgreSQL error might be in error.cause
-      const pgError = error.cause || error;
-
-      // Handle unique constraint violation for server name
-      if (
-        (pgError?.code === "23505" || error?.code === "23505") &&
-        (pgError?.constraint === "mcp_servers_name_unique_idx" ||
-          error?.constraint_name === "mcp_servers_name_unique_idx" ||
-          pgError?.constraint_name === "mcp_servers_name_unique_idx")
-      ) {
-        throw new Error(
-          `Server name "${input.name}" already exists. Server names must be unique.`,
-        );
-      }
-
-      // Handle regex constraint violation for server name
-      if (
-        (pgError?.code === "23514" || error?.code === "23514") &&
-        (pgError?.constraint === "mcp_servers_name_regex_check" ||
-          error?.constraint_name === "mcp_servers_name_regex_check" ||
-          pgError?.constraint_name === "mcp_servers_name_regex_check")
-      ) {
-        throw new Error(
-          `Server name "${input.name}" is invalid. Server names must only contain letters, numbers, underscores, and hyphens.`,
-        );
-      }
-
-      // For any other database errors, throw a generic user-friendly message
-      throw new Error(
-        "Failed to create MCP server. Please check your input and try again.",
-      );
+    } catch (error: unknown) {
+      handleDatabaseError(error, "create", input.name);
     }
   }
 
@@ -103,40 +123,8 @@ export class McpServersRepository {
         .returning();
 
       return updatedServer;
-    } catch (error: any) {
-      console.error("Database error in update:", error);
-
-      // Handle DrizzleQueryError structure - the actual PostgreSQL error might be in error.cause
-      const pgError = error.cause || error;
-
-      // Handle unique constraint violation for server name
-      if (
-        (pgError?.code === "23505" || error?.code === "23505") &&
-        (pgError?.constraint === "mcp_servers_name_unique_idx" ||
-          error?.constraint_name === "mcp_servers_name_unique_idx" ||
-          pgError?.constraint_name === "mcp_servers_name_unique_idx")
-      ) {
-        throw new Error(
-          `Server name "${input.name}" already exists. Server names must be unique.`,
-        );
-      }
-
-      // Handle regex constraint violation for server name
-      if (
-        (pgError?.code === "23514" || error?.code === "23514") &&
-        (pgError?.constraint === "mcp_servers_name_regex_check" ||
-          error?.constraint_name === "mcp_servers_name_regex_check" ||
-          pgError?.constraint_name === "mcp_servers_name_regex_check")
-      ) {
-        throw new Error(
-          `Server name "${input.name}" is invalid. Server names must only contain letters, numbers, underscores, and hyphens.`,
-        );
-      }
-
-      // For any other database errors, throw a generic user-friendly message
-      throw new Error(
-        "Failed to update MCP server. Please check your input and try again.",
-      );
+    } catch (error: unknown) {
+      handleDatabaseError(error, "update", input.name);
     }
   }
 
@@ -145,37 +133,44 @@ export class McpServersRepository {
   ): Promise<DatabaseMcpServer[]> {
     try {
       return await db.insert(mcpServersTable).values(servers).returning();
-    } catch (error: any) {
-      console.error("Database error in bulkCreate:", error);
+    } catch (error: unknown) {
+      // For bulk operations, we don't have a specific server name to report
+      // Extract the actual PostgreSQL error from Drizzle's error structure
+      let pgError: DatabaseError | undefined;
 
-      // Handle DrizzleQueryError structure - the actual PostgreSQL error might be in error.cause
-      const pgError = error.cause || error;
-
-      // Handle unique constraint violation for server name
       if (
-        (pgError?.code === "23505" || error?.code === "23505") &&
-        (pgError?.constraint === "mcp_servers_name_unique_idx" ||
-          error?.constraint_name === "mcp_servers_name_unique_idx" ||
-          pgError?.constraint_name === "mcp_servers_name_unique_idx")
+        error instanceof Error &&
+        "cause" in error &&
+        error.cause instanceof DatabaseError
       ) {
-        throw new Error(
-          "One or more server names already exist. Server names must be unique.",
-        );
+        pgError = error.cause;
+      } else if (error instanceof DatabaseError) {
+        pgError = error;
       }
 
-      // Handle regex constraint violation for server name
-      if (
-        (pgError?.code === "23514" || error?.code === "23514") &&
-        (pgError?.constraint === "mcp_servers_name_regex_check" ||
-          error?.constraint_name === "mcp_servers_name_regex_check" ||
-          pgError?.constraint_name === "mcp_servers_name_regex_check")
-      ) {
-        throw new Error(
-          "One or more server names are invalid. Server names must only contain letters, numbers, underscores, and hyphens.",
-        );
+      if (pgError) {
+        // Handle unique constraint violation for server name
+        if (
+          pgError.code === "23505" &&
+          pgError.constraint === "mcp_servers_name_unique_idx"
+        ) {
+          throw new Error(
+            "One or more server names already exist. Server names must be unique.",
+          );
+        }
+
+        // Handle regex constraint violation for server name
+        if (
+          pgError.code === "23514" &&
+          pgError.constraint === "mcp_servers_name_regex_check"
+        ) {
+          throw new Error(
+            "One or more server names are invalid. Server names must only contain letters, numbers, underscores, and hyphens.",
+          );
+        }
       }
 
-      // For any other database errors, throw a generic user-friendly message
+      console.error("Database error in bulk create:", error);
       throw new Error(
         "Failed to bulk create MCP servers. Please check your input and try again.",
       );

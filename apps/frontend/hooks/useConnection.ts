@@ -41,6 +41,7 @@ import { SESSION_KEYS } from "@/lib/constants";
 import { trpc } from "@/lib/trpc";
 
 import { ConnectionStatus } from "../lib/constants";
+import { getAppUrl } from "../lib/env";
 import {
   Notification,
   StdErrNotificationSchema,
@@ -236,17 +237,7 @@ export function useConnection({
 
   const checkProxyHealth = async () => {
     try {
-      console.log(
-        "process.env.NEXT_PUBLIC_APP_URL",
-        process.env.NEXT_PUBLIC_APP_URL,
-      );
-
-      const proxyHealthUrl = new URL(
-        `/mcp-proxy/server/health`,
-        process.env.NEXT_PUBLIC_APP_URL,
-      );
-
-      console.log("proxyHealthUrl", proxyHealthUrl);
+      const proxyHealthUrl = new URL(`/mcp-proxy/server/health`, getAppUrl());
 
       // Cookies will be sent automatically by the browser
       const proxyHealthResponse = await fetch(proxyHealthUrl, {
@@ -359,7 +350,7 @@ export function useConnection({
       // Handle MetaMCP connections
       if (isMetaMCP) {
         // For MetaMCP, we use SSE connection to the metamcp proxy endpoint
-        mcpProxyServerUrl = new URL(sseUrl, process.env.NEXT_PUBLIC_APP_URL);
+        mcpProxyServerUrl = new URL(sseUrl, getAppUrl());
         // Add includeInactiveServers as a query parameter
         if (includeInactiveServers) {
           mcpProxyServerUrl.searchParams.append(
@@ -387,10 +378,7 @@ export function useConnection({
       } else {
         switch (transportType) {
           case McpServerTypeEnum.Enum.STDIO:
-            mcpProxyServerUrl = new URL(
-              `/mcp-proxy/server/stdio`,
-              process.env.NEXT_PUBLIC_APP_URL,
-            );
+            mcpProxyServerUrl = new URL(`/mcp-proxy/server/stdio`, getAppUrl());
             mcpProxyServerUrl.searchParams.append("command", command);
             mcpProxyServerUrl.searchParams.append("args", args);
             mcpProxyServerUrl.searchParams.append("env", JSON.stringify(env));
@@ -419,10 +407,7 @@ export function useConnection({
             break;
 
           case McpServerTypeEnum.Enum.SSE:
-            mcpProxyServerUrl = new URL(
-              `/mcp-proxy/server/sse`,
-              process.env.NEXT_PUBLIC_APP_URL,
-            );
+            mcpProxyServerUrl = new URL(`/mcp-proxy/server/sse`, getAppUrl());
             mcpProxyServerUrl.searchParams.append("url", sseUrl);
             mcpProxyServerUrl.searchParams.append(
               "mcpServerName",
@@ -448,10 +433,7 @@ export function useConnection({
             break;
 
           case McpServerTypeEnum.Enum.STREAMABLE_HTTP:
-            mcpProxyServerUrl = new URL(
-              `/mcp-proxy/server/mcp`,
-              process.env.NEXT_PUBLIC_APP_URL,
-            );
+            mcpProxyServerUrl = new URL(`/mcp-proxy/server/mcp`, getAppUrl());
             mcpProxyServerUrl.searchParams.append("url", sseUrl);
             mcpProxyServerUrl.searchParams.append(
               "mcpServerName",

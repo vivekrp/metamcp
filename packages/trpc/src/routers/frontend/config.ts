@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { SetConfigRequestSchema, SetConfigRequest } from "@repo/zod-types";
 
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, publicProcedure, router } from "../../trpc";
 
 export const createConfigRouter = (implementations: {
   getSignupDisabled: () => Promise<boolean>;
@@ -10,14 +11,10 @@ export const createConfigRouter = (implementations: {
   getAllConfigs: () => Promise<
     Array<{ id: string; value: string; description?: string | null }>
   >;
-  setConfig: (input: {
-    key: string;
-    value: string;
-    description?: string;
-  }) => Promise<{ success: boolean }>;
+  setConfig: (input: SetConfigRequest) => Promise<{ success: boolean }>;
 }) =>
   router({
-    getSignupDisabled: protectedProcedure.query(async () => {
+    getSignupDisabled: publicProcedure.query(async () => {
       return await implementations.getSignupDisabled();
     }),
 
@@ -32,13 +29,7 @@ export const createConfigRouter = (implementations: {
     }),
 
     setConfig: protectedProcedure
-      .input(
-        z.object({
-          key: z.string(),
-          value: z.string(),
-          description: z.string().optional(),
-        }),
-      )
+      .input(SetConfigRequestSchema)
       .mutation(async ({ input }) => {
         return await implementations.setConfig(input);
       }),
