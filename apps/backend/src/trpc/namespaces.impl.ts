@@ -262,7 +262,7 @@ export const namespacesImplementations = {
         serverName: string;
         toolName: string;
         description: string;
-        inputSchema: Record<string, any>;
+        inputSchema: Record<string, unknown>;
       }> = [];
 
       for (const tool of input.tools) {
@@ -309,7 +309,7 @@ export const namespacesImplementations = {
           tools: Array<{
             toolName: string;
             description: string;
-            inputSchema: Record<string, any>;
+            inputSchema: Record<string, unknown>;
           }>;
         }
       > = {};
