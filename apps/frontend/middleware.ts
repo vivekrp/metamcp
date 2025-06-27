@@ -23,11 +23,24 @@ export default async function middleware(request: NextRequest) {
   }
 
   try {
+    // Get the original host for nginx compatibility
+    const originalHost =
+      request.headers.get("x-forwarded-host") ||
+      request.headers.get("host") ||
+      "";
+
     // Check if user is authenticated by calling the session endpoint
     const { data: session } = await betterFetch("/api/auth/get-session", {
-      baseURL: request.nextUrl.origin,
+      // this hardcoded is correct, because in same container, we should use localhost, outside url won't work
+      baseURL: "http://localhost:12009",
       headers: {
         cookie: request.headers.get("cookie") || "",
+        // Pass nginx-forwarded host headers for better-auth baseURL resolution
+        host: originalHost,
+        // Include nginx forwarding headers if present
+        "x-forwarded-host": request.headers.get("x-forwarded-host") || "",
+        "x-forwarded-proto": request.headers.get("x-forwarded-proto") || "",
+        "x-forwarded-for": request.headers.get("x-forwarded-for") || "",
       },
     });
 

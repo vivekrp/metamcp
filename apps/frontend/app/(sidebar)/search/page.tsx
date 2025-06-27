@@ -38,7 +38,6 @@ function SearchContent() {
   });
 
   if (error) console.error("Search error:", error);
-  console.log("Search data:", data);
 
   useEffect(() => {
     const timer = setTimeout(() => {
