@@ -44,8 +44,6 @@ export default function MCPServersPage() {
   // tRPC mutation for creating MCP server
   const createServerMutation = trpc.frontend.mcpServers.create.useMutation({
     onSuccess: (data) => {
-      console.log("MCP server response:", data);
-
       // Check if the operation was actually successful
       if (data.success) {
         toast.success("MCP Server Created", {
