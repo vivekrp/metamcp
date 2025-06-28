@@ -12,6 +12,10 @@ export const createServerFormSchema = z
       .regex(
         /^[a-zA-Z0-9_-]+$/,
         "Server name must only contain letters, numbers, underscores, and hyphens",
+      )
+      .refine(
+        (value) => !/_{2,}/.test(value),
+        "Server name cannot contain consecutive underscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -72,6 +76,10 @@ export const EditServerFormSchema = z
       .regex(
         /^[a-zA-Z0-9_-]+$/,
         "Server name must only contain letters, numbers, underscores, and hyphens",
+      )
+      .refine(
+        (value) => !/_{2,}/.test(value),
+        "Server name cannot contain consecutive underscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -131,6 +139,10 @@ export const CreateMcpServerRequestSchema = z
       .regex(
         /^[a-zA-Z0-9_-]+$/,
         "Server name must only contain letters, numbers, underscores, and hyphens",
+      )
+      .refine(
+        (value) => !/_{2,}/.test(value),
+        "Server name cannot contain consecutive underscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -285,6 +297,10 @@ export const UpdateMcpServerRequestSchema = z
       .regex(
         /^[a-zA-Z0-9_-]+$/,
         "Server name must only contain letters, numbers, underscores, and hyphens",
+      )
+      .refine(
+        (value) => !/_{2,}/.test(value),
+        "Server name cannot contain consecutive underscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -349,6 +365,10 @@ export const McpServerCreateInputSchema = z.object({
     .regex(
       /^[a-zA-Z0-9_-]+$/,
       "Server name must only contain letters, numbers, underscores, and hyphens",
+    )
+    .refine(
+      (value) => !/_{2,}/.test(value),
+      "Server name cannot contain consecutive underscores",
     ),
   description: z.string().nullable().optional(),
   type: McpServerTypeEnum,
@@ -366,6 +386,10 @@ export const McpServerUpdateInputSchema = z.object({
     .regex(
       /^[a-zA-Z0-9_-]+$/,
       "Server name must only contain letters, numbers, underscores, and hyphens",
+    )
+    .refine(
+      (value) => !/_{2,}/.test(value),
+      "Server name cannot contain consecutive underscores",
     )
     .optional(),
   description: z.string().nullable().optional(),
