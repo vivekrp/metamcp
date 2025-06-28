@@ -4,7 +4,7 @@ import { CreateServerFormData, createServerFormSchema } from "@repo/zod-types";
 import { Github, Plus } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -69,16 +69,7 @@ function CreateServerDialog({
           description: `Successfully created "${form.getValues().name}" server`,
         });
         onOpenChange(false);
-        form.reset({
-          name: "",
-          description: "",
-          type: McpServerTypeEnum.Enum.STDIO,
-          command: "",
-          args: "",
-          url: "",
-          bearerToken: "",
-          env: "",
-        });
+        form.reset(defaultValues);
         // Invalidate and refetch the server list
         utils.frontend.mcpServers.list.invalidate();
       } else {
@@ -164,6 +155,16 @@ function CreateServerDialog({
     resolver: zodResolver(createServerFormSchema),
     defaultValues,
   });
+
+  // Reset form when dialog opens with new defaultValues
+  useEffect(() => {
+    if (open) {
+      form.reset(defaultValues);
+    } else {
+      // Reset form when dialog closes to ensure clean state
+      form.reset(defaultValues);
+    }
+  }, [open, defaultValues, form]);
 
   const onSubmit = async (data: CreateServerFormData) => {
     setIsSubmitting(true);
@@ -389,6 +390,7 @@ function CreateServerDialog({
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  form.reset(defaultValues);
                   onOpenChange(false);
                 }}
                 disabled={isSubmitting}
@@ -414,7 +416,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
 
   const handleAddServer = (item: SearchIndex[string]) => {
     // Prepare default values for the form
-    const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const sanitizedName = item.name.replace(/[^a-zA-Z0-9_-]/g, "-");
     const envString =
       item.envs && item.envs.length > 0
         ? item.envs.map((env) => `${env}=`).join("\n")
