@@ -4,7 +4,7 @@ import { CreateServerFormData, createServerFormSchema } from "@repo/zod-types";
 import { Github, Plus } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
