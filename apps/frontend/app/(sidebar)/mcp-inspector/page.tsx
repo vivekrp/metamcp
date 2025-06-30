@@ -16,13 +16,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useConnection } from "@/hooks/useConnection";
+import { Notification } from "@/lib/notificationTypes";
 import { trpc } from "@/lib/trpc";
 
 import { Inspector } from "./components/inspector";
+import { NotificationsPanel } from "./components/notifications-panel";
+
+interface NotificationEntry {
+  id: string;
+  notification: Notification;
+  timestamp: Date;
+  type: "notification" | "stderr";
+}
 
 function McpInspectorContent() {
   const [selectedServerUuid, setSelectedServerUuid] = useState<string>("");
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -54,6 +64,30 @@ function McpInspectorContent() {
     (server) => server.uuid === selectedServerUuid,
   );
 
+  // Notification management functions
+  const addNotification = (
+    notification: Notification,
+    type: "notification" | "stderr",
+  ) => {
+    const entry: NotificationEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      notification,
+      timestamp: new Date(),
+      type,
+    };
+    setNotifications((prev) => [entry, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const removeNotification = (id: string) => {
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id),
+    );
+  };
+
   // MCP Connection setup - only create connection if server exists
   const connection = useConnection({
     mcpServerUuid: selectedServerUuid,
@@ -63,10 +97,10 @@ function McpInspectorContent() {
     env: selectedServer?.env || {},
     bearerToken: selectedServer?.bearerToken || undefined,
     onNotification: (notification) => {
-      console.log("MCP Inspector Notification:", notification);
+      addNotification(notification, "notification");
     },
     onStdErrNotification: (notification) => {
-      console.error("MCP Inspector StdErr:", notification);
+      addNotification(notification, "stderr");
     },
   });
 
@@ -94,6 +128,11 @@ function McpInspectorContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServerUuid, selectedServer]); // Only depend on selectedServerUuid to detect server changes
+
+  // Clear notifications when switching servers
+  React.useEffect(() => {
+    clearNotifications();
+  }, [selectedServerUuid]);
 
   const handleConnectionToggle = () => {
     if (connection.connectionStatus === "connected") {
@@ -267,6 +306,13 @@ function McpInspectorContent() {
           </div>
         )}
       </div>
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        notifications={notifications}
+        onClearNotifications={clearNotifications}
+        onRemoveNotification={removeNotification}
+      />
     </div>
   );
 }
