@@ -1,18 +1,21 @@
 "use client";
 
 import {
+  Activity,
   AlertTriangle,
   Bell,
   ChevronDown,
   ChevronUp,
+  Info,
   Trash2,
   X,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Notification } from "@/lib/notificationTypes";
 
 interface NotificationEntry {
@@ -28,12 +31,61 @@ interface NotificationsPanelProps {
   onRemoveNotification: (id: string) => void;
 }
 
+type NotificationFilterType = "all" | "info" | "progress" | "stderr";
+
+interface NotificationCounts {
+  all: number;
+  info: number;
+  progress: number;
+  stderr: number;
+}
+
 export function NotificationsPanel({
   notifications,
   onClearNotifications,
   onRemoveNotification,
 }: NotificationsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [activeFilter, setActiveFilter] =
+    useState<NotificationFilterType>("all");
+
+  const { filteredNotifications, counts } = useMemo(() => {
+    const counts: NotificationCounts = {
+      all: notifications.length,
+      info: 0,
+      progress: 0,
+      stderr: 0,
+    };
+
+    // Count notifications by type
+    notifications.forEach((notification) => {
+      if (notification.type === "stderr") {
+        counts.stderr++;
+      } else if (notification.notification.method?.includes("progress")) {
+        counts.progress++;
+      } else {
+        counts.info++;
+      }
+    });
+
+    // Filter notifications based on active filter
+    const filtered = notifications.filter((notification) => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "stderr") return notification.type === "stderr";
+      if (activeFilter === "progress") {
+        return notification.notification.method?.includes("progress");
+      }
+      if (activeFilter === "info") {
+        return (
+          notification.type !== "stderr" &&
+          !notification.notification.method?.includes("progress")
+        );
+      }
+      return true;
+    });
+
+    return { filteredNotifications: filtered, counts };
+  }, [notifications, activeFilter]);
 
   const formatTimestamp = (timestamp: Date) => {
     return timestamp.toLocaleTimeString();
@@ -111,7 +163,7 @@ export function NotificationsPanel({
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-none">
       <CardHeader className="py-1 pb-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -148,47 +200,124 @@ export function NotificationsPanel({
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="space-y-0.5 max-h-64 overflow-y-auto pt-0 px-2 pb-2">
-          {notifications.map((notification) => {
-            const typeInfo = getNotificationTypeInfo(notification);
-            const Icon = typeInfo.icon;
-
-            return (
-              <div key={notification.id}>
-                <div
-                  className={`p-1.5 rounded border ${typeInfo.bgColor} ${typeInfo.borderColor}`}
+        <CardContent className="pt-0 px-2 pb-2">
+          <Tabs
+            value={activeFilter}
+            onValueChange={(value) =>
+              setActiveFilter(value as NotificationFilterType)
+            }
+          >
+            <div className="flex justify-start">
+              <TabsList className="h-8 p-0.5 inline-flex w-auto">
+                <TabsTrigger
+                  value="all"
+                  className="text-xs h-6 px-3 flex items-center gap-1"
                 >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <Icon
-                        className={`h-3 w-3 flex-shrink-0 ${typeInfo.color}`}
-                      />
-                      <Badge
-                        variant={typeInfo.badgeVariant}
-                        className="text-xs py-0 h-3.5 px-1"
-                      >
-                        {typeInfo.badge}
-                      </Badge>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {formatTimestamp(notification.timestamp)}
-                      </span>
-                    </div>
+                  <Bell className="h-3 w-3" />
+                  All
+                  <Badge variant="outline" className="text-xs h-3.5 px-1 ml-1">
+                    {counts.all}
+                  </Badge>
+                </TabsTrigger>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 flex-shrink-0"
-                      onClick={() => onRemoveNotification(notification.id)}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </Button>
+                <TabsTrigger
+                  value="info"
+                  className="text-xs h-6 px-3 flex items-center gap-1"
+                >
+                  <Info className="h-3 w-3" />
+                  Info
+                  <Badge
+                    variant={counts.info > 0 ? "default" : "outline"}
+                    className="text-xs h-3.5 px-1 ml-1"
+                  >
+                    {counts.info}
+                  </Badge>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="progress"
+                  className="text-xs h-6 px-3 flex items-center gap-1"
+                >
+                  <Activity className="h-3 w-3" />
+                  Progress
+                  <Badge
+                    variant={counts.progress > 0 ? "secondary" : "outline"}
+                    className="text-xs h-3.5 px-1 ml-1"
+                  >
+                    {counts.progress}
+                  </Badge>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="stderr"
+                  className="text-xs h-6 px-3 flex items-center gap-1"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Stderr
+                  <Badge
+                    variant={counts.stderr > 0 ? "destructive" : "outline"}
+                    className="text-xs h-3.5 px-1 ml-1"
+                  >
+                    {counts.stderr}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value={activeFilter} className="mt-2">
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {filteredNotifications.length === 0 ? (
+                  <div className="text-center text-xs text-gray-500 py-4">
+                    No {activeFilter === "all" ? "" : activeFilter}{" "}
+                    notifications
                   </div>
+                ) : (
+                  filteredNotifications.map((notification) => {
+                    const typeInfo = getNotificationTypeInfo(notification);
+                    const Icon = typeInfo.icon;
 
-                  <div>{renderNotificationContent(notification)}</div>
-                </div>
+                    return (
+                      <div key={notification.id}>
+                        <div
+                          className={`p-1.5 rounded border ${typeInfo.bgColor} ${typeInfo.borderColor}`}
+                        >
+                          <div className="flex items-start justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <Icon
+                                className={`h-3 w-3 flex-shrink-0 ${typeInfo.color}`}
+                              />
+                              <Badge
+                                variant={typeInfo.badgeVariant}
+                                className="text-xs py-0 h-3.5 px-1"
+                              >
+                                {typeInfo.badge}
+                              </Badge>
+                              <span className="text-xs text-gray-500 flex-shrink-0">
+                                {formatTimestamp(notification.timestamp)}
+                              </span>
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 flex-shrink-0"
+                              onClick={() =>
+                                onRemoveNotification(notification.id)
+                              }
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+
+                          <div>{renderNotificationContent(notification)}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-            );
-          })}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       )}
     </Card>
