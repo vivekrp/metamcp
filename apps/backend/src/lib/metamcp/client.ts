@@ -8,6 +8,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 import { IOType, ServerParameters } from "./fetch-metamcp";
+import { metamcpLogStore } from "./log-store";
 
 const sleep = (time: number) =>
   new Promise<void>((resolve) => setTimeout(() => resolve(), time));
@@ -25,10 +26,18 @@ export const transformDockerUrl = (url: string): string => {
       /localhost|127\.0\.0\.1/g,
       "host.docker.internal",
     );
-    console.log(`Docker URL transformation: ${url} -> ${transformed}`);
+    metamcpLogStore.addLog(
+      "docker",
+      "info",
+      `URL transformation: ${url} -> ${transformed}`,
+    );
     return transformed;
   }
-  console.log(`Docker URL transformation disabled: ${url}`);
+  metamcpLogStore.addLog(
+    "docker",
+    "info",
+    `URL transformation disabled: ${url}`,
+  );
   return url;
 };
 
@@ -57,19 +66,30 @@ export const createMetaMcpClient = (
       const stderrStream = (transport as StdioClientTransport).stderr;
 
       stderrStream?.on("data", (chunk: Buffer) => {
-        console.error(
-          `[MetaMCP][${serverParams.name}] ${chunk.toString().trim()}`,
+        metamcpLogStore.addLog(
+          serverParams.name,
+          "error",
+          chunk.toString().trim(),
         );
       });
 
       stderrStream?.on("error", (error: Error) => {
-        console.error(`[MetaMCP][${serverParams.name}] stderr error:`, error);
+        metamcpLogStore.addLog(
+          serverParams.name,
+          "error",
+          "stderr error",
+          error,
+        );
       });
     }
   } else if (serverParams.type === "SSE" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    console.log(`Creating SSE transport for: ${transformedUrl}`);
+    metamcpLogStore.addLog(
+      serverParams.name,
+      "info",
+      `Creating SSE transport for: ${transformedUrl}`,
+    );
 
     if (!serverParams.oauth_tokens) {
       transport = new SSEClientTransport(new URL(transformedUrl));
@@ -89,7 +109,11 @@ export const createMetaMcpClient = (
   } else if (serverParams.type === "STREAMABLE_HTTP" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    console.log(`Creating StreamableHTTP transport for: ${transformedUrl}`);
+    metamcpLogStore.addLog(
+      serverParams.name,
+      "info",
+      `Creating StreamableHTTP transport for: ${transformedUrl}`,
+    );
 
     if (!serverParams.oauth_tokens) {
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl));
@@ -104,7 +128,11 @@ export const createMetaMcpClient = (
       });
     }
   } else {
-    console.error(`Unsupported server type: ${serverParams.type}`);
+    metamcpLogStore.addLog(
+      serverParams.name,
+      "error",
+      `Unsupported server type: ${serverParams.type}`,
+    );
     return { client: undefined, transport: undefined };
   }
 
@@ -137,6 +165,12 @@ export const connectMetaMcpClient = async (
     try {
       await client.connect(transport);
 
+      metamcpLogStore.addLog(
+        "client",
+        "info",
+        "Successfully connected to MetaMCP client",
+      );
+
       return {
         client,
         cleanup: async () => {
@@ -145,7 +179,12 @@ export const connectMetaMcpClient = async (
         },
       };
     } catch (error) {
-      console.error(`Error connecting to MetaMCP client: ${error}`);
+      metamcpLogStore.addLog(
+        "client",
+        "error",
+        `Error connecting to MetaMCP client (attempt ${count + 1}/${retries})`,
+        error,
+      );
       count++;
       retry = count < retries;
       if (retry) {

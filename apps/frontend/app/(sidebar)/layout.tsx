@@ -8,6 +8,7 @@ import {
   SearchCode,
   Server,
   Settings,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -61,6 +62,11 @@ const items = [
     title: "API Keys",
     url: "/api-keys",
     icon: Key,
+  },
+  {
+    title: "Error logs",
+    url: "/error-logs",
+    icon: AlertCircle,
   },
   {
     title: "Settings",

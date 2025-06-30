@@ -1,5 +1,6 @@
 import { createApiKeysRouter } from "./api-keys";
 import { createConfigRouter } from "./config";
+import { createLogsRouter } from "./logs";
 import { createEndpointsRouter } from "./endpoints";
 import { createMcpServersRouter } from "./mcp-servers";
 import { createNamespacesRouter } from "./namespaces";
@@ -22,6 +23,7 @@ export const createFrontendRouter = (implementations: {
   tools: Parameters<typeof createToolsRouter>[0];
   apiKeys: Parameters<typeof createApiKeysRouter>[0];
   config: Parameters<typeof createConfigRouter>[0];
+  logs: Parameters<typeof createLogsRouter>[0];
 }) => {
   return {
     mcpServers: createMcpServersRouter(implementations.mcpServers),
@@ -31,5 +33,6 @@ export const createFrontendRouter = (implementations: {
     tools: createToolsRouter(implementations.tools),
     apiKeys: createApiKeysRouter(implementations.apiKeys),
     config: createConfigRouter(implementations.config),
+    logs: createLogsRouter(implementations.logs),
   };
 };
