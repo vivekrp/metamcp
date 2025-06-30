@@ -48,22 +48,22 @@ export const createMetaMcpClient = (
       command: serverParams.command || "",
       args: serverParams.args || undefined,
       env: serverParams.env || undefined,
-      stderr: "ignore",
+      stderr: "pipe",
     };
     transport = new StdioClientTransport(stdioParams);
 
     // Handle stderr stream when set to "pipe"
-    // if ((transport as StdioClientTransport).stderr) {
-    //   const stderrStream = (transport as StdioClientTransport).stderr;
+    if ((transport as StdioClientTransport).stderr) {
+      const stderrStream = (transport as StdioClientTransport).stderr;
 
-    //   stderrStream?.on("data", (chunk: Buffer) => {
-    //     console.error(`[${serverParams.name}] ${chunk.toString().trim()}`);
-    //   });
+      stderrStream?.on("data", (chunk: Buffer) => {
+        console.error(`[${serverParams.name}] ${chunk.toString().trim()}`);
+      });
 
-    //   stderrStream?.on("error", (error: Error) => {
-    //     console.error(`[${serverParams.name}] stderr error:`, error);
-    //   });
-    // }
+      stderrStream?.on("error", (error: Error) => {
+        console.error(`[${serverParams.name}] stderr error:`, error);
+      });
+    }
   } else if (serverParams.type === "SSE" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
