@@ -5,8 +5,7 @@ import express from "express";
 
 import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
-import { createServer } from "../../lib/metamcp/index";
-import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
+import { metaMcpServerPool } from "../../lib/metamcp/metamcp-server-pool";
 
 // Extend Express Request interface for our custom properties
 interface AuthenticatedRequest extends express.Request {
@@ -21,22 +20,6 @@ const sseRouter = express.Router();
 const apiKeysRepository = new ApiKeysRepository();
 
 const webAppTransports: Map<string, Transport> = new Map<string, Transport>(); // Web app transports by sessionId
-const metamcpServers: Map<
-  string,
-  {
-    server: Awaited<ReturnType<typeof createServer>>["server"];
-    cleanup: () => Promise<void>;
-  }
-> = new Map(); // MetaMCP servers by sessionId
-
-// Create a MetaMCP server instance
-const createMetaMcpServer = async (
-  namespaceUuid: string,
-  sessionId: string,
-) => {
-  const { server, cleanup } = await createServer(namespaceUuid, sessionId);
-  return { server, cleanup };
-};
 
 // Cleanup function for a specific session
 const cleanupSession = async (sessionId: string) => {
@@ -49,15 +32,8 @@ const cleanupSession = async (sessionId: string) => {
     await transport.close();
   }
 
-  // Clean up server instance
-  const serverInstance = metamcpServers.get(sessionId);
-  if (serverInstance) {
-    metamcpServers.delete(sessionId);
-    await serverInstance.cleanup();
-  }
-
-  // Clean up session connections
-  await mcpServerPool.cleanupSession(sessionId);
+  // Clean up MetaMCP server pool session
+  await metaMcpServerPool.cleanupSession(sessionId);
 };
 
 // Middleware to lookup endpoint by name and add namespace info to request
@@ -182,17 +158,20 @@ sseRouter.get(
 
       const sessionId = webAppTransport.sessionId;
 
-      // Create MetaMCP server instance with sessionId
-      const mcpServerInstance = await createMetaMcpServer(
-        namespaceUuid,
+      // Get or create MetaMCP server instance from the pool
+      const mcpServerInstance = await metaMcpServerPool.getServer(
         sessionId,
+        namespaceUuid,
       );
+      if (!mcpServerInstance) {
+        throw new Error("Failed to get MetaMCP server instance from pool");
+      }
+
       console.log(
-        `Created MetaMCP server instance for public endpoint session ${sessionId}`,
+        `Using MetaMCP server instance for public endpoint session ${sessionId}`,
       );
 
       webAppTransports.set(sessionId, webAppTransport);
-      metamcpServers.set(sessionId, mcpServerInstance);
 
       // Handle cleanup when connection closes
       res.on("close", async () => {

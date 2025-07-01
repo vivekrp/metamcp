@@ -11,8 +11,8 @@ import express from "express";
 import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
 import { getMcpServers } from "../../lib/metamcp/fetch-metamcp";
-import { createServer } from "../../lib/metamcp/index";
 import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
+import { metaMcpServerPool } from "../../lib/metamcp/metamcp-server-pool";
 import { sanitizeName } from "../../lib/metamcp/utils";
 
 // Extend Express Request interface for our custom properties
@@ -26,41 +26,6 @@ interface AuthenticatedRequest extends express.Request {
 
 const openApiRouter = express.Router();
 const apiKeysRepository = new ApiKeysRepository();
-
-// Cache for MetaMCP servers by endpoint name
-const metamcpServers: Record<
-  string,
-  {
-    server: Awaited<ReturnType<typeof createServer>>["server"];
-    cleanup: () => Promise<void>;
-  }
-> = {};
-
-// Create a MetaMCP server instance
-const createMetaMcpServer = async (
-  namespaceUuid: string,
-  sessionId: string,
-  endpointName: string,
-) => {
-  // Check if we already have a server for this endpoint
-  if (metamcpServers[endpointName]) {
-    console.log(
-      `Reusing existing MetaMCP server for endpoint: ${endpointName}`,
-    );
-    return metamcpServers[endpointName];
-  }
-
-  const { server, cleanup } = await createServer(namespaceUuid, sessionId);
-  const serverInstance = { server, cleanup };
-
-  // Cache by endpoint name
-  metamcpServers[endpointName] = serverInstance;
-  console.log(
-    `Created and cached new MetaMCP server for OpenAPI endpoint: ${endpointName}`,
-  );
-
-  return serverInstance;
-};
 
 // Middleware to lookup endpoint by name and add namespace info to request
 const lookupEndpoint = async (
@@ -323,62 +288,72 @@ openApiRouter.get(
       // Create a temporary session to get tools
       const sessionId = randomUUID();
 
-      // Initialize session connections
-      const mcpServerInstance = await createMetaMcpServer(
-        namespaceUuid,
-        sessionId,
-        endpointName,
-      );
+      try {
+        // Initialize session connections
+        const mcpServerInstance = await metaMcpServerPool.getServer(
+          sessionId,
+          namespaceUuid,
+        );
+        if (!mcpServerInstance) {
+          throw new Error("Failed to get MetaMCP server instance from pool");
+        }
 
-      // Get server parameters and collect tools from each server
-      const serverParams = await getMcpServers(namespaceUuid);
-      const allTools: Tool[] = [];
+        // Get server parameters and collect tools from each server
+        const serverParams = await getMcpServers(namespaceUuid);
+        const allTools: Tool[] = [];
 
-      await Promise.allSettled(
-        Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
-          const session = await mcpServerPool.getSession(
-            sessionId,
-            mcpServerUuid,
-            params,
-          );
-          if (!session) return;
-
-          const capabilities = session.client.getServerCapabilities();
-          if (!capabilities?.tools) return;
-
-          // Use name assigned by user, fallback to name from server
-          const serverName =
-            params.name || session.client.getServerVersion()?.name || "";
-
-          try {
-            const result = await session.client.request(
-              {
-                method: "tools/list",
-                params: {},
-              },
-              ListToolsResultSchema,
+        await Promise.allSettled(
+          Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
+            const session = await mcpServerPool.getSession(
+              sessionId,
+              mcpServerUuid,
+              params,
             );
+            if (!session) return;
 
-            const toolsWithSource =
-              result.tools?.map((tool) => {
-                const toolName = `${sanitizeName(serverName)}__${tool.name}`;
-                return {
-                  ...tool,
-                  name: toolName,
-                  description: tool.description,
-                };
-              }) || [];
+            const capabilities = session.client.getServerCapabilities();
+            if (!capabilities?.tools) return;
 
-            allTools.push(...toolsWithSource);
-          } catch (error) {
-            console.error(`Error fetching tools from: ${serverName}`, error);
-          }
-        }),
-      );
+            // Use name assigned by user, fallback to name from server
+            const serverName =
+              params.name || session.client.getServerVersion()?.name || "";
 
-      const openApiSchema = await generateOpenApiSchema(allTools, endpointName);
+            try {
+              const result = await session.client.request(
+                {
+                  method: "tools/list",
+                  params: {},
+                },
+                ListToolsResultSchema,
+              );
 
-      res.json(openApiSchema);
+              const toolsWithSource =
+                result.tools?.map((tool) => {
+                  const toolName = `${sanitizeName(serverName)}__${tool.name}`;
+                  return {
+                    ...tool,
+                    name: toolName,
+                    description: tool.description,
+                  };
+                }) || [];
+
+              allTools.push(...toolsWithSource);
+            } catch (error) {
+              console.error(`Error fetching tools from: ${serverName}`, error);
+            }
+          }),
+        );
+
+        const openApiSchema = await generateOpenApiSchema(
+          allTools,
+          endpointName,
+        );
+
+        res.json(openApiSchema);
+      } finally {
+        // Cleanup the temporary session
+        await metaMcpServerPool.cleanupSession(sessionId);
+      }
     } catch (error) {
       console.error("Error generating OpenAPI schema:", error);
       res.status(500).json({
@@ -425,72 +400,79 @@ openApiRouter.post(
       // Create a temporary session for this tool call
       const sessionId = randomUUID();
 
-      // Initialize session connections
-      const mcpServerInstance = await createMetaMcpServer(
-        namespaceUuid,
-        sessionId,
-        endpointName,
-      );
-
-      // Extract the original tool name by removing the server prefix
-      const firstDoubleUnderscoreIndex = toolName.indexOf("__");
-      if (firstDoubleUnderscoreIndex === -1) {
-        return res.status(404).json({
-          error: "Tool not found",
-          message: `Tool '${toolName}' not found - invalid name format`,
-        });
-      }
-
-      const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
-      const originalToolName = toolName.substring(
-        firstDoubleUnderscoreIndex + 2,
-      );
-
-      // Get server parameters and find the right session for this tool
-      const serverParams = await getMcpServers(namespaceUuid);
-      let targetSession = null;
-
-      for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
-        const session = await mcpServerPool.getSession(
+      try {
+        // Initialize session connections
+        const mcpServerInstance = await metaMcpServerPool.getServer(
           sessionId,
-          mcpServerUuid,
-          params,
+          namespaceUuid,
         );
-        if (!session) continue;
-
-        const capabilities = session.client.getServerCapabilities();
-        if (!capabilities?.tools) continue;
-
-        // Use name assigned by user, fallback to name from server
-        const serverName =
-          params.name || session.client.getServerVersion()?.name || "";
-
-        if (sanitizeName(serverName) === serverPrefix) {
-          targetSession = session;
-          break;
+        if (!mcpServerInstance) {
+          throw new Error("Failed to get MetaMCP server instance from pool");
         }
-      }
 
-      if (!targetSession) {
-        return res.status(404).json({
-          error: "Tool not found",
-          message: `Tool '${toolName}' not found`,
-        });
-      }
+        // Extract the original tool name by removing the server prefix
+        const firstDoubleUnderscoreIndex = toolName.indexOf("__");
+        if (firstDoubleUnderscoreIndex === -1) {
+          return res.status(404).json({
+            error: "Tool not found",
+            message: `Tool '${toolName}' not found - invalid name format`,
+          });
+        }
 
-      // Execute the tool through the individual MCP client
-      const result = await targetSession.client.request(
-        {
-          method: "tools/call",
-          params: {
-            name: originalToolName,
-            arguments: toolArguments,
+        const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
+        const originalToolName = toolName.substring(
+          firstDoubleUnderscoreIndex + 2,
+        );
+
+        // Get server parameters and find the right session for this tool
+        const serverParams = await getMcpServers(namespaceUuid);
+        let targetSession = null;
+
+        for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
+          const session = await mcpServerPool.getSession(
+            sessionId,
+            mcpServerUuid,
+            params,
+          );
+          if (!session) continue;
+
+          const capabilities = session.client.getServerCapabilities();
+          if (!capabilities?.tools) continue;
+
+          // Use name assigned by user, fallback to name from server
+          const serverName =
+            params.name || session.client.getServerVersion()?.name || "";
+
+          if (sanitizeName(serverName) === serverPrefix) {
+            targetSession = session;
+            break;
+          }
+        }
+
+        if (!targetSession) {
+          return res.status(404).json({
+            error: "Tool not found",
+            message: `Tool '${toolName}' not found`,
+          });
+        }
+
+        // Execute the tool through the individual MCP client
+        const result = await targetSession.client.request(
+          {
+            method: "tools/call",
+            params: {
+              name: originalToolName,
+              arguments: toolArguments,
+            },
           },
-        },
-        CompatibilityCallToolResultSchema,
-      );
+          CompatibilityCallToolResultSchema,
+        );
 
-      res.json(result);
+        res.json(result);
+      } finally {
+        // Cleanup the temporary session
+        await metaMcpServerPool.cleanupSession(sessionId);
+      }
     } catch (error) {
       console.error(`Error executing tool ${toolName}:`, error);
 
