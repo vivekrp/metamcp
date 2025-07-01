@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 
 import { endpointsRepository } from "../db/repositories/endpoints.repo";
+import openApiRouter from "./public-metamcp/openapi";
 import sseRouter from "./public-metamcp/sse";
 import streamableHttpRouter from "./public-metamcp/streamable-http";
 
@@ -28,6 +29,9 @@ publicEndpointsRouter.use(streamableHttpRouter);
 // Use SSE router for /sse and /message routes
 publicEndpointsRouter.use(sseRouter);
 
+// Use OpenAPI router for /api and /openapi.json routes
+publicEndpointsRouter.use(openApiRouter);
+
 // Health check endpoint
 publicEndpointsRouter.get("/health", (req, res) => {
   res.json({
@@ -47,6 +51,8 @@ publicEndpointsRouter.get("/", async (req, res) => {
       endpoints: {
         mcp: `/metamcp/${endpoint.name}/mcp`,
         sse: `/metamcp/${endpoint.name}/sse`,
+        api: `/metamcp/${endpoint.name}/api`,
+        openapi: `/metamcp/${endpoint.name}/openapi.json`,
       },
     }));
 
