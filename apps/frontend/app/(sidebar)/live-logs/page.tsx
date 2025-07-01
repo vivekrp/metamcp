@@ -89,11 +89,7 @@ export default function LiveLogsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{totalCount} total logs</Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleAutoRefresh}
-          >
+          <Button variant="outline" size="sm" onClick={handleToggleAutoRefresh}>
             {isAutoRefreshing ? "Stop" : "Start"} Auto-refresh
           </Button>
           <Button
@@ -141,7 +137,7 @@ export default function LiveLogsPage() {
                 {logs.map((log) => (
                   <div
                     key={log.id}
-                    className="flex items-start gap-2 text-gray-300 hover:bg-gray-800 px-2 py-1 rounded"
+                    className="flex items-center gap-2 text-gray-300 hover:bg-gray-800 px-2 py-1 rounded"
                   >
                     <span className="text-gray-500 text-xs whitespace-nowrap">
                       {formatTimestamp(new Date(log.timestamp))}

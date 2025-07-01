@@ -26,18 +26,8 @@ export const transformDockerUrl = (url: string): string => {
       /localhost|127\.0\.0\.1/g,
       "host.docker.internal",
     );
-    metamcpLogStore.addLog(
-      "docker",
-      "info",
-      `URL transformation: ${url} -> ${transformed}`,
-    );
     return transformed;
   }
-  metamcpLogStore.addLog(
-    "docker",
-    "info",
-    `URL transformation disabled: ${url}`,
-  );
   return url;
 };
 
@@ -85,11 +75,6 @@ export const createMetaMcpClient = (
   } else if (serverParams.type === "SSE" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    metamcpLogStore.addLog(
-      serverParams.name,
-      "info",
-      `Creating SSE transport for: ${transformedUrl}`,
-    );
 
     if (!serverParams.oauth_tokens) {
       transport = new SSEClientTransport(new URL(transformedUrl));
@@ -109,11 +94,6 @@ export const createMetaMcpClient = (
   } else if (serverParams.type === "STREAMABLE_HTTP" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    metamcpLogStore.addLog(
-      serverParams.name,
-      "info",
-      `Creating StreamableHTTP transport for: ${transformedUrl}`,
-    );
 
     if (!serverParams.oauth_tokens) {
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl));
@@ -164,12 +144,6 @@ export const connectMetaMcpClient = async (
   while (retry) {
     try {
       await client.connect(transport);
-
-      metamcpLogStore.addLog(
-        "client",
-        "info",
-        "Successfully connected to MetaMCP client",
-      );
 
       return {
         client,
