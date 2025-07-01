@@ -7,12 +7,6 @@ import trpcRouter from "./routers/trpc";
 
 const app = express();
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  next();
-});
-
 // Global JSON middleware for non-proxy routes
 app.use((req, res, next) => {
   if (req.path.startsWith("/mcp-proxy/") || req.path.startsWith("/metamcp/")) {

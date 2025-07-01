@@ -14,8 +14,6 @@ export const betterAuthMcpMiddleware = async (
   next: express.NextFunction,
 ) => {
   try {
-    console.log("Auth middleware - method:", req.method, "path:", req.path);
-
     // Check if we have cookies in the request
     if (!req.headers.cookie) {
       console.log("Auth middleware - no cookies found in request");

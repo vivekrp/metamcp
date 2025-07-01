@@ -7,7 +7,7 @@ import {
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
-import { IOType, ServerParameters } from "./fetch-metamcp";
+import { ServerParameters } from "./fetch-metamcp";
 import { metamcpLogStore } from "./log-store";
 
 const sleep = (time: number) =>
@@ -39,10 +39,6 @@ export const createMetaMcpClient = (
   // Create the appropriate transport based on server type
   // Default to "STDIO" if type is undefined
   if (!serverParams.type || serverParams.type === "STDIO") {
-    // Get stderr value from serverParams, environment variable, or default to "ignore"
-    // TODO: improve error handling, piping and reporting
-    const _stderrValue: IOType = "pipe";
-
     const stdioParams: StdioServerParameters = {
       command: serverParams.command || "",
       args: serverParams.args || undefined,
