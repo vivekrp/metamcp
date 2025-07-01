@@ -1,14 +1,13 @@
 "use client";
 
 import {
+  FileTerminal,
   Key,
   Link,
   Package,
   Search,
   SearchCode,
   Server,
-  Settings,
-  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -30,6 +29,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
+import { LogsStatusIndicator } from "@/components/logs-status-indicator";
 
 // Menu items (removed Home item)
 const items = [
@@ -63,17 +63,23 @@ const items = [
     url: "/api-keys",
     icon: Key,
   },
-  {
-    title: "Error logs",
-    url: "/error-logs",
-    icon: AlertCircle,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
 ];
+
+function LiveLogsMenuItem() {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild>
+        <a href="/live-logs" className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <FileTerminal className="h-4 w-4" />
+            <span>Live Logs</span>
+          </div>
+          <LogsStatusIndicator />
+        </a>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 function UserInfoFooter() {
   const { data: session } = authClient.useSession();
@@ -156,6 +162,7 @@ export default function SidebarLayout({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <LiveLogsMenuItem />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
