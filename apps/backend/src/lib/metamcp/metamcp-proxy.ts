@@ -64,8 +64,8 @@ export const createServer = async (
     },
   );
 
-  // Initialize session connections in the background when server starts
-  initSessionConnections(sessionId, namespaceUuid).catch();
+  // Initialize session connections and wait for them to be established
+  await initSessionConnections(sessionId, namespaceUuid);
 
   // Create the handler context
   const handlerContext: MetaMCPHandlerContext = {

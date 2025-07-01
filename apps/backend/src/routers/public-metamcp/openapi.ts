@@ -10,7 +10,10 @@ import express from "express";
 
 import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
+import { getMcpServers } from "../../lib/metamcp/fetch-metamcp";
 import { createServer } from "../../lib/metamcp/index";
+import { getSession } from "../../lib/metamcp/sessions";
+import { sanitizeName } from "../../lib/metamcp/utils";
 
 // Extend Express Request interface for our custom properties
 interface AuthenticatedRequest extends express.Request {
@@ -319,23 +322,57 @@ openApiRouter.get(
 
       // Create a temporary session to get tools
       const sessionId = randomUUID();
+
+      // Initialize session connections
       const mcpServerInstance = await createMetaMcpServer(
         namespaceUuid,
         sessionId,
         endpointName,
       );
 
-      // Get list of tools from the MCP server
-      const toolsResult = await mcpServerInstance.server.request(
-        {
-          method: "tools/list",
-          params: {},
-        },
-        ListToolsResultSchema,
+      // Get server parameters and collect tools from each server
+      const serverParams = await getMcpServers(namespaceUuid);
+      const allTools: Tool[] = [];
+
+      await Promise.allSettled(
+        Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
+          const session = await getSession(sessionId, mcpServerUuid, params);
+          if (!session) return;
+
+          const capabilities = session.client.getServerCapabilities();
+          if (!capabilities?.tools) return;
+
+          // Use name assigned by user, fallback to name from server
+          const serverName =
+            params.name || session.client.getServerVersion()?.name || "";
+
+          try {
+            const result = await session.client.request(
+              {
+                method: "tools/list",
+                params: {},
+              },
+              ListToolsResultSchema,
+            );
+
+            const toolsWithSource =
+              result.tools?.map((tool) => {
+                const toolName = `${sanitizeName(serverName)}__${tool.name}`;
+                return {
+                  ...tool,
+                  name: toolName,
+                  description: tool.description,
+                };
+              }) || [];
+
+            allTools.push(...toolsWithSource);
+          } catch (error) {
+            console.error(`Error fetching tools from: ${serverName}`, error);
+          }
+        }),
       );
 
-      const tools = toolsResult.tools || [];
-      const openApiSchema = await generateOpenApiSchema(tools, endpointName);
+      const openApiSchema = await generateOpenApiSchema(allTools, endpointName);
 
       res.json(openApiSchema);
     } catch (error) {
@@ -383,18 +420,62 @@ openApiRouter.post(
 
       // Create a temporary session for this tool call
       const sessionId = randomUUID();
+
+      // Initialize session connections
       const mcpServerInstance = await createMetaMcpServer(
         namespaceUuid,
         sessionId,
         endpointName,
       );
 
-      // Execute the tool through the MCP server
-      const result = await mcpServerInstance.server.request(
+      // Extract the original tool name by removing the server prefix
+      const firstDoubleUnderscoreIndex = toolName.indexOf("__");
+      if (firstDoubleUnderscoreIndex === -1) {
+        return res.status(404).json({
+          error: "Tool not found",
+          message: `Tool '${toolName}' not found - invalid name format`,
+        });
+      }
+
+      const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
+      const originalToolName = toolName.substring(
+        firstDoubleUnderscoreIndex + 2,
+      );
+
+      // Get server parameters and find the right session for this tool
+      const serverParams = await getMcpServers(namespaceUuid);
+      let targetSession = null;
+
+      for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
+        const session = await getSession(sessionId, mcpServerUuid, params);
+        if (!session) continue;
+
+        const capabilities = session.client.getServerCapabilities();
+        if (!capabilities?.tools) continue;
+
+        // Use name assigned by user, fallback to name from server
+        const serverName =
+          params.name || session.client.getServerVersion()?.name || "";
+
+        if (sanitizeName(serverName) === serverPrefix) {
+          targetSession = session;
+          break;
+        }
+      }
+
+      if (!targetSession) {
+        return res.status(404).json({
+          error: "Tool not found",
+          message: `Tool '${toolName}' not found`,
+        });
+      }
+
+      // Execute the tool through the individual MCP client
+      const result = await targetSession.client.request(
         {
           method: "tools/call",
           params: {
-            name: toolName,
+            name: originalToolName,
             arguments: toolArguments,
           },
         },
