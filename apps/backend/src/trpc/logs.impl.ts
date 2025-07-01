@@ -1,9 +1,10 @@
-import { z } from "zod";
 import {
+  ClearLogsResponseSchema,
   GetLogsRequestSchema,
   GetLogsResponseSchema,
-  ClearLogsResponseSchema,
 } from "@repo/zod-types";
+import { z } from "zod";
+
 import { metamcpLogStore } from "../lib/metamcp/log-store";
 
 export const logsImplementations = {
@@ -38,4 +39,4 @@ export const logsImplementations = {
       throw new Error("Failed to clear logs");
     }
   },
-}; 
+};

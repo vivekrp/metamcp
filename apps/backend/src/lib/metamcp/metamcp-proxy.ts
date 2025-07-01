@@ -23,6 +23,7 @@ import { z } from "zod";
 import { toolsImplementations } from "../../trpc/tools.impl";
 import { ConnectedClient } from "./client";
 import { getMcpServers } from "./fetch-metamcp";
+import { mcpServerPool } from "./mcp-server-pool";
 import {
   createFilterCallToolMiddleware,
   createFilterListToolsMiddleware,
@@ -33,11 +34,6 @@ import {
   ListToolsHandler,
   MetaMCPHandlerContext,
 } from "./metamcp-middleware/functional-middleware";
-import {
-  cleanupSessionConnections,
-  getSession,
-  initSessionConnections,
-} from "./sessions";
 import { sanitizeName } from "./utils";
 
 export const createServer = async (
@@ -64,8 +60,12 @@ export const createServer = async (
     },
   );
 
-  // Initialize session connections and wait for them to be established
-  await initSessionConnections(sessionId, namespaceUuid);
+  // Get server parameters and ensure idle sessions exist in the pool
+  const serverParams = await getMcpServers(
+    namespaceUuid,
+    includeInactiveServers,
+  );
+  await mcpServerPool.ensureIdleSessions(serverParams);
 
   // Create the handler context
   const handlerContext: MetaMCPHandlerContext = {
@@ -86,7 +86,7 @@ export const createServer = async (
 
     await Promise.allSettled(
       Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
-        const session = await getSession(
+        const session = await mcpServerPool.getSession(
           context.sessionId,
           mcpServerUuid,
           params,
@@ -283,7 +283,7 @@ export const createServer = async (
 
     await Promise.allSettled(
       Object.entries(serverParams).map(async ([uuid, params]) => {
-        const session = await getSession(sessionId, uuid, params);
+        const session = await mcpServerPool.getSession(sessionId, uuid, params);
         if (!session) return;
 
         const capabilities = session.client.getServerCapabilities();
@@ -339,7 +339,7 @@ export const createServer = async (
 
     await Promise.allSettled(
       Object.entries(serverParams).map(async ([uuid, params]) => {
-        const session = await getSession(sessionId, uuid, params);
+        const session = await mcpServerPool.getSession(sessionId, uuid, params);
         if (!session) return;
 
         const capabilities = session.client.getServerCapabilities();
@@ -425,7 +425,11 @@ export const createServer = async (
 
       await Promise.allSettled(
         Object.entries(serverParams).map(async ([uuid, params]) => {
-          const session = await getSession(sessionId, uuid, params);
+          const session = await mcpServerPool.getSession(
+            sessionId,
+            uuid,
+            params,
+          );
           if (!session) return;
 
           const capabilities = session.client.getServerCapabilities();
@@ -473,7 +477,8 @@ export const createServer = async (
   );
 
   const cleanup = async () => {
-    await cleanupSessionConnections(sessionId);
+    // Cleanup is now handled by the pool
+    await mcpServerPool.cleanupSession(sessionId);
   };
 
   return { server, cleanup };

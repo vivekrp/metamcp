@@ -6,7 +6,7 @@ import express from "express";
 import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
 import { createServer } from "../../lib/metamcp/index";
-import { cleanupSessionConnections } from "../../lib/metamcp/sessions";
+import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
 
 // Extend Express Request interface for our custom properties
 interface AuthenticatedRequest extends express.Request {
@@ -57,7 +57,7 @@ const cleanupSession = async (sessionId: string) => {
   }
 
   // Clean up session connections
-  await cleanupSessionConnections(sessionId);
+  await mcpServerPool.cleanupSession(sessionId);
 };
 
 // Middleware to lookup endpoint by name and add namespace info to request

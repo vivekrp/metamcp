@@ -12,7 +12,7 @@ import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
 import { getMcpServers } from "../../lib/metamcp/fetch-metamcp";
 import { createServer } from "../../lib/metamcp/index";
-import { getSession } from "../../lib/metamcp/sessions";
+import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
 import { sanitizeName } from "../../lib/metamcp/utils";
 
 // Extend Express Request interface for our custom properties
@@ -336,7 +336,11 @@ openApiRouter.get(
 
       await Promise.allSettled(
         Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
-          const session = await getSession(sessionId, mcpServerUuid, params);
+          const session = await mcpServerPool.getSession(
+            sessionId,
+            mcpServerUuid,
+            params,
+          );
           if (!session) return;
 
           const capabilities = session.client.getServerCapabilities();
@@ -447,7 +451,11 @@ openApiRouter.post(
       let targetSession = null;
 
       for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
-        const session = await getSession(sessionId, mcpServerUuid, params);
+        const session = await mcpServerPool.getSession(
+          sessionId,
+          mcpServerUuid,
+          params,
+        );
         if (!session) continue;
 
         const capabilities = session.client.getServerCapabilities();
