@@ -1,7 +1,7 @@
 import {
+  ClearLogsResponseSchema,
   GetLogsRequestSchema,
   GetLogsResponseSchema,
-  ClearLogsResponseSchema,
 } from "@repo/zod-types";
 import { z } from "zod";
 
@@ -33,4 +33,4 @@ export const createLogsRouter = (
       .mutation(async () => {
         return await implementations.clearLogs();
       }),
-  }); 
+  });

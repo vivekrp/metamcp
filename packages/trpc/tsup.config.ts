@@ -12,7 +12,7 @@ export default defineConfig({
   keepNames: true,
   minify: false,
   dts: true, // Generate TypeScript declaration files
-  outExtension({ format }) {
+  outExtension() {
     return {
       js: `.js`, // Ensure .js output instead of .mjs
     };

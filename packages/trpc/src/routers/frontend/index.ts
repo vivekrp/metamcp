@@ -1,7 +1,7 @@
 import { createApiKeysRouter } from "./api-keys";
 import { createConfigRouter } from "./config";
-import { createLogsRouter } from "./logs";
 import { createEndpointsRouter } from "./endpoints";
+import { createLogsRouter } from "./logs";
 import { createMcpServersRouter } from "./mcp-servers";
 import { createNamespacesRouter } from "./namespaces";
 import { createOAuthRouter } from "./oauth";
