@@ -99,14 +99,7 @@ export class MetaMcpServerPool {
     includeInactiveServers: boolean = false,
   ): Promise<MetaMcpServerInstance | undefined> {
     try {
-      // Ensure MCP server pool has idle sessions for all servers in this namespace
-      const serverParams = await getMcpServers(
-        namespaceUuid,
-        includeInactiveServers,
-      );
-      await mcpServerPool.ensureIdleSessions(serverParams);
-
-      // Create the MetaMCP server - this will use the MCP server pool internally
+      // Create the MetaMCP server - MCP server pool is pre-warmed during startup
       const serverInstance = await createServer(
         namespaceUuid,
         sessionId,

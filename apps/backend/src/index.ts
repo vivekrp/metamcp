@@ -1,6 +1,8 @@
 import express from "express";
 
 import { auth } from "./auth";
+import { namespacesRepository } from "./db/repositories";
+import { metaMcpServerPool } from "./lib/metamcp";
 import mcpProxyRouter from "./routers/mcp-proxy";
 import publicEndpointsRouter from "./routers/public-metamcp";
 import trpcRouter from "./routers/trpc";
@@ -77,7 +79,68 @@ app.use("/mcp-proxy", mcpProxyRouter);
 // Mount tRPC routes
 app.use("/trpc", trpcRouter);
 
-app.listen(12009, () => {
+// Startup function to initialize idle servers for all namespaces
+async function initializeIdleServers() {
+  try {
+    console.log("Initializing idle servers for all namespaces...");
+
+    // Fetch all namespaces from the database
+    const namespaces = await namespacesRepository.findAll();
+    const namespaceUuids = namespaces.map((namespace) => namespace.uuid);
+
+    if (namespaceUuids.length === 0) {
+      console.log("No namespaces found in database");
+      return;
+    }
+
+    console.log(
+      `Found ${namespaceUuids.length} namespaces: ${namespaceUuids.join(", ")}`,
+    );
+
+    // Gather all server parameters from all namespaces for MCP server pool
+    console.log(
+      "Gathering server parameters for MCP server pool initialization...",
+    );
+    const allServerParams: Record<string, any> = {};
+
+    for (const namespaceUuid of namespaceUuids) {
+      try {
+        const { getMcpServers } = await import("./lib/metamcp/fetch-metamcp");
+        const serverParams = await getMcpServers(namespaceUuid, true); // Include inactive servers
+
+        // Merge server parameters (servers can be reused across namespaces)
+        Object.assign(allServerParams, serverParams);
+      } catch (error) {
+        console.error(
+          `Error getting server parameters for namespace ${namespaceUuid}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `Found ${Object.keys(allServerParams).length} unique MCP servers across all namespaces`,
+    );
+
+    // Initialize idle sessions for the underlying MCP server pool
+    if (Object.keys(allServerParams).length > 0) {
+      const { mcpServerPool } = await import("./lib/metamcp");
+      await mcpServerPool.ensureIdleSessions(allServerParams);
+      console.log("✅ Successfully initialized idle MCP server pool sessions");
+    }
+
+    // Ensure idle servers for all namespaces (MetaMCP server pool)
+    await metaMcpServerPool.ensureIdleServers(namespaceUuids, true);
+
+    console.log("✅ Successfully initialized idle servers for all namespaces");
+  } catch (error) {
+    console.error("❌ Error initializing idle servers:", error);
+    // Don't exit the process, just log the error
+    // The server should still start even if idle server initialization fails
+  }
+}
+
+app.listen(12009, async () => {
   console.log(`Server is running on port 12009`);
   console.log(`Auth routes available at: http://localhost:12009/api/auth`);
   console.log(
@@ -87,6 +150,9 @@ app.listen(12009, () => {
     `MCP Proxy routes available at: http://localhost:12009/mcp-proxy`,
   );
   console.log(`tRPC routes available at: http://localhost:12009/trpc`);
+
+  // Initialize idle servers after server starts
+  await initializeIdleServers();
 });
 
 app.get("/health", (req, res) => {
