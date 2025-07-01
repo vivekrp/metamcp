@@ -12,14 +12,23 @@ class MetaMcpLogStore {
   private readonly maxLogs = 1000; // Keep only the last 1000 logs
   private readonly listeners: Set<(log: MetaMcpLogEntry) => void> = new Set();
 
-  addLog(serverName: string, level: MetaMcpLogEntry["level"], message: string, error?: any) {
+  addLog(
+    serverName: string,
+    level: MetaMcpLogEntry["level"],
+    message: string,
+    error?: any,
+  ) {
     const logEntry: MetaMcpLogEntry = {
       id: crypto.randomUUID(),
       timestamp: new Date(),
       serverName,
       level,
       message,
-      error: error ? (error instanceof Error ? error.message : String(error)) : undefined,
+      error: error
+        ? error instanceof Error
+          ? error.message
+          : String(error)
+        : undefined,
     };
 
     // Add to logs array
@@ -45,7 +54,7 @@ class MetaMcpLogStore {
     }
 
     // Notify listeners
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(logEntry);
       } catch (err) {
@@ -74,4 +83,4 @@ class MetaMcpLogStore {
 }
 
 // Singleton instance
-export const metamcpLogStore = new MetaMcpLogStore(); 
+export const metamcpLogStore = new MetaMcpLogStore();

@@ -27,4 +27,4 @@ export const ClearLogsResponseSchema = z.object({
 export type MetaMcpLogEntry = z.infer<typeof MetaMcpLogEntrySchema>;
 export type GetLogsRequest = z.infer<typeof GetLogsRequestSchema>;
 export type GetLogsResponse = z.infer<typeof GetLogsResponseSchema>;
-export type ClearLogsResponse = z.infer<typeof ClearLogsResponseSchema>; 
+export type ClearLogsResponse = z.infer<typeof ClearLogsResponseSchema>;

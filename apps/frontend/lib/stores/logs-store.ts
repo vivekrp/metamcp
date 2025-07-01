@@ -1,23 +1,16 @@
-import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
-import { vanillaTrpcClient } from '../trpc';
+import { MetaMcpLogEntry } from "@repo/zod-types";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 
-export interface LogEntry {
-  id: string;
-  timestamp: Date;
-  serverName: string;
-  level: "error" | "info" | "warn";
-  message: string;
-  error?: string;
-}
+import { vanillaTrpcClient } from "../trpc";
 
 interface LogsState {
-  logs: LogEntry[];
+  logs: MetaMcpLogEntry[];
   isLoading: boolean;
   isAutoRefreshing: boolean;
   totalCount: number;
   lastFetch: Date | null;
-  
+
   // Actions
   fetchLogs: () => Promise<void>;
   clearLogs: () => Promise<void>;
@@ -40,21 +33,25 @@ export const useLogsStore = create<LogsState>()(
     fetchLogs: async () => {
       try {
         set({ isLoading: true });
-        
-        const response = await vanillaTrpcClient.frontend.logs.get.query({ 
-          limit: 500 
+
+        const response = await vanillaTrpcClient.frontend.logs.get.query({
+          limit: 500,
         });
-        
+
         if (response.success) {
-          set({ 
-            logs: response.data || [],
+          set({
+            logs:
+              response.data?.map((log) => ({
+                ...log,
+                timestamp: new Date(log.timestamp),
+              })) || [],
             totalCount: response.totalCount || 0,
             lastFetch: new Date(),
-            isLoading: false
+            isLoading: false,
           });
         }
       } catch (error) {
-        console.error('Failed to fetch logs:', error);
+        console.error("Failed to fetch logs:", error);
         set({ isLoading: false });
       }
     },
@@ -64,7 +61,7 @@ export const useLogsStore = create<LogsState>()(
         await vanillaTrpcClient.frontend.logs.clear.mutate();
         set({ logs: [], totalCount: 0 });
       } catch (error) {
-        console.error('Failed to clear logs:', error);
+        console.error("Failed to clear logs:", error);
       }
     },
 
@@ -101,11 +98,11 @@ export const useLogsStore = create<LogsState>()(
         get().stopAutoRefresh();
       }
     },
-  }))
+  })),
 );
 
 // Auto-start when store is created
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   // Only start in browser environment
   setTimeout(() => {
     useLogsStore.getState().startAutoRefresh();
@@ -113,10 +110,10 @@ if (typeof window !== 'undefined') {
 }
 
 // Cleanup on page unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
     if (refreshInterval) {
       clearInterval(refreshInterval);
     }
   });
-} 
+}
