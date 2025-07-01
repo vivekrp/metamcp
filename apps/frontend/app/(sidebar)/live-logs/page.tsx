@@ -1,14 +1,24 @@
 "use client";
 
 import { FileTerminal, RefreshCw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLogsStore } from "@/lib/stores/logs-store";
 
 export default function LiveLogsPage() {
+  const [showClearDialog, setShowClearDialog] = useState(false);
   const {
     logs,
     isLoading,
@@ -21,17 +31,12 @@ export default function LiveLogsPage() {
   } = useLogsStore();
 
   const handleClearLogs = async () => {
-    if (
-      confirm(
-        "Are you sure you want to clear all logs? This action cannot be undone.",
-      )
-    ) {
-      try {
-        await clearLogs();
-        toast.success("Logs cleared successfully");
-      } catch (error) {
-        toast.error("Failed to clear logs");
-      }
+    try {
+      await clearLogs();
+      toast.success("Logs cleared successfully");
+      setShowClearDialog(false);
+    } catch (error) {
+      toast.error("Failed to clear logs");
     }
   };
 
@@ -106,7 +111,7 @@ export default function LiveLogsPage() {
           <Button
             variant="destructive"
             size="sm"
-            onClick={handleClearLogs}
+            onClick={() => setShowClearDialog(true)}
             disabled={isLoading || logs.length === 0}
           >
             <Trash2 className="h-4 w-4" />
@@ -170,6 +175,31 @@ export default function LiveLogsPage() {
           Showing {logs.length} of {totalCount} logs (newest first)
         </div>
       )}
+
+      <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear All Logs</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to clear all logs? This action cannot be
+              undone and will permanently remove all log entries.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClearDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearLogs}
+              disabled={isLoading}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear logs
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
