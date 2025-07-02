@@ -6,6 +6,7 @@ import {
   DeleteMcpServerResponseSchema,
   GetMcpServerResponseSchema,
   ListMcpServersResponseSchema,
+  ServerParameters,
   UpdateMcpServerRequestSchema,
   UpdateMcpServerResponseSchema,
 } from "@repo/zod-types";
@@ -13,6 +14,8 @@ import { z } from "zod";
 
 import { mcpServersRepository } from "../db/repositories";
 import { McpServersSerializer } from "../db/serializers";
+import { mcpServerPool } from "../lib/metamcp/mcp-server-pool";
+import { convertDbServerToParams } from "../lib/metamcp/utils";
 
 export const mcpServersImplementations = {
   create: async (
@@ -26,6 +29,17 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "Failed to create MCP server",
         };
+      }
+
+      // Ensure idle session for the newly created server
+      const serverParams = await convertDbServerToParams(createdServer);
+      if (serverParams) {
+        await mcpServerPool.ensureIdleSessions({
+          [createdServer.uuid]: serverParams,
+        });
+        console.log(
+          `Ensured idle session for newly created server: ${createdServer.name} (${createdServer.uuid})`,
+        );
       }
 
       return {
@@ -102,8 +116,34 @@ export const mcpServersImplementations = {
       }
 
       if (serversToInsert.length > 0) {
-        await mcpServersRepository.bulkCreate(serversToInsert);
+        const createdServers =
+          await mcpServersRepository.bulkCreate(serversToInsert);
         imported = serversToInsert.length;
+
+        // Ensure idle sessions for all imported servers
+        if (createdServers && createdServers.length > 0) {
+          const serverParamsPromises = createdServers.map(async (server) => {
+            const params = await convertDbServerToParams(server);
+            return params ? { uuid: server.uuid, params } : null;
+          });
+
+          const serverParamsResults =
+            await Promise.allSettled(serverParamsPromises);
+          const validServerParams: Record<string, ServerParameters> = {};
+
+          serverParamsResults.forEach((result) => {
+            if (result.status === "fulfilled" && result.value) {
+              validServerParams[result.value.uuid] = result.value.params;
+            }
+          });
+
+          if (Object.keys(validServerParams).length > 0) {
+            await mcpServerPool.ensureIdleSessions(validServerParams);
+            console.log(
+              `Ensured idle sessions for ${Object.keys(validServerParams).length} bulk imported servers`,
+            );
+          }
+        }
       }
 
       return {
@@ -190,6 +230,17 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "MCP server not found",
         };
+      }
+
+      // Ensure idle session for the updated server
+      const serverParams = await convertDbServerToParams(updatedServer);
+      if (serverParams) {
+        await mcpServerPool.ensureIdleSessions({
+          [updatedServer.uuid]: serverParams,
+        });
+        console.log(
+          `Ensured idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
+        );
       }
 
       return {
