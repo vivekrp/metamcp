@@ -14,6 +14,9 @@ export interface McpServerPoolStatus {
 }
 
 export class McpServerPool {
+  // Singleton instance
+  private static instance: McpServerPool | null = null;
+
   // Idle sessions: serverUuid -> ConnectedClient (no sessionId assigned yet)
   private idleSessions: Record<string, ConnectedClient> = {};
 
@@ -32,8 +35,18 @@ export class McpServerPool {
   // Default number of idle sessions per server UUID
   private readonly defaultIdleCount: number;
 
-  constructor(defaultIdleCount: number = 1) {
+  private constructor(defaultIdleCount: number = 1) {
     this.defaultIdleCount = defaultIdleCount;
+  }
+
+  /**
+   * Get the singleton instance
+   */
+  static getInstance(defaultIdleCount: number = 1): McpServerPool {
+    if (!McpServerPool.instance) {
+      McpServerPool.instance = new McpServerPool(defaultIdleCount);
+    }
+    return McpServerPool.instance;
   }
 
   /**
@@ -298,4 +311,4 @@ export class McpServerPool {
 }
 
 // Create a singleton instance
-export const mcpServerPool = new McpServerPool();
+export const mcpServerPool = McpServerPool.getInstance();

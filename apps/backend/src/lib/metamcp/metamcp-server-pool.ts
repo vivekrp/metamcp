@@ -16,6 +16,9 @@ export interface MetaMcpServerPoolStatus {
 }
 
 export class MetaMcpServerPool {
+  // Singleton instance
+  private static instance: MetaMcpServerPool | null = null;
+
   // Idle MetaMCP servers: namespaceUuid -> MetaMcpServerInstance (no sessionId assigned yet)
   private idleServers: Record<string, MetaMcpServerInstance> = {};
 
@@ -31,8 +34,18 @@ export class MetaMcpServerPool {
   // Default number of idle servers per namespace UUID
   private readonly defaultIdleCount: number;
 
-  constructor(defaultIdleCount: number = 1) {
+  private constructor(defaultIdleCount: number = 1) {
     this.defaultIdleCount = defaultIdleCount;
+  }
+
+  /**
+   * Get the singleton instance
+   */
+  static getInstance(defaultIdleCount: number = 1): MetaMcpServerPool {
+    if (!MetaMcpServerPool.instance) {
+      MetaMcpServerPool.instance = new MetaMcpServerPool(defaultIdleCount);
+    }
+    return MetaMcpServerPool.instance;
   }
 
   /**
@@ -313,4 +326,4 @@ export class MetaMcpServerPool {
 }
 
 // Create a singleton instance
-export const metaMcpServerPool = new MetaMcpServerPool();
+export const metaMcpServerPool = MetaMcpServerPool.getInstance();
