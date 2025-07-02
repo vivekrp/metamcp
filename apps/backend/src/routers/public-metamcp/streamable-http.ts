@@ -147,9 +147,9 @@ streamableHttpRouter.get(
     const { namespaceUuid, endpointName } = authReq;
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    console.log(
-      `Received GET message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received GET message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
 
     try {
       const transport = transports[sessionId];
