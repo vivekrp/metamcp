@@ -1,5 +1,4 @@
-import { ServerParameters } from "@repo/zod-types";
-import crypto from "crypto";
+import { DatabaseMcpServer, ServerParameters } from "@repo/zod-types";
 
 import { oauthSessionsRepository } from "../../db/repositories/oauth-sessions.repo";
 
@@ -51,50 +50,13 @@ export function sanitizeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9_-]/g, "");
 }
 
-export function computeParamsHash(
-  params: ServerParameters,
-  uuid: string,
-): string {
-  let paramsDict: object;
-
-  // Default to "STDIO" if type is undefined
-  if (!params.type || params.type === "STDIO") {
-    paramsDict = {
-      uuid,
-      type: "STDIO", // Explicitly set type to "STDIO" for consistent hashing
-      command: params.command,
-      args: params.args,
-      env: params.env
-        ? Object.fromEntries(
-            Object.entries(params.env).sort((a, b) => a[0].localeCompare(b[0])),
-          )
-        : null,
-    };
-  } else if (params.type === "SSE" || params.type === "STREAMABLE_HTTP") {
-    paramsDict = {
-      uuid,
-      type: params.type,
-      url: params.url,
-    };
-  } else {
-    throw new Error(`Unsupported server type: ${params.type}`);
-  }
-
-  const paramsJson = JSON.stringify(paramsDict);
-  return crypto.createHash("sha256").update(paramsJson).digest("hex");
-}
-
-export function getSessionKey(uuid: string, params: ServerParameters): string {
-  return `${uuid}_${computeParamsHash(params, uuid)}`;
-}
-
 /**
  * Converts a database MCP server record to ServerParameters format
  * @param server Database MCP server record
  * @returns ServerParameters object or null if conversion fails
  */
 export async function convertDbServerToParams(
-  server: any,
+  server: DatabaseMcpServer,
 ): Promise<ServerParameters | null> {
   try {
     // Fetch OAuth tokens from OAuth sessions table
