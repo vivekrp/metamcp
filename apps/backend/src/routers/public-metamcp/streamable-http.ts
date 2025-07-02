@@ -235,9 +235,9 @@ streamableHttpRouter.post(
         res.status(500).json(error);
       }
     } else {
-      console.log(
-        `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
-      );
+      // console.log(
+      //   `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
+      // );
       console.log(`Available session IDs:`, Object.keys(transports));
       console.log(`Looking for sessionId: ${sessionId}`);
       try {

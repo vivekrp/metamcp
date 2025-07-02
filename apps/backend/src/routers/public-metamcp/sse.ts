@@ -199,9 +199,9 @@ sseRouter.post(
 
     try {
       const sessionId = req.query.sessionId;
-      console.log(
-        `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
-      );
+      // console.log(
+      //   `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
+      // );
 
       const transport = webAppTransports.get(
         sessionId as string,

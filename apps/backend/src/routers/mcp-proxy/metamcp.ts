@@ -148,9 +148,9 @@ metamcpRouter.post("/:uuid/mcp", async (req, res) => {
       res.status(500).json(error);
     }
   } else {
-    console.log(
-      `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
     try {
       const transport = webAppTransports.get(
         sessionId,
@@ -236,9 +236,9 @@ metamcpRouter.post("/:uuid/message", async (req, res) => {
   const namespaceUuid = req.params.uuid;
   try {
     const sessionId = req.query.sessionId;
-    console.log(
-      `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
 
     const transport = webAppTransports.get(
       sessionId as string,
