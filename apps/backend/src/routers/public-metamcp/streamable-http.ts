@@ -23,7 +23,7 @@ const apiKeysRepository = new ApiKeysRepository();
 const transports: Record<string, StreamableHTTPServerTransport> = {}; // Web app transports by sessionId
 
 // Cleanup function for a specific session
-const cleanupSession = async (sessionId: string, endpointName: string) => {
+const cleanupSession = async (sessionId: string) => {
   console.log(`Cleaning up StreamableHTTP session ${sessionId}`);
 
   // Clean up transport
@@ -274,7 +274,7 @@ streamableHttpRouter.delete(
 
     if (sessionId) {
       try {
-        await cleanupSession(sessionId, endpointName);
+        await cleanupSession(sessionId);
         console.log(
           `Public endpoint session ${sessionId} cleaned up successfully`,
         );

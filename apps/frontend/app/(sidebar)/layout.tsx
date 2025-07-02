@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { LogsStatusIndicator } from "@/components/logs-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,7 +30,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
-import { LogsStatusIndicator } from "@/components/logs-status-indicator";
 
 // Menu items (removed Home item)
 const items = [
@@ -69,7 +69,10 @@ function LiveLogsMenuItem() {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
-        <a href="/live-logs" className="flex items-center justify-between w-full">
+        <a
+          href="/live-logs"
+          className="flex items-center justify-between w-full"
+        >
           <div className="flex items-center gap-2">
             <FileTerminal className="h-4 w-4" />
             <span>Live Logs</span>

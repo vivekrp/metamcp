@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { useLogsStore } from "@/lib/stores/logs-store";
-import { useEffect, useState } from "react";
 
 export function LogsStatusIndicator() {
   const { logs, totalCount, isAutoRefreshing } = useLogsStore();
@@ -12,7 +13,8 @@ export function LogsStatusIndicator() {
   useEffect(() => {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const recentErrors = logs.filter(
-      log => log.level === "error" && new Date(log.timestamp) > fiveMinutesAgo
+      (log) =>
+        log.level === "error" && new Date(log.timestamp) > fiveMinutesAgo,
     ).length;
     setRecentErrorCount(recentErrors);
   }, [logs]);
@@ -21,7 +23,10 @@ export function LogsStatusIndicator() {
     return (
       <div className="flex items-center gap-1">
         {isAutoRefreshing && (
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Live updates active" />
+          <div
+            className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+            title="Live updates active"
+          />
         )}
       </div>
     );
@@ -38,8 +43,11 @@ export function LogsStatusIndicator() {
         </Badge>
       )}
       {isAutoRefreshing && (
-        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Live updates active" />
+        <div
+          className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+          title="Live updates active"
+        />
       )}
     </div>
   );
-} 
+}

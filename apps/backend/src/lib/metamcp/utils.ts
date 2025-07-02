@@ -1,6 +1,5 @@
+import { ServerParameters } from "@repo/zod-types";
 import crypto from "crypto";
-
-import { ServerParameters } from "./fetch-metamcp";
 
 /**
  * Environment variables to inherit by default, if an environment is not explicitly given.

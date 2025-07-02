@@ -1,3 +1,4 @@
+import { ServerParameters } from "@repo/zod-types";
 import express from "express";
 
 import { auth } from "./auth";
@@ -101,7 +102,7 @@ async function initializeIdleServers() {
     console.log(
       "Gathering server parameters for MCP server pool initialization...",
     );
-    const allServerParams: Record<string, any> = {};
+    const allServerParams: Record<string, ServerParameters> = {};
 
     for (const namespaceUuid of namespaceUuids) {
       try {

@@ -121,7 +121,7 @@ const authenticateApiKey = async (
 
 // Convert MCP tools to OpenAPI schema
 const generateOpenApiSchema = async (tools: Tool[], endpointName: string) => {
-  const paths: Record<string, any> = {};
+  const paths: Record<string, unknown> = {};
 
   // Add health check endpoint
   paths["/health"] = {

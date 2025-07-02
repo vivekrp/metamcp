@@ -60,12 +60,6 @@ export const createServer = async (
     },
   );
 
-  // Get server parameters (idle sessions are pre-warmed during startup)
-  const serverParams = await getMcpServers(
-    namespaceUuid,
-    includeInactiveServers,
-  );
-
   // Create the handler context
   const handlerContext: MetaMCPHandlerContext = {
     namespaceUuid,

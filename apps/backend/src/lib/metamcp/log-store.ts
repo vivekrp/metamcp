@@ -16,7 +16,7 @@ class MetaMcpLogStore {
     serverName: string,
     level: MetaMcpLogEntry["level"],
     message: string,
-    error?: any,
+    error?: unknown,
   ) {
     const logEntry: MetaMcpLogEntry = {
       id: crypto.randomUUID(),

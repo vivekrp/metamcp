@@ -35,7 +35,7 @@ export default function LiveLogsPage() {
       await clearLogs();
       toast.success("Logs cleared successfully");
       setShowClearDialog(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to clear logs");
     }
   };
@@ -44,7 +44,7 @@ export default function LiveLogsPage() {
     try {
       await fetchLogs();
       toast.success("Logs refreshed");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to refresh logs");
     }
   };

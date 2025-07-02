@@ -6,8 +6,8 @@ import {
 } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { ServerParameters } from "@repo/zod-types";
 
-import { ServerParameters } from "./fetch-metamcp";
 import { metamcpLogStore } from "./log-store";
 
 const sleep = (time: number) =>

@@ -61,10 +61,6 @@ export const betterAuthMcpMiddleware = async (
     (req as any).user = sessionData.user;
     (req as any).session = sessionData.session;
 
-    console.log(
-      "Auth middleware - authentication successful for user:",
-      sessionData.user.id,
-    );
     next();
   } catch (error) {
     console.error("Better auth middleware error:", error);

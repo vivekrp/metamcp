@@ -1,9 +1,10 @@
+import { ServerParameters } from "@repo/zod-types";
+
 import {
   ConnectedClient,
   connectMetaMcpClient,
   createMetaMcpClient,
 } from "./client";
-import { ServerParameters } from "./fetch-metamcp";
 
 export interface McpServerPoolStatus {
   idle: number;
@@ -76,7 +77,7 @@ export class McpServerPool {
     }
 
     // No idle session available, create a new connection
-    const newClient = await this.createNewConnection(serverUuid, params);
+    const newClient = await this.createNewConnection(params);
     if (!newClient) {
       return undefined;
     }
@@ -98,7 +99,6 @@ export class McpServerPool {
    * Create a new connection for a server
    */
   private async createNewConnection(
-    serverUuid: string,
     params: ServerParameters,
   ): Promise<ConnectedClient | undefined> {
     const { client, transport } = createMetaMcpClient(params);
@@ -126,7 +126,7 @@ export class McpServerPool {
       return;
     }
 
-    const newClient = await this.createNewConnection(serverUuid, params);
+    const newClient = await this.createNewConnection(params);
     if (newClient) {
       this.idleSessions[serverUuid] = newClient;
       console.log(`Created idle session for server ${serverUuid}`);
@@ -152,12 +152,12 @@ export class McpServerPool {
     this.creatingIdleSessions.add(serverUuid);
 
     // Create the session in the background (fire and forget)
-    this.createNewConnection(serverUuid, params)
+    this.createNewConnection(params)
       .then((newClient) => {
         if (newClient && !this.idleSessions[serverUuid]) {
           this.idleSessions[serverUuid] = newClient;
           console.log(
-            `Created background idle session for server ${serverUuid}`,
+            `Created background idle session for server [${params.name}] ${serverUuid}`,
           );
         } else if (newClient) {
           // We already have an idle session, cleanup the extra one
