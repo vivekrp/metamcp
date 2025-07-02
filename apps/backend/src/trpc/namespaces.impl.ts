@@ -24,6 +24,7 @@ import {
   toolsRepository,
 } from "../db/repositories";
 import { NamespacesSerializer } from "../db/serializers";
+import { metaMcpServerPool } from "../lib/metamcp/metamcp-server-pool";
 
 export const namespacesImplementations = {
   create: async (
@@ -35,6 +36,20 @@ export const namespacesImplementations = {
         description: input.description,
         mcpServerUuids: input.mcpServerUuids,
       });
+
+      // Ensure idle MetaMCP server exists for the new namespace to improve performance
+      try {
+        await metaMcpServerPool.ensureIdleServerForNewNamespace(result.uuid);
+        console.log(
+          `Ensured idle MetaMCP server exists for new namespace ${result.uuid}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error ensuring idle MetaMCP server for new namespace ${result.uuid}:`,
+          error,
+        );
+        // Don't fail the entire create operation if idle server creation fails
+      }
 
       return {
         success: true as const,
@@ -138,6 +153,20 @@ export const namespacesImplementations = {
         };
       }
 
+      // Clean up idle MetaMCP server for the deleted namespace
+      try {
+        await metaMcpServerPool.cleanupIdleServer(input.uuid);
+        console.log(
+          `Cleaned up idle MetaMCP server for deleted namespace ${input.uuid}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error cleaning up idle MetaMCP server for deleted namespace ${input.uuid}:`,
+          error,
+        );
+        // Don't fail the entire delete operation if idle server cleanup fails
+      }
+
       return {
         success: true as const,
         message: "Namespace deleted successfully",
@@ -162,6 +191,20 @@ export const namespacesImplementations = {
         description: input.description,
         mcpServerUuids: input.mcpServerUuids,
       });
+
+      // Invalidate idle MetaMCP server for this namespace since the MCP servers list may have changed
+      try {
+        await metaMcpServerPool.invalidateIdleServer(input.uuid);
+        console.log(
+          `Invalidated idle MetaMCP server for updated namespace ${input.uuid}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error invalidating idle MetaMCP server for namespace ${input.uuid}:`,
+          error,
+        );
+        // Don't fail the entire update operation if idle server invalidation fails
+      }
 
       return {
         success: true as const,
@@ -194,6 +237,20 @@ export const namespacesImplementations = {
           success: false as const,
           message: "Server not found in namespace",
         };
+      }
+
+      // Invalidate idle MetaMCP server for this namespace since server status changed
+      try {
+        await metaMcpServerPool.invalidateIdleServer(input.namespaceUuid);
+        console.log(
+          `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after server status update`,
+        );
+      } catch (error) {
+        console.error(
+          `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
+          error,
+        );
+        // Don't fail the entire operation if idle server invalidation fails
       }
 
       return {
@@ -414,6 +471,20 @@ export const namespacesImplementations = {
         console.log(
           `Processed ${tools.length} tools for server "${serverName}" (${serverUuid})`,
         );
+      }
+
+      // Invalidate idle MetaMCP server for this namespace since tools were refreshed
+      try {
+        await metaMcpServerPool.invalidateIdleServer(input.namespaceUuid);
+        console.log(
+          `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after tools refresh`,
+        );
+      } catch (error) {
+        console.error(
+          `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
+          error,
+        );
+        // Don't fail the entire operation if idle server invalidation fails
       }
 
       return {

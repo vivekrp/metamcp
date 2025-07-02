@@ -323,6 +323,101 @@ export class MetaMcpServerPool {
   getMcpServerPoolStatus() {
     return mcpServerPool.getPoolStatus();
   }
+
+  /**
+   * Invalidate and refresh idle server for a specific namespace
+   * This should be called when a namespace's MCP servers list changes
+   */
+  async invalidateIdleServer(
+    namespaceUuid: string,
+    includeInactiveServers: boolean = false,
+  ): Promise<void> {
+    console.log(`Invalidating idle server for namespace ${namespaceUuid}`);
+
+    // Cleanup existing idle server if it exists
+    const existingIdleServer = this.idleServers[namespaceUuid];
+    if (existingIdleServer) {
+      try {
+        await existingIdleServer.cleanup();
+        console.log(
+          `Cleaned up existing idle server for namespace ${namespaceUuid}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error cleaning up existing idle server for namespace ${namespaceUuid}:`,
+          error,
+        );
+      }
+      delete this.idleServers[namespaceUuid];
+    }
+
+    // Remove from creating set if it's in progress
+    this.creatingIdleServers.delete(namespaceUuid);
+
+    // Create a new idle server with updated configuration
+    await this.createIdleServer(namespaceUuid, includeInactiveServers);
+  }
+
+  /**
+   * Invalidate and refresh idle servers for multiple namespaces
+   */
+  async invalidateIdleServers(
+    namespaceUuids: string[],
+    includeInactiveServers: boolean = false,
+  ): Promise<void> {
+    const promises = namespaceUuids.map((namespaceUuid) =>
+      this.invalidateIdleServer(namespaceUuid, includeInactiveServers),
+    );
+
+    await Promise.allSettled(promises);
+  }
+
+  /**
+   * Clean up idle server for a specific namespace without creating a new one
+   * This should be called when a namespace is being deleted
+   */
+  async cleanupIdleServer(namespaceUuid: string): Promise<void> {
+    console.log(`Cleaning up idle server for namespace ${namespaceUuid}`);
+
+    // Cleanup existing idle server if it exists
+    const existingIdleServer = this.idleServers[namespaceUuid];
+    if (existingIdleServer) {
+      try {
+        await existingIdleServer.cleanup();
+        console.log(`Cleaned up idle server for namespace ${namespaceUuid}`);
+      } catch (error) {
+        console.error(
+          `Error cleaning up idle server for namespace ${namespaceUuid}:`,
+          error,
+        );
+      }
+      delete this.idleServers[namespaceUuid];
+    }
+
+    // Remove from creating set if it's in progress
+    this.creatingIdleServers.delete(namespaceUuid);
+  }
+
+  /**
+   * Ensure idle server exists for a newly created namespace
+   * This should be called when a new namespace is created
+   */
+  async ensureIdleServerForNewNamespace(
+    namespaceUuid: string,
+    includeInactiveServers: boolean = false,
+  ): Promise<void> {
+    console.log(
+      `Ensuring idle server exists for new namespace ${namespaceUuid}`,
+    );
+
+    // Only create if we don't already have one
+    if (
+      !this.idleServers[namespaceUuid] &&
+      !this.creatingIdleServers.has(namespaceUuid)
+    ) {
+      await this.createIdleServer(namespaceUuid, includeInactiveServers);
+    }
+  }
 }
 
 // Create a singleton instance

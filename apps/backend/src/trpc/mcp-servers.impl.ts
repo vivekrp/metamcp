@@ -12,9 +12,10 @@ import {
 } from "@repo/zod-types";
 import { z } from "zod";
 
-import { mcpServersRepository } from "../db/repositories";
+import { mcpServersRepository, namespaceMappingsRepository } from "../db/repositories";
 import { McpServersSerializer } from "../db/serializers";
 import { mcpServerPool } from "../lib/metamcp/mcp-server-pool";
+import { metaMcpServerPool } from "../lib/metamcp/metamcp-server-pool";
 import { convertDbServerToParams } from "../lib/metamcp/utils";
 
 export const mcpServersImplementations = {
@@ -196,6 +197,10 @@ export const mcpServersImplementations = {
     uuid: string;
   }): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
     try {
+      // Find affected namespaces before deleting the server
+      const affectedNamespaceUuids =
+        await namespaceMappingsRepository.findNamespacesByServerUuid(input.uuid);
+
       const deletedServer = await mcpServersRepository.deleteByUuid(input.uuid);
 
       if (!deletedServer) {
@@ -203,6 +208,21 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "MCP server not found",
         };
+      }
+
+      // Invalidate idle MetaMCP servers for all affected namespaces
+      if (affectedNamespaceUuids.length > 0) {
+        try {
+          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
+          console.log(
+            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
+          );
+        } catch (error) {
+          console.error(
+            `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
+            error,
+          );
+        }
       }
 
       return {
@@ -241,6 +261,26 @@ export const mcpServersImplementations = {
         console.log(
           `Ensured idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
         );
+      }
+
+      // Find affected namespaces and invalidate their idle MetaMCP servers
+      const affectedNamespaceUuids =
+        await namespaceMappingsRepository.findNamespacesByServerUuid(
+          updatedServer.uuid,
+        );
+
+      if (affectedNamespaceUuids.length > 0) {
+        try {
+          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
+          console.log(
+            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
+          );
+        } catch (error) {
+          console.error(
+            `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
+            error,
+          );
+        }
       }
 
       return {
