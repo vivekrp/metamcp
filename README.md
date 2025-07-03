@@ -195,3 +195,7 @@ Would appreciate if you mentioned with back links if your projects use the code.
 Some code inspired by:
 - [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
 - [MCP Proxy Server](https://github.com/adamwattis/mcp-proxy-server)
+
+Not directly used the code by took ideas from
+- https://github.com/open-webui/openapi-servers
+- https://github.com/open-webui/mcpo
