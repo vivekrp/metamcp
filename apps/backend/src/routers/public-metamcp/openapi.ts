@@ -146,7 +146,7 @@ const generateOpenApiSchema = async (tools: Tool[], endpointName: string) => {
         ? "post"
         : "get";
 
-    const pathDefinition: any = {
+    const pathDefinition: Record<string, unknown> = {
       summary: tool.description || tool.name,
       operationId: `${operationId}_${operationId}_${httpMethod}`,
       responses: {
