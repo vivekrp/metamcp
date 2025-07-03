@@ -61,7 +61,7 @@ publicEndpointsRouter.get("/", async (req, res) => {
         mcp: `/metamcp/${endpoint.name}/mcp`,
         sse: `/metamcp/${endpoint.name}/sse`,
         api: `/metamcp/${endpoint.name}/api`,
-        openapi: `/metamcp/${endpoint.name}/openapi.json`,
+        openapi: `/metamcp/${endpoint.name}/api/openapi.json`,
       },
     }));
 

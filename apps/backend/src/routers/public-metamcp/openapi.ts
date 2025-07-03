@@ -128,50 +128,9 @@ const authenticateApiKey = async (
 const generateOpenApiSchema = async (tools: Tool[], endpointName: string) => {
   const paths: Record<string, unknown> = {};
 
-  // Add health check endpoint
-  paths["/health"] = {
-    get: {
-      summary: "Health Check",
-      description: "Check if the API server is healthy and operational",
-      operationId: "healthCheck",
-      tags: ["Health"],
-      responses: {
-        "200": {
-          description: "API is healthy and operational",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  status: {
-                    type: "string",
-                    example: "ok",
-                    description: "Health status of the API",
-                  },
-                  service: {
-                    type: "string",
-                    example: endpointName,
-                    description: "Name of the service",
-                  },
-                  timestamp: {
-                    type: "string",
-                    format: "date-time",
-                    example: "2023-12-07T10:30:00Z",
-                    description: "Timestamp of the health check",
-                  },
-                },
-                required: ["status", "service", "timestamp"],
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-
-  // Convert each MCP tool to an OpenAPI path
+  // Convert each MCP tool to an OpenAPI path (mounted directly to root, no /tools/ prefix)
   for (const tool of tools) {
-    const toolPath = `/tools/${tool.name}`;
+    const toolPath = `/${tool.name}`;
     const operationId = tool.name.replace(/[^a-zA-Z0-9]/g, "_");
 
     // Create request body schema from tool input schema
@@ -180,221 +139,175 @@ const generateOpenApiSchema = async (tools: Tool[], endpointName: string) => {
       properties: {},
     };
 
-    paths[toolPath] = {
-      post: {
-        summary: tool.name,
-        description: tool.description || `Execute the ${tool.name} tool`,
-        operationId: `execute_${operationId}`,
-        tags: ["Tools"],
-        requestBody: {
-          required: true,
+    // Determine HTTP method based on tool characteristics
+    const httpMethod =
+      requestBodySchema.properties &&
+      Object.keys(requestBodySchema.properties).length > 0
+        ? "post"
+        : "get";
+
+    const pathDefinition: any = {
+      summary: tool.description || tool.name,
+      operationId: `${operationId}_${operationId}_${httpMethod}`,
+      responses: {
+        "200": {
+          description: "Successful Response",
           content: {
             "application/json": {
-              schema: {
-                ...requestBodySchema,
-                example: requestBodySchema.properties
-                  ? Object.keys(requestBodySchema.properties).reduce(
-                      (acc, key) => {
-                        acc[key] = "example_value";
-                        return acc;
-                      },
-                      {} as Record<string, unknown>,
-                    )
-                  : {},
-              },
+              schema: {},
             },
           },
         },
-        responses: {
-          "200": {
-            description: "Tool executed successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    success: {
-                      type: "boolean",
-                      example: true,
-                      description:
-                        "Indicates if the tool execution was successful",
-                    },
-                    data: {
-                      type: "object",
-                      description: "Tool execution result data",
-                      properties: {
-                        content: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              type: {
-                                type: "string",
-                                example: "text",
-                                description: "Type of content",
-                              },
-                              text: {
-                                type: "string",
-                                example: "Tool execution result",
-                                description: "Content text",
-                              },
-                            },
-                          },
-                        },
-                        isError: {
-                          type: "boolean",
-                          example: false,
-                          description:
-                            "Whether the execution resulted in an error",
-                        },
-                      },
-                    },
-                    timestamp: {
-                      type: "string",
-                      format: "date-time",
-                      example: "2023-12-07T10:30:00Z",
-                      description: "Timestamp of the execution",
-                    },
-                  },
-                  required: ["success", "data", "timestamp"],
-                },
-              },
-            },
-          },
-          "400": {
-            description: "Bad request - Invalid input parameters",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
-              },
-            },
-          },
-          "401": {
-            description: "Unauthorized - Invalid or missing API key",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
-              },
-            },
-          },
-          "404": {
-            description: "Tool not found",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
-              },
-            },
-          },
-          "500": {
-            description: "Internal server error - Tool execution failed",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
+        "422": {
+          description: "Validation Error",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/HTTPValidationError",
               },
             },
           },
         },
       },
     };
+
+    // Add request body for POST requests
+    if (httpMethod === "post") {
+      pathDefinition.requestBody = {
+        content: {
+          "application/json": {
+            schema: requestBodySchema,
+          },
+        },
+        required: true,
+      };
+    }
+
+    paths[toolPath] = {
+      [httpMethod]: pathDefinition,
+    };
   }
 
   return {
-    openapi: "3.0.0",
+    openapi: "3.1.0",
     info: {
-      title: `${endpointName} Tool Server`,
-      description: `OpenAPI-compatible tool server for ${endpointName}. This server provides secure access to various tools and utilities through a standardized REST API interface, following OpenAPI specifications for maximum compatibility and ease of integration.`,
+      title: `${endpointName} Server`,
+      description: `API server for ${endpointName} tools and utilities.`,
       version: "1.0.0",
-      contact: {
-        name: "MetaMCP API Support",
-        url: `${process.env.APP_URL}/metamcp/${endpointName}/api`,
-      },
-      license: {
-        name: "MIT",
-        url: "https://opensource.org/licenses/MIT",
-      },
     },
-    servers: [
-      {
-        url: `${process.env.APP_URL}/metamcp/${endpointName}/api`,
-        description: `${endpointName} production API server`,
-      },
-    ],
     paths,
     components: {
       schemas: {
-        ErrorResponse: {
-          type: "object",
+        HTTPValidationError: {
           properties: {
-            error: {
-              type: "string",
-              example: "Bad Request",
-              description: "Error type or category",
-            },
-            message: {
-              type: "string",
-              example: "Invalid input parameters provided",
-              description: "Detailed error message",
-            },
-            timestamp: {
-              type: "string",
-              format: "date-time",
-              example: "2023-12-07T10:30:00Z",
-              description: "Timestamp when the error occurred",
+            detail: {
+              items: {
+                $ref: "#/components/schemas/ValidationError",
+              },
+              type: "array",
+              title: "Detail",
             },
           },
-          required: ["error", "message", "timestamp"],
+          type: "object",
+          title: "HTTPValidationError",
         },
-      },
-      securitySchemes: {
-        ApiKeyAuth: {
-          type: "apiKey",
-          in: "header",
-          name: "X-API-Key",
-          description:
-            "API key for authentication. Include your API key in the X-API-Key header.",
-        },
-        BearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description:
-            "Bearer token authentication. Include your token in the Authorization header as 'Bearer <token>'.",
-        },
-        QueryApiKey: {
-          type: "apiKey",
-          in: "query",
-          name: "api_key",
-          description:
-            "API key as query parameter. Only available if query parameter authentication is enabled for this endpoint.",
+        ValidationError: {
+          properties: {
+            loc: {
+              items: {
+                anyOf: [
+                  {
+                    type: "string",
+                  },
+                  {
+                    type: "integer",
+                  },
+                ],
+              },
+              type: "array",
+              title: "Location",
+            },
+            msg: {
+              type: "string",
+              title: "Message",
+            },
+            type: {
+              type: "string",
+              title: "Error Type",
+            },
+          },
+          type: "object",
+          required: ["loc", "msg", "type"],
+          title: "ValidationError",
         },
       },
     },
-    security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }, { QueryApiKey: [] }],
-    tags: [
-      {
-        name: "Health",
-        description: "Health check and system status endpoints",
-      },
-      {
-        name: "Tools",
-        description:
-          "Tool execution endpoints for various utilities and functions",
-      },
-    ],
   };
 };
 
-// OpenAPI JSON schema endpoint
+// Generic API endpoint that serves the OpenAPI docs UI
 openApiRouter.get(
-  "/:endpoint_name/openapi.json",
+  "/:endpoint_name/api",
+  lookupEndpoint,
+  authenticateApiKey,
+  async (req, res) => {
+    const authReq = req as AuthenticatedRequest;
+    const { endpointName } = authReq;
+
+    // Return a simple HTML page with Swagger UI
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${endpointName} API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: '/metamcp/${endpointName}/api/openapi.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+        }
+    </script>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  },
+);
+
+// OpenAPI JSON schema endpoint (must come before tool execution routes)
+openApiRouter.get(
+  "/:endpoint_name/api/openapi.json",
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
@@ -486,26 +399,9 @@ openApiRouter.get(
   },
 );
 
-// Health check endpoint
-openApiRouter.get(
-  "/:endpoint_name/api/health",
-  lookupEndpoint,
-  authenticateApiKey,
-  async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
-    const { endpointName } = authReq;
-
-    res.json({
-      status: "ok",
-      service: endpointName,
-      timestamp: new Date().toISOString(),
-    });
-  },
-);
-
-// Tool execution endpoint
+// Tool execution endpoint (mounted directly to /{endpoint}/api/{tool_name})
 openApiRouter.post(
-  "/:endpoint_name/api/tools/:tool_name",
+  "/:endpoint_name/api/:tool_name",
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
@@ -592,14 +488,8 @@ openApiRouter.post(
           CompatibilityCallToolResultSchema,
         );
 
-        // Format response according to OpenAPI schema
-        const response = {
-          success: true,
-          data: result,
-          timestamp: new Date().toISOString(),
-        };
-
-        res.json(response);
+        // Return the result directly (simplified format)
+        res.json(result);
       } finally {
         // Cleanup the temporary session
         await metaMcpServerPool.cleanupSession(sessionId);
@@ -633,63 +523,126 @@ openApiRouter.post(
   },
 );
 
-// Generic API endpoint that serves the OpenAPI docs UI
+// Support GET requests for tools that don't require parameters
 openApiRouter.get(
-  "/:endpoint_name/api",
+  "/:endpoint_name/api/:tool_name",
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
     const authReq = req as AuthenticatedRequest;
-    const { endpointName } = authReq;
+    const { namespaceUuid, endpointName } = authReq;
+    const toolName = req.params.tool_name;
 
-    // Return a simple HTML page with Swagger UI
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>${endpointName} API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
-    <style>
-        html {
-            box-sizing: border-box;
-            overflow: -moz-scrollbars-vertical;
-            overflow-y: scroll;
-        }
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
-        body {
-            margin: 0;
-            background: #fafafa;
-        }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: '/metamcp/${endpointName}/openapi.json',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout"
-            });
-        }
-    </script>
-</body>
-</html>`;
+    try {
+      console.log(
+        `Tool execution request (GET) for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
+      );
 
-    res.setHeader("Content-Type", "text/html");
-    res.send(html);
+      // Create a temporary session for this tool call
+      const sessionId = randomUUID();
+
+      try {
+        // Initialize session connections
+        const mcpServerInstance = await metaMcpServerPool.getServer(
+          sessionId,
+          namespaceUuid,
+        );
+        if (!mcpServerInstance) {
+          throw new Error("Failed to get MetaMCP server instance from pool");
+        }
+
+        // Extract the original tool name by removing the server prefix
+        const firstDoubleUnderscoreIndex = toolName.indexOf("__");
+        if (firstDoubleUnderscoreIndex === -1) {
+          return res.status(404).json({
+            error: "Tool not found",
+            message: `Tool '${toolName}' not found - invalid name format`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
+        const originalToolName = toolName.substring(
+          firstDoubleUnderscoreIndex + 2,
+        );
+
+        // Get server parameters and find the right session for this tool
+        const serverParams = await getMcpServers(namespaceUuid);
+        let targetSession = null;
+
+        for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
+          const session = await mcpServerPool.getSession(
+            sessionId,
+            mcpServerUuid,
+            params,
+          );
+          if (!session) continue;
+
+          const capabilities = session.client.getServerCapabilities();
+          if (!capabilities?.tools) continue;
+
+          // Use name assigned by user, fallback to name from server
+          const serverName =
+            params.name || session.client.getServerVersion()?.name || "";
+
+          if (sanitizeName(serverName) === serverPrefix) {
+            targetSession = session;
+            break;
+          }
+        }
+
+        if (!targetSession) {
+          return res.status(404).json({
+            error: "Tool not found",
+            message: `Tool '${toolName}' not found`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Execute the tool through the individual MCP client
+        const result = await targetSession.client.request(
+          {
+            method: "tools/call",
+            params: {
+              name: originalToolName,
+              arguments: {},
+            },
+          },
+          CompatibilityCallToolResultSchema,
+        );
+
+        // Return the result directly (simplified format)
+        res.json(result);
+      } finally {
+        // Cleanup the temporary session
+        await metaMcpServerPool.cleanupSession(sessionId);
+      }
+    } catch (error) {
+      console.error(`Error executing tool ${toolName}:`, error);
+
+      // Handle different types of errors
+      if (error instanceof Error) {
+        if (error.message.includes("Unknown tool")) {
+          return res.status(404).json({
+            error: "Tool not found",
+            message: `Tool '${toolName}' not found`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        return res.status(500).json({
+          error: "Tool execution failed",
+          message: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to execute tool",
+        timestamp: new Date().toISOString(),
+      });
+    }
   },
 );
 

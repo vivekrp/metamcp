@@ -152,7 +152,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
               <br />
               OpenAPI: {getAppUrl()}/metamcp/{endpoint.name}/api
               <br />
-              Schema: {getAppUrl()}/metamcp/{endpoint.name}/openapi.json
+              Schema: {getAppUrl()}/metamcp/{endpoint.name}/api/openapi.json
             </div>
           </div>
         );
@@ -241,7 +241,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
         };
 
         const copyFullOpenApiSchemaUrl = () => {
-          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/openapi.json`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("OpenAPI Schema URL copied to clipboard");
         };
@@ -277,7 +277,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
 
         const copyFullOpenApiSchemaUrlWithApiKey = () => {
           const apiKey = getApiKey();
-          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/openapi.json?api_key=${apiKey}`;
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
           toast.success(
             "OpenAPI Schema URL with API key parameter copied to clipboard",
