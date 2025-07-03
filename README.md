@@ -2,7 +2,17 @@
 
 <div align="center">
 
-[![](https://dcbadge.limes.pink/api/server/mNsyat7mFX)](https://discord.gg/mNsyat7mFX)
+<p align="center">
+  <a href="https://discord.gg/mNsyat7mFX">
+    <img src="https://img.shields.io/discord/1342414427122827316?style=flat-square&logo=discord&logoColor=white&label=Discord" alt="Discord">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
+  </a>
+  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp">
+    <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR">
+  </a>
+</p>
 
 </div>
 
