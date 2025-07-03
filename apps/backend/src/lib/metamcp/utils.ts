@@ -88,6 +88,7 @@ export async function convertDbServerToParams(
       status: "active", // Default status for non-namespace servers
       stderr: "inherit" as const,
       oauth_tokens: oauthTokens,
+      bearerToken: server.bearerToken,
     };
 
     // Process based on server type

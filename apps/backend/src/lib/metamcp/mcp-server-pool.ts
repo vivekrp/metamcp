@@ -1,10 +1,6 @@
 import { ServerParameters } from "@repo/zod-types";
 
-import {
-  ConnectedClient,
-  connectMetaMcpClient,
-  createMetaMcpClient,
-} from "./client";
+import { ConnectedClient, connectMetaMcpClient } from "./client";
 
 export interface McpServerPoolStatus {
   idle: number;
@@ -114,12 +110,7 @@ export class McpServerPool {
   private async createNewConnection(
     params: ServerParameters,
   ): Promise<ConnectedClient | undefined> {
-    const { client, transport } = createMetaMcpClient(params);
-    if (!client || !transport) {
-      return undefined;
-    }
-
-    const connectedClient = await connectMetaMcpClient(client, transport);
+    const connectedClient = await connectMetaMcpClient(params);
     if (!connectedClient) {
       return undefined;
     }

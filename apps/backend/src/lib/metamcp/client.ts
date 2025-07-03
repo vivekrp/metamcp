@@ -72,12 +72,20 @@ export const createMetaMcpClient = (
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
 
-    if (!serverParams.oauth_tokens) {
+    // Check for authentication - prioritize OAuth tokens, fallback to bearerToken
+    const hasAuth =
+      serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+
+    if (!hasAuth) {
       transport = new SSEClientTransport(new URL(transformedUrl));
     } else {
       const headers: Record<string, string> = {};
-      headers["Authorization"] =
-        `Bearer ${serverParams.oauth_tokens.access_token}`;
+
+      // Use OAuth access token if available, otherwise use bearerToken
+      const authToken =
+        serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+      headers["Authorization"] = `Bearer ${authToken}`;
+
       transport = new SSEClientTransport(new URL(transformedUrl), {
         requestInit: {
           headers,
@@ -91,12 +99,20 @@ export const createMetaMcpClient = (
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
 
-    if (!serverParams.oauth_tokens) {
+    // Check for authentication - prioritize OAuth tokens, fallback to bearerToken
+    const hasAuth =
+      serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+
+    if (!hasAuth) {
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl));
     } else {
       const headers: Record<string, string> = {};
-      headers["Authorization"] =
-        `Bearer ${serverParams.oauth_tokens.access_token}`;
+
+      // Use OAuth access token if available, otherwise use bearerToken
+      const authToken =
+        serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+      headers["Authorization"] = `Bearer ${authToken}`;
+
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl), {
         requestInit: {
           headers,
@@ -129,8 +145,7 @@ export const createMetaMcpClient = (
 };
 
 export const connectMetaMcpClient = async (
-  client: Client,
-  transport: Transport,
+  serverParams: ServerParameters,
 ): Promise<ConnectedClient | undefined> => {
   const waitFor = 2500;
   const retries = 3;
@@ -139,6 +154,12 @@ export const connectMetaMcpClient = async (
 
   while (retry) {
     try {
+      // Create fresh client and transport for each attempt
+      const { client, transport } = createMetaMcpClient(serverParams);
+      if (!client || !transport) {
+        return undefined;
+      }
+
       await client.connect(transport);
 
       return {
@@ -158,13 +179,10 @@ export const connectMetaMcpClient = async (
       count++;
       retry = count < retries;
       if (retry) {
-        try {
-          await client.close();
-        } catch {
-          /* empty */
-        }
         await sleep(waitFor);
       }
     }
   }
+
+  return undefined;
 };

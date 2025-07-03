@@ -83,6 +83,7 @@ export async function getMcpServers(
         status: server.status.toLowerCase(),
         stderr: "inherit" as IOType,
         oauth_tokens: oauthTokens,
+        bearerToken: server.bearerToken,
       };
 
       // Process based on server type
