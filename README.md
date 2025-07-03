@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://discord.gg/mNsyat7mFX">
-    <img src="https://img.shields.io/discord/1342414427122827316?style=flat-square&logo=discord&logoColor=white&label=Discord" alt="Discord">
+    <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord">
   </a>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
