@@ -26,6 +26,7 @@
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
 - [❄️ Cold Start Problem and Custom Dockerfile](#️-cold-start-problem-and-custom-dockerfile)
 - [🔐 Authentication](#-authentication)
+- [🔗 OpenID Connect (OIDC) Provider Support](#-openid-connect-oidc-provider-support)
 - [🏗️ Architecture](#️-architecture)
   - [📊 Sequence Diagram](#-sequence-diagram)
 - [🗺️ Roadmap](#️-roadmap)
@@ -121,6 +122,51 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 - 🍪 **Session cookies** enforce internal MCP proxy connections  
 - 🔑 **API key auth** for external access via `Authorization: Bearer <api-key>` header
 - Note though: the repo is not designed for multi-tenancy and each org should self-host an instance for org wide. E.g., MCP server has no user_id association, so every account have access to every MCP server configs hosted on the instance.
+
+## 🔗 OpenID Connect (OIDC) Provider Support
+
+MetaMCP supports **OpenID Connect authentication** for enterprise SSO integration. This allows organizations to use their existing identity providers (Auth0, Keycloak, Azure AD, etc.) for authentication.
+
+### 🛠️ **Configuration**
+
+Add the following environment variables to your `.env` file:
+
+```bash
+# Required
+OIDC_CLIENT_ID=your-oidc-client-id
+OIDC_CLIENT_SECRET=your-oidc-client-secret
+
+# Recommended: Auto-discovery
+OIDC_DISCOVERY_URL=https://your-provider.com/.well-known/openid-configuration
+
+# Optional customization
+OIDC_PROVIDER_ID=oidc
+OIDC_SCOPES=openid email profile
+OIDC_PKCE=true
+```
+
+### 🏢 **Supported Providers**
+
+MetaMCP has been tested with popular OIDC providers:
+
+- **Auth0**: `https://your-domain.auth0.com/.well-known/openid-configuration`
+- **Keycloak**: `https://your-keycloak.com/realms/your-realm/.well-known/openid-configuration`
+- **Azure AD**: `https://login.microsoftonline.com/your-tenant-id/v2.0/.well-known/openid-configuration`
+- **Google**: `https://accounts.google.com/.well-known/openid-configuration`
+- **Okta**: `https://your-domain.okta.com/.well-known/openid-configuration`
+
+### 🔒 **Security Features**
+
+- 🔐 **PKCE (Proof Key for Code Exchange)** enabled by default
+- 🛡️ **Authorization Code Flow** with automatic user creation
+- 🔄 **Auto-discovery** of OIDC endpoints
+- 🍪 **Seamless session management** with existing auth system
+
+### 📱 **Usage**
+
+Once configured, users will see a **"Sign in with OIDC"** button on the login page alongside the email/password form. The authentication flow automatically creates new users on first login.
+
+For more detailed configuration examples and troubleshooting, see **[CONTRIBUTING.md](CONTRIBUTING.md#openid-connect-oidc-provider-setup)**.
 
 ## SSE conf for Nginx
 
