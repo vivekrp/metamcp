@@ -78,7 +78,7 @@ A MCP server configuration that tells MetaMCP how to start a MCP server.
 - Create endpoints and assign namespace to endpoints
 - Multiple MCP servers in the namespace will be aggregated and emitted as a MetaMCP endpoint
 - Choose auth level and strategy
-- Host through **SSE** or **Streamable HTTP** transports in MCP + OpenAPI endpoints for clients like [Open WebUI](https://github.com/open-webui/open-webui)
+- Host through **SSE** or **Streamable HTTP** transports in MCP and **OpenAPI** endpoints for clients like [Open WebUI](https://github.com/open-webui/open-webui)
 
 ### ⚙️ **Middleware**
 - Intercepts and transforms MCP requests and responses at namespace level
