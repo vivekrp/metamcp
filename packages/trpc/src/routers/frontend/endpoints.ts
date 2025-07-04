@@ -20,13 +20,21 @@ export const createEndpointsRouter = (
       input: z.infer<typeof CreateEndpointRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof CreateEndpointResponseSchema>>;
-    list: (userId: string) => Promise<z.infer<typeof ListEndpointsResponseSchema>>;
-    get: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof GetEndpointResponseSchema>>;
-    delete: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof DeleteEndpointResponseSchema>>;
+    list: (
+      userId: string,
+    ) => Promise<z.infer<typeof ListEndpointsResponseSchema>>;
+    get: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof GetEndpointResponseSchema>>;
+    delete: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof DeleteEndpointResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateEndpointRequestSchema>,
       userId: string,

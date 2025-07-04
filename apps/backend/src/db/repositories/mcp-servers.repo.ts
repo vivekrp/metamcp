@@ -3,7 +3,7 @@ import {
   McpServerCreateInput,
   McpServerUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq, or, isNull, and } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { DatabaseError } from "pg";
 
 import { db } from "../index";
@@ -89,8 +89,8 @@ export class McpServersRepository {
       .where(
         or(
           isNull(mcpServersTable.user_id), // Public servers
-          eq(mcpServersTable.user_id, userId) // User's own servers
-        )
+          eq(mcpServersTable.user_id, userId), // User's own servers
+        ),
       )
       .orderBy(desc(mcpServersTable.created_at));
   }
@@ -134,15 +134,20 @@ export class McpServersRepository {
   }
 
   // Find server by name within user scope (for uniqueness checks)
-  async findByNameAndUserId(name: string, userId: string | null): Promise<DatabaseMcpServer | undefined> {
+  async findByNameAndUserId(
+    name: string,
+    userId: string | null,
+  ): Promise<DatabaseMcpServer | undefined> {
     const [server] = await db
       .select()
       .from(mcpServersTable)
       .where(
         and(
           eq(mcpServersTable.name, name),
-          userId ? eq(mcpServersTable.user_id, userId) : isNull(mcpServersTable.user_id)
-        )
+          userId
+            ? eq(mcpServersTable.user_id, userId)
+            : isNull(mcpServersTable.user_id),
+        ),
       )
       .limit(1);
 

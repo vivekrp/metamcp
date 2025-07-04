@@ -35,11 +35,14 @@ export const endpointsImplementations = {
       }
 
       // Determine user ownership based on input.user_id or default to current user
-      const effectiveUserId = input.user_id !== undefined ? input.user_id : userId;
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : userId;
       const isPublicEndpoint = effectiveUserId === null;
 
       // Validate namespace accessibility and relationship rules
-      const namespace = await namespacesRepository.findByUuid(input.namespaceUuid);
+      const namespace = await namespacesRepository.findByUuid(
+        input.namespaceUuid,
+      );
       if (!namespace) {
         return {
           success: false as const,
@@ -136,10 +139,13 @@ export const endpointsImplementations = {
     }
   },
 
-  list: async (userId: string): Promise<z.infer<typeof ListEndpointsResponseSchema>> => {
+  list: async (
+    userId: string,
+  ): Promise<z.infer<typeof ListEndpointsResponseSchema>> => {
     try {
       // Get endpoints accessible to user (public + user's own)
-      const endpoints = await endpointsRepository.findAllAccessibleToUser(userId);
+      const endpoints =
+        await endpointsRepository.findAllAccessibleToUser(userId);
 
       return {
         success: true as const,
@@ -156,9 +162,12 @@ export const endpointsImplementations = {
     }
   },
 
-  get: async (input: {
-    uuid: string;
-  }, userId: string): Promise<z.infer<typeof GetEndpointResponseSchema>> => {
+  get: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof GetEndpointResponseSchema>> => {
     try {
       const endpoint = await endpointsRepository.findByUuidWithNamespace(
         input.uuid,
@@ -175,7 +184,8 @@ export const endpointsImplementations = {
       if (endpoint.user_id && endpoint.user_id !== userId) {
         return {
           success: false as const,
-          message: "Access denied: You can only view endpoints you own or public endpoints",
+          message:
+            "Access denied: You can only view endpoints you own or public endpoints",
         };
       }
 
@@ -193,20 +203,24 @@ export const endpointsImplementations = {
     }
   },
 
-  delete: async (input: {
-    uuid: string;
-  }, userId: string): Promise<z.infer<typeof DeleteEndpointResponseSchema>> => {
+  delete: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof DeleteEndpointResponseSchema>> => {
     try {
       // First, check if the endpoint exists and user has permission to delete it
-      const existingEndpoint = await endpointsRepository.findByUuidWithNamespace(input.uuid);
-      
+      const existingEndpoint =
+        await endpointsRepository.findByUuidWithNamespace(input.uuid);
+
       if (!existingEndpoint) {
         return {
           success: false as const,
           message: "Endpoint not found",
         };
       }
-      
+
       // Check if user owns this endpoint (only owners can delete, protect public endpoints)
       if (existingEndpoint.user_id && existingEndpoint.user_id !== userId) {
         return {
@@ -246,15 +260,16 @@ export const endpointsImplementations = {
   ): Promise<z.infer<typeof UpdateEndpointResponseSchema>> => {
     try {
       // First, check if the endpoint exists and user has permission to update it
-      const existingEndpoint = await endpointsRepository.findByUuidWithNamespace(input.uuid);
-      
+      const existingEndpoint =
+        await endpointsRepository.findByUuidWithNamespace(input.uuid);
+
       if (!existingEndpoint) {
         return {
           success: false as const,
           message: "Endpoint not found",
         };
       }
-      
+
       // Check if user owns this endpoint (only owners can update)
       if (existingEndpoint.user_id && existingEndpoint.user_id !== userId) {
         return {
@@ -267,7 +282,9 @@ export const endpointsImplementations = {
 
       // Validate namespace accessibility and relationship rules if namespace is being updated
       if (input.namespaceUuid !== existingEndpoint.namespace_uuid) {
-        const namespace = await namespacesRepository.findByUuid(input.namespaceUuid);
+        const namespace = await namespacesRepository.findByUuid(
+          input.namespaceUuid,
+        );
         if (!namespace) {
           return {
             success: false as const,
@@ -293,7 +310,9 @@ export const endpointsImplementations = {
       }
 
       // Check if another endpoint with the same name exists (excluding current one)
-      const duplicateEndpoint = await endpointsRepository.findByName(input.name);
+      const duplicateEndpoint = await endpointsRepository.findByName(
+        input.name,
+      );
       if (duplicateEndpoint && duplicateEndpoint.uuid !== input.uuid) {
         return {
           success: false as const,

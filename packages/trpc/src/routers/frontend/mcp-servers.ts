@@ -22,17 +22,25 @@ export const createMcpServersRouter = (
       input: z.infer<typeof CreateMcpServerRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof CreateMcpServerResponseSchema>>;
-    list: (userId: string) => Promise<z.infer<typeof ListMcpServersResponseSchema>>;
+    list: (
+      userId: string,
+    ) => Promise<z.infer<typeof ListMcpServersResponseSchema>>;
     bulkImport: (
       input: z.infer<typeof BulkImportMcpServersRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof BulkImportMcpServersResponseSchema>>;
-    get: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof GetMcpServerResponseSchema>>;
-    delete: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof DeleteMcpServerResponseSchema>>;
+    get: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof GetMcpServerResponseSchema>>;
+    delete: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof DeleteMcpServerResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateMcpServerRequestSchema>,
       userId: string,

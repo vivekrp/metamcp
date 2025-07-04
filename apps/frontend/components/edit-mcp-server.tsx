@@ -320,23 +320,20 @@ export function EditMcpServer({
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
                 <DropdownMenuItem
-                  onClick={() =>
-                    editForm.setValue("user_id", undefined)
-                  }
+                  onClick={() => editForm.setValue("user_id", undefined)}
                 >
                   For myself (Private)
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() =>
-                    editForm.setValue("user_id", null)
-                  }
+                  onClick={() => editForm.setValue("user_id", null)}
                 >
                   Everyone (Public)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <p className="text-xs text-muted-foreground">
-              Private servers are only accessible to you. Public servers are accessible to all users.
+              Private servers are only accessible to you. Public servers are
+              accessible to all users.
             </p>
           </div>
 

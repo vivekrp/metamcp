@@ -12,7 +12,10 @@ import {
 } from "@repo/zod-types";
 import { z } from "zod";
 
-import { mcpServersRepository, namespaceMappingsRepository } from "../db/repositories";
+import {
+  mcpServersRepository,
+  namespaceMappingsRepository,
+} from "../db/repositories";
 import { McpServersSerializer } from "../db/serializers";
 import { mcpServerPool } from "../lib/metamcp/mcp-server-pool";
 import { metaMcpServerPool } from "../lib/metamcp/metamcp-server-pool";
@@ -25,8 +28,9 @@ export const mcpServersImplementations = {
   ): Promise<z.infer<typeof CreateMcpServerResponseSchema>> => {
     try {
       // Determine user ownership based on input.user_id or default to current user
-      const effectiveUserId = input.user_id !== undefined ? input.user_id : userId;
-      
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : userId;
+
       const createdServer = await mcpServersRepository.create({
         ...input,
         user_id: effectiveUserId,
@@ -65,10 +69,13 @@ export const mcpServersImplementations = {
     }
   },
 
-  list: async (userId: string): Promise<z.infer<typeof ListMcpServersResponseSchema>> => {
+  list: async (
+    userId: string,
+  ): Promise<z.infer<typeof ListMcpServersResponseSchema>> => {
     try {
       // Find servers accessible to user (public + user's own)
-      const servers = await mcpServersRepository.findAllAccessibleToUser(userId);
+      const servers =
+        await mcpServersRepository.findAllAccessibleToUser(userId);
 
       return {
         success: true as const,
@@ -176,17 +183,21 @@ export const mcpServersImplementations = {
     }
   },
 
-  get: async (input: {
-    uuid: string;
-  }, userId: string): Promise<z.infer<typeof GetMcpServerResponseSchema>> => {
+  get: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof GetMcpServerResponseSchema>> => {
     try {
       const server = await mcpServersRepository.findByUuid(input.uuid);
-      
+
       // Check if user has access to this server (own server or public server)
       if (server && server.user_id && server.user_id !== userId) {
         return {
           success: false as const,
-          message: "Access denied: You can only view servers you own or public servers",
+          message:
+            "Access denied: You can only view servers you own or public servers",
         };
       }
 
@@ -211,20 +222,23 @@ export const mcpServersImplementations = {
     }
   },
 
-  delete: async (input: {
-    uuid: string;
-  }, userId: string): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
+  delete: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
     try {
       // Check if server exists and user has permission to delete it
       const server = await mcpServersRepository.findByUuid(input.uuid);
-      
+
       if (!server) {
         return {
           success: false as const,
           message: "MCP server not found",
         };
       }
-      
+
       // Only server owner can delete their own servers, only admin can delete public servers
       if (server.user_id && server.user_id !== userId) {
         return {
@@ -232,10 +246,12 @@ export const mcpServersImplementations = {
           message: "Access denied: You can only delete servers you own",
         };
       }
-      
+
       // Find affected namespaces before deleting the server
       const affectedNamespaceUuids =
-        await namespaceMappingsRepository.findNamespacesByServerUuid(input.uuid);
+        await namespaceMappingsRepository.findNamespacesByServerUuid(
+          input.uuid,
+        );
 
       const deletedServer = await mcpServersRepository.deleteByUuid(input.uuid);
 
@@ -282,14 +298,14 @@ export const mcpServersImplementations = {
     try {
       // Check if server exists and user has permission to update it
       const server = await mcpServersRepository.findByUuid(input.uuid);
-      
+
       if (!server) {
         return {
           success: false as const,
           message: "MCP server not found",
         };
       }
-      
+
       // Only server owner can update their own servers, only admin can update public servers
       if (server.user_id && server.user_id !== userId) {
         return {
@@ -297,10 +313,11 @@ export const mcpServersImplementations = {
           message: "Access denied: You can only update servers you own",
         };
       }
-      
+
       // Determine user ownership based on input.user_id or keep existing ownership
-      const effectiveUserId = input.user_id !== undefined ? input.user_id : server.user_id;
-      
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : server.user_id;
+
       const updatedServer = await mcpServersRepository.update({
         ...input,
         user_id: effectiveUserId,

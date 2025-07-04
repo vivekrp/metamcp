@@ -28,17 +28,25 @@ export const createNamespacesRouter = (
       input: z.infer<typeof CreateNamespaceRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof CreateNamespaceResponseSchema>>;
-    list: (userId: string) => Promise<z.infer<typeof ListNamespacesResponseSchema>>;
-    get: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof GetNamespaceResponseSchema>>;
+    list: (
+      userId: string,
+    ) => Promise<z.infer<typeof ListNamespacesResponseSchema>>;
+    get: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof GetNamespaceResponseSchema>>;
     getTools: (
       input: z.infer<typeof GetNamespaceToolsRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof GetNamespaceToolsResponseSchema>>;
-    delete: (input: {
-      uuid: string;
-    }, userId: string) => Promise<z.infer<typeof DeleteNamespaceResponseSchema>>;
+    delete: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof DeleteNamespaceResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateNamespaceRequestSchema>,
       userId: string,

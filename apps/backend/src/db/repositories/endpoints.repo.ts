@@ -4,7 +4,7 @@ import {
   EndpointCreateInput,
   EndpointUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq, or, isNull, and } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import { db } from "../index";
 import { endpointsTable, namespacesTable } from "../schema";
@@ -65,8 +65,8 @@ export class EndpointsRepository {
       .where(
         or(
           isNull(endpointsTable.user_id), // Public endpoints
-          eq(endpointsTable.user_id, userId) // User's own endpoints
-        )
+          eq(endpointsTable.user_id, userId), // User's own endpoints
+        ),
       )
       .orderBy(desc(endpointsTable.created_at));
   }
@@ -216,7 +216,10 @@ export class EndpointsRepository {
   }
 
   // Find endpoint by name within user scope (for uniqueness checks)
-  async findByNameAndUserId(name: string, userId: string | null): Promise<DatabaseEndpoint | undefined> {
+  async findByNameAndUserId(
+    name: string,
+    userId: string | null,
+  ): Promise<DatabaseEndpoint | undefined> {
     const [endpoint] = await db
       .select({
         uuid: endpointsTable.uuid,
@@ -233,8 +236,10 @@ export class EndpointsRepository {
       .where(
         and(
           eq(endpointsTable.name, name),
-          userId ? eq(endpointsTable.user_id, userId) : isNull(endpointsTable.user_id)
-        )
+          userId
+            ? eq(endpointsTable.user_id, userId)
+            : isNull(endpointsTable.user_id),
+        ),
       )
       .limit(1);
 

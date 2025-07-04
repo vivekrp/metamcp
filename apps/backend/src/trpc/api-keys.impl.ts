@@ -24,7 +24,7 @@ export const apiKeysImplementations = {
     try {
       // Use input.user_id if provided, otherwise default to current user (private)
       const apiKeyUserId = input.user_id !== undefined ? input.user_id : userId;
-      
+
       const result = await apiKeysRepository.create({
         name: input.name,
         user_id: apiKeyUserId,

@@ -5,7 +5,7 @@ import {
   NamespaceCreateInput,
   NamespaceUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq, inArray, or, isNull, and } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { db } from "../index";
 import {
@@ -97,8 +97,8 @@ export class NamespacesRepository {
       .where(
         or(
           isNull(namespacesTable.user_id), // Public namespaces
-          eq(namespacesTable.user_id, userId) // User's own namespaces
-        )
+          eq(namespacesTable.user_id, userId), // User's own namespaces
+        ),
       )
       .orderBy(desc(namespacesTable.created_at));
   }
@@ -152,7 +152,10 @@ export class NamespacesRepository {
   }
 
   // Find namespace by name within user scope (for uniqueness checks)
-  async findByNameAndUserId(name: string, userId: string | null): Promise<DatabaseNamespace | undefined> {
+  async findByNameAndUserId(
+    name: string,
+    userId: string | null,
+  ): Promise<DatabaseNamespace | undefined> {
     const [namespace] = await db
       .select({
         uuid: namespacesTable.uuid,
@@ -166,8 +169,10 @@ export class NamespacesRepository {
       .where(
         and(
           eq(namespacesTable.name, name),
-          userId ? eq(namespacesTable.user_id, userId) : isNull(namespacesTable.user_id)
-        )
+          userId
+            ? eq(namespacesTable.user_id, userId)
+            : isNull(namespacesTable.user_id),
+        ),
       )
       .limit(1);
 

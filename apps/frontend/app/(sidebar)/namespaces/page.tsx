@@ -196,23 +196,20 @@ export default function NamespacesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
                       <DropdownMenuItem
-                        onClick={() =>
-                          form.setValue("user_id", undefined)
-                        }
+                        onClick={() => form.setValue("user_id", undefined)}
                       >
                         For myself (Private)
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() =>
-                          form.setValue("user_id", null)
-                        }
+                        onClick={() => form.setValue("user_id", null)}
                       >
                         Everyone (Public)
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <p className="text-xs text-muted-foreground">
-                    Private namespaces are only accessible to you. Public namespaces are accessible to all users.
+                    Private namespaces are only accessible to you. Public
+                    namespaces are accessible to all users.
                   </p>
                 </div>
 
@@ -272,11 +269,11 @@ export default function NamespacesPage() {
                     variant="outline"
                     onClick={() => {
                       setCreateOpen(false);
-                            form.reset({
-        name: "",
-        description: "",
-        user_id: undefined, // Default to "For myself" (Private)
-      });
+                      form.reset({
+                        name: "",
+                        description: "",
+                        user_id: undefined, // Default to "For myself" (Private)
+                      });
                       setSelectedServerUuids([]);
                     }}
                     disabled={isSubmitting}

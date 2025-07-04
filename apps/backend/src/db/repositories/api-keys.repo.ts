@@ -1,5 +1,5 @@
 import { ApiKeyCreateInput, ApiKeyUpdateInput } from "@repo/zod-types";
-import { and, desc, eq, or, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 
 import { db } from "../index";
@@ -115,8 +115,8 @@ export class ApiKeysRepository {
       .where(
         or(
           isNull(apiKeysTable.user_id), // Public API keys
-          eq(apiKeysTable.user_id, userId) // User's own API keys
-        )
+          eq(apiKeysTable.user_id, userId), // User's own API keys
+        ),
       )
       .orderBy(desc(apiKeysTable.created_at));
   }
@@ -154,13 +154,13 @@ export class ApiKeysRepository {
       .where(
         and(
           eq(apiKeysTable.uuid, uuid),
-          userId 
+          userId
             ? or(
                 isNull(apiKeysTable.user_id), // Public API keys
-                eq(apiKeysTable.user_id, userId) // User's own API keys
+                eq(apiKeysTable.user_id, userId), // User's own API keys
               )
-            : isNull(apiKeysTable.user_id) // Only public if no user context
-        )
+            : isNull(apiKeysTable.user_id), // Only public if no user context
+        ),
       );
 
     return apiKey;

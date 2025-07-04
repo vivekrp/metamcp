@@ -180,9 +180,14 @@ export default function ApiKeysPage() {
                     Ownership
                   </Label>
                   <Select
-                    value={form.watch("user_id") === null ? "public" : "private"}
+                    value={
+                      form.watch("user_id") === null ? "public" : "private"
+                    }
                     onValueChange={(value) => {
-                      form.setValue("user_id", value === "public" ? null : undefined);
+                      form.setValue(
+                        "user_id",
+                        value === "public" ? null : undefined,
+                      );
                     }}
                   >
                     <SelectTrigger>
@@ -198,7 +203,8 @@ export default function ApiKeysPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Private API keys are only visible to you. Public API keys can be used by anyone.
+                    Private API keys are only visible to you. Public API keys
+                    can be used by anyone.
                   </p>
                 </div>
                 <div className="flex gap-2">
