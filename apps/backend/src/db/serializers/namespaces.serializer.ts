@@ -15,6 +15,7 @@ export class NamespacesSerializer {
       description: dbNamespace.description,
       created_at: dbNamespace.created_at.toISOString(),
       updated_at: dbNamespace.updated_at.toISOString(),
+      user_id: dbNamespace.user_id,
     };
   }
 
@@ -33,6 +34,7 @@ export class NamespacesSerializer {
       description: dbNamespace.description,
       created_at: dbNamespace.created_at.toISOString(),
       updated_at: dbNamespace.updated_at.toISOString(),
+      user_id: dbNamespace.user_id,
       servers: dbNamespace.servers.map((server) => ({
         uuid: server.uuid,
         name: server.name,
