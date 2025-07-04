@@ -610,24 +610,21 @@ export function useConnection({
       }
     };
 
-    const handleVisibilityChange = () => {
-      // Close connection when page becomes hidden (tab switch, minimize, etc.)
-      if (
-        document.visibilityState === "hidden" &&
-        connectionStatus === "connected"
-      ) {
+    const handleUnload = () => {
+      // Final cleanup on actual page unload (refresh, close, navigate away)
+      if (connectionStatus === "connected") {
         disconnect();
       }
     };
 
     // Add event listeners for browser navigation
     window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("unload", handleUnload);
 
     // Cleanup on component unmount
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("unload", handleUnload);
       if (connectionStatus === "connected") {
         disconnect();
       }
