@@ -99,7 +99,12 @@ export const apiKeysImplementations = {
     input: z.infer<typeof ValidateApiKeyRequestSchema>,
   ): Promise<z.infer<typeof ValidateApiKeyResponseSchema>> => {
     try {
-      return await apiKeysRepository.validateApiKey(input.key);
+      const result = await apiKeysRepository.validateApiKey(input.key);
+      return {
+        valid: result.valid,
+        user_id: result.user_id ?? undefined,
+        key_uuid: result.key_uuid,
+      };
     } catch (error) {
       console.error("Error validating API key:", error);
       return { valid: false };

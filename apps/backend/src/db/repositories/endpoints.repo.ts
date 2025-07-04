@@ -71,6 +71,46 @@ export class EndpointsRepository {
       .orderBy(desc(endpointsTable.created_at));
   }
 
+  // Find endpoints accessible to a specific user with namespace data (public + user's own endpoints)
+  async findAllAccessibleToUserWithNamespaces(userId: string): Promise<DatabaseEndpointWithNamespace[]> {
+    const endpointsData = await db
+      .select({
+        // Endpoint fields
+        uuid: endpointsTable.uuid,
+        name: endpointsTable.name,
+        description: endpointsTable.description,
+        namespace_uuid: endpointsTable.namespace_uuid,
+        enable_api_key_auth: endpointsTable.enable_api_key_auth,
+        use_query_param_auth: endpointsTable.use_query_param_auth,
+        created_at: endpointsTable.created_at,
+        updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
+        // Namespace fields
+        namespace: {
+          uuid: namespacesTable.uuid,
+          name: namespacesTable.name,
+          description: namespacesTable.description,
+          created_at: namespacesTable.created_at,
+          updated_at: namespacesTable.updated_at,
+          user_id: namespacesTable.user_id,
+        },
+      })
+      .from(endpointsTable)
+      .innerJoin(
+        namespacesTable,
+        eq(endpointsTable.namespace_uuid, namespacesTable.uuid),
+      )
+      .where(
+        or(
+          isNull(endpointsTable.user_id), // Public endpoints
+          eq(endpointsTable.user_id, userId), // User's own endpoints
+        ),
+      )
+      .orderBy(desc(endpointsTable.created_at));
+
+    return endpointsData;
+  }
+
   // Find only public endpoints (no user ownership)
   async findPublicEndpoints(): Promise<DatabaseEndpoint[]> {
     return await db

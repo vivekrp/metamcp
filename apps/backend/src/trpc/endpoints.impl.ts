@@ -143,9 +143,9 @@ export const endpointsImplementations = {
     userId: string,
   ): Promise<z.infer<typeof ListEndpointsResponseSchema>> => {
     try {
-      // Get endpoints accessible to user (public + user's own)
+      // Get endpoints accessible to user (public + user's own) with namespace data
       const endpoints =
-        await endpointsRepository.findAllAccessibleToUser(userId);
+        await endpointsRepository.findAllAccessibleToUserWithNamespaces(userId);
 
       return {
         success: true as const,
