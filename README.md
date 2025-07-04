@@ -127,9 +127,8 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
 ## ❄️ Cold Start Problem and Custom Dockerfile
 
-⚠️ **Cold start issue** for hosting `stdio` type MCP servers:
-- First run will be slow as package managers (uvx, npx) install dependencies
-- Happens again on docker restart
+- MetaMCP pre-allocate idle sessions for each configured MCP servers and MetaMCPs. The default idle session for each is 1 and that can help reduce cold start time.
+- If your MCP requires dependencies other than `uvx` or `npx`, you need to customize the Dockerfile to install dependencies on your own.
 
 🛠️ **Solution**: Customize the Dockerfile to add dependencies or pre-install packages to reduce cold start time.
 
