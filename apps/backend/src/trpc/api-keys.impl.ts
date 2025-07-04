@@ -22,9 +22,12 @@ export const apiKeysImplementations = {
     userId: string,
   ): Promise<z.infer<typeof CreateApiKeyResponseSchema>> => {
     try {
+      // Use input.user_id if provided, otherwise default to current user (private)
+      const apiKeyUserId = input.user_id !== undefined ? input.user_id : userId;
+      
       const result = await apiKeysRepository.create({
         name: input.name,
-        user_id: userId,
+        user_id: apiKeyUserId,
         is_active: true,
       });
 
@@ -41,7 +44,7 @@ export const apiKeysImplementations = {
     userId: string,
   ): Promise<z.infer<typeof ListApiKeysResponseSchema>> => {
     try {
-      const apiKeys = await apiKeysRepository.findByUserId(userId);
+      const apiKeys = await apiKeysRepository.findAccessibleToUser(userId);
 
       return {
         apiKeys: ApiKeysSerializer.serializeApiKeyList(apiKeys),

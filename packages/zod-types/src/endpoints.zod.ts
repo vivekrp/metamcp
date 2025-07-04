@@ -14,6 +14,7 @@ export const createEndpointFormSchema = z.object({
   enableApiKeyAuth: z.boolean(),
   useQueryParamAuth: z.boolean(),
   createMcpServer: z.boolean(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const editEndpointFormSchema = z.object({
@@ -28,6 +29,7 @@ export const editEndpointFormSchema = z.object({
   namespaceUuid: z.string().uuid("Please select a valid namespace"),
   enableApiKeyAuth: z.boolean().optional(),
   useQueryParamAuth: z.boolean().optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const CreateEndpointRequestSchema = z.object({
@@ -40,6 +42,7 @@ export const CreateEndpointRequestSchema = z.object({
   enableApiKeyAuth: z.boolean().default(true),
   useQueryParamAuth: z.boolean().default(false),
   createMcpServer: z.boolean().default(true),
+  user_id: z.string().nullable().optional(),
 });
 
 export const EndpointSchema = z.object({
@@ -51,6 +54,7 @@ export const EndpointSchema = z.object({
   use_query_param_auth: z.boolean(),
   created_at: z.string(),
   updated_at: z.string(),
+  user_id: z.string().nullable(),
 });
 
 // Extended endpoint schema with namespace details
@@ -92,6 +96,7 @@ export const UpdateEndpointRequestSchema = z.object({
   namespaceUuid: z.string().uuid(),
   enableApiKeyAuth: z.boolean().optional(),
   useQueryParamAuth: z.boolean().optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const UpdateEndpointResponseSchema = z.object({
@@ -136,6 +141,7 @@ export const EndpointCreateInputSchema = z.object({
   namespace_uuid: z.string(),
   enable_api_key_auth: z.boolean().optional().default(true),
   use_query_param_auth: z.boolean().optional().default(false),
+  user_id: z.string().nullable().optional(),
 });
 
 export const EndpointUpdateInputSchema = z.object({
@@ -145,6 +151,7 @@ export const EndpointUpdateInputSchema = z.object({
   namespace_uuid: z.string(),
   enable_api_key_auth: z.boolean().optional(),
   use_query_param_auth: z.boolean().optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export type EndpointCreateInput = z.infer<typeof EndpointCreateInputSchema>;
@@ -160,6 +167,7 @@ export const DatabaseEndpointSchema = z.object({
   use_query_param_auth: z.boolean(),
   created_at: z.date(),
   updated_at: z.date(),
+  user_id: z.string().nullable(),
 });
 
 export const DatabaseEndpointWithNamespaceSchema =

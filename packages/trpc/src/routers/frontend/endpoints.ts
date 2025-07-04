@@ -20,15 +20,16 @@ export const createEndpointsRouter = (
       input: z.infer<typeof CreateEndpointRequestSchema>,
       userId: string,
     ) => Promise<z.infer<typeof CreateEndpointResponseSchema>>;
-    list: () => Promise<z.infer<typeof ListEndpointsResponseSchema>>;
+    list: (userId: string) => Promise<z.infer<typeof ListEndpointsResponseSchema>>;
     get: (input: {
       uuid: string;
-    }) => Promise<z.infer<typeof GetEndpointResponseSchema>>;
+    }, userId: string) => Promise<z.infer<typeof GetEndpointResponseSchema>>;
     delete: (input: {
       uuid: string;
-    }) => Promise<z.infer<typeof DeleteEndpointResponseSchema>>;
+    }, userId: string) => Promise<z.infer<typeof DeleteEndpointResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateEndpointRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof UpdateEndpointResponseSchema>>;
   },
 ) => {
@@ -36,16 +37,16 @@ export const createEndpointsRouter = (
     // Protected: List all endpoints
     list: protectedProcedure
       .output(ListEndpointsResponseSchema)
-      .query(async () => {
-        return await implementations.list();
+      .query(async ({ ctx }) => {
+        return await implementations.list(ctx.user.id);
       }),
 
     // Protected: Get single endpoint by UUID
     get: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(GetEndpointResponseSchema)
-      .query(async ({ input }) => {
-        return await implementations.get(input);
+      .query(async ({ input, ctx }) => {
+        return await implementations.get(input, ctx.user.id);
       }),
 
     // Protected: Create endpoint
@@ -60,16 +61,16 @@ export const createEndpointsRouter = (
     delete: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(DeleteEndpointResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.delete(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.delete(input, ctx.user.id);
       }),
 
     // Protected: Update endpoint
     update: protectedProcedure
       .input(UpdateEndpointRequestSchema)
       .output(UpdateEndpointResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.update(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.update(input, ctx.user.id);
       }),
   });
 };

@@ -59,6 +59,7 @@ export default function MCPServersPage() {
           url: "",
           bearerToken: "",
           env: "",
+          user_id: undefined, // Default to "For myself" (Private)
         });
         // Invalidate and refetch the server list
         utils.frontend.mcpServers.list.invalidate();
@@ -152,6 +153,7 @@ export default function MCPServersPage() {
       url: "",
       bearerToken: "",
       env: "",
+      user_id: undefined, // Default to "For myself" (Private)
     },
   });
 
@@ -192,6 +194,7 @@ export default function MCPServersPage() {
         env: envObject,
         url: data.url,
         bearerToken: data.bearerToken,
+        user_id: data.user_id,
       };
 
       // Use tRPC mutation instead of direct fetch
@@ -266,6 +269,43 @@ export default function MCPServersPage() {
                     {...form.register("description")}
                     placeholder="Server description"
                   />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Ownership</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                        type="button"
+                      >
+                        {form.watch("user_id") === null
+                          ? "Everyone (Public)"
+                          : "For myself (Private)"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          form.setValue("user_id", undefined)
+                        }
+                      >
+                        For myself (Private)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          form.setValue("user_id", null)
+                        }
+                      >
+                        Everyone (Public)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <p className="text-xs text-muted-foreground">
+                    Private servers are only accessible to you. Public servers are accessible to all users.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -422,6 +462,7 @@ export default function MCPServersPage() {
                         url: "",
                         bearerToken: "",
                         env: "",
+                        user_id: undefined, // Default to "For myself" (Private)
                       });
                     }}
                     disabled={isSubmitting}

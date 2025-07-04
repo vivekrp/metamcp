@@ -46,10 +46,15 @@ export const mcpServersTable = pgTable(
       .notNull()
       .defaultNow(),
     bearerToken: text("bearer_token"),
+    user_id: text("user_id").references(() => usersTable.id, {
+      onDelete: "cascade",
+    }),
   },
   (table) => [
     index("mcp_servers_type_idx").on(table.type),
-    unique("mcp_servers_name_unique_idx").on(table.name),
+    index("mcp_servers_user_id_idx").on(table.user_id),
+    // Allow same name for different users, but unique within user scope (including public)
+    unique("mcp_servers_name_user_unique_idx").on(table.name, table.user_id),
     sql`CONSTRAINT mcp_servers_name_regex_check CHECK (
         name ~ '^[a-zA-Z0-9_-]+$'
       )`,
@@ -192,24 +197,38 @@ export const verificationsTable = pgTable("verifications", {
 });
 
 // Namespaces table
-export const namespacesTable = pgTable("namespaces", {
-  uuid: uuid("uuid").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  created_at: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const namespacesTable = pgTable(
+  "namespaces",
+  {
+    uuid: uuid("uuid").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    user_id: text("user_id").references(() => usersTable.id, {
+      onDelete: "cascade",
+    }),
+  },
+  (table) => [
+    index("namespaces_user_id_idx").on(table.user_id),
+    // Allow same name for different users, but unique within user scope (including public)
+    unique("namespaces_name_user_unique_idx").on(table.name, table.user_id),
+    sql`CONSTRAINT namespaces_name_regex_check CHECK (
+        name ~ '^[a-zA-Z0-9_-]+$'
+      )`,
+  ],
+);
 
 // Endpoints table - public routing endpoints that map to namespaces
 export const endpointsTable = pgTable(
   "endpoints",
   {
     uuid: uuid("uuid").primaryKey().defaultRandom(),
-    name: text("name").notNull().unique(),
+    name: text("name").notNull(),
     description: text("description"),
     namespace_uuid: uuid("namespace_uuid")
       .notNull()
@@ -224,10 +243,15 @@ export const endpointsTable = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    user_id: text("user_id").references(() => usersTable.id, {
+      onDelete: "cascade",
+    }),
   },
   (table) => [
     index("endpoints_namespace_uuid_idx").on(table.namespace_uuid),
-    unique("endpoints_name_unique_idx").on(table.name),
+    index("endpoints_user_id_idx").on(table.user_id),
+    // Allow same name for different users, but unique within user scope (including public)
+    unique("endpoints_name_user_unique_idx").on(table.name, table.user_id),
     sql`CONSTRAINT endpoints_name_url_compatible_check CHECK (
         name ~ '^[a-zA-Z0-9_-]+$'
       )`,
@@ -311,9 +335,9 @@ export const apiKeysTable = pgTable(
     uuid: uuid("uuid").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     key: text("key").notNull().unique(),
-    user_id: text("user_id")
-      .notNull()
-      .references(() => usersTable.id, { onDelete: "cascade" }),
+    user_id: text("user_id").references(() => usersTable.id, {
+      onDelete: "cascade",
+    }),
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

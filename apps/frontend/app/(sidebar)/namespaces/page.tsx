@@ -6,7 +6,7 @@ import {
   createNamespaceFormSchema,
   CreateNamespaceRequest,
 } from "@repo/zod-types";
-import { Package, Plus } from "lucide-react";
+import { ChevronDown, Package, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -20,6 +20,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
@@ -51,6 +57,7 @@ export default function NamespacesPage() {
       form.reset({
         name: "",
         description: "",
+        user_id: undefined, // Default to "For myself" (Private)
       });
       setSelectedServerUuids([]);
       // Invalidate and refetch the namespace list
@@ -73,6 +80,7 @@ export default function NamespacesPage() {
       name: "",
       description: "",
       mcpServerUuids: [],
+      user_id: undefined, // Default to "For myself" (Private)
     },
   });
 
@@ -84,6 +92,7 @@ export default function NamespacesPage() {
         name: data.name,
         description: data.description,
         mcpServerUuids: selectedServerUuids,
+        user_id: data.user_id,
       };
 
       // Use tRPC mutation
@@ -171,6 +180,43 @@ export default function NamespacesPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Ownership</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                        type="button"
+                      >
+                        {form.watch("user_id") === null
+                          ? "Everyone (Public)"
+                          : "For myself (Private)"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          form.setValue("user_id", undefined)
+                        }
+                      >
+                        For myself (Private)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          form.setValue("user_id", null)
+                        }
+                      >
+                        Everyone (Public)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <p className="text-xs text-muted-foreground">
+                    Private namespaces are only accessible to you. Public namespaces are accessible to all users.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium">
                     MCP Servers (Optional)
                   </label>
@@ -226,10 +272,11 @@ export default function NamespacesPage() {
                     variant="outline"
                     onClick={() => {
                       setCreateOpen(false);
-                      form.reset({
-                        name: "",
-                        description: "",
-                      });
+                            form.reset({
+        name: "",
+        description: "",
+        user_id: undefined, // Default to "For myself" (Private)
+      });
                       setSelectedServerUuids([]);
                     }}
                     disabled={isSubmitting}

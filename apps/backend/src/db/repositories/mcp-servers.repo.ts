@@ -3,7 +3,7 @@ import {
   McpServerCreateInput,
   McpServerUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, or, isNull, and } from "drizzle-orm";
 import { DatabaseError } from "pg";
 
 import { db } from "../index";
@@ -36,10 +36,10 @@ function handleDatabaseError(
     // Handle unique constraint violation for server name
     if (
       pgError.code === "23505" &&
-      pgError.constraint === "mcp_servers_name_unique_idx"
+      pgError.constraint === "mcp_servers_name_user_unique_idx"
     ) {
       throw new Error(
-        `Server name "${serverName}" already exists. Server names must be unique.`,
+        `Server name "${serverName}" already exists. Server names must be unique within your scope.`,
       );
     }
 
@@ -81,6 +81,38 @@ export class McpServersRepository {
       .orderBy(desc(mcpServersTable.created_at));
   }
 
+  // Find servers accessible to a specific user (public + user's own servers)
+  async findAllAccessibleToUser(userId: string): Promise<DatabaseMcpServer[]> {
+    return await db
+      .select()
+      .from(mcpServersTable)
+      .where(
+        or(
+          isNull(mcpServersTable.user_id), // Public servers
+          eq(mcpServersTable.user_id, userId) // User's own servers
+        )
+      )
+      .orderBy(desc(mcpServersTable.created_at));
+  }
+
+  // Find only public servers (no user ownership)
+  async findPublicServers(): Promise<DatabaseMcpServer[]> {
+    return await db
+      .select()
+      .from(mcpServersTable)
+      .where(isNull(mcpServersTable.user_id))
+      .orderBy(desc(mcpServersTable.created_at));
+  }
+
+  // Find servers owned by a specific user
+  async findByUserId(userId: string): Promise<DatabaseMcpServer[]> {
+    return await db
+      .select()
+      .from(mcpServersTable)
+      .where(eq(mcpServersTable.user_id, userId))
+      .orderBy(desc(mcpServersTable.created_at));
+  }
+
   async findByUuid(uuid: string): Promise<DatabaseMcpServer | undefined> {
     const [server] = await db
       .select()
@@ -96,6 +128,22 @@ export class McpServersRepository {
       .select()
       .from(mcpServersTable)
       .where(eq(mcpServersTable.name, name))
+      .limit(1);
+
+    return server;
+  }
+
+  // Find server by name within user scope (for uniqueness checks)
+  async findByNameAndUserId(name: string, userId: string | null): Promise<DatabaseMcpServer | undefined> {
+    const [server] = await db
+      .select()
+      .from(mcpServersTable)
+      .where(
+        and(
+          eq(mcpServersTable.name, name),
+          userId ? eq(mcpServersTable.user_id, userId) : isNull(mcpServersTable.user_id)
+        )
+      )
       .limit(1);
 
     return server;
@@ -152,10 +200,10 @@ export class McpServersRepository {
         // Handle unique constraint violation for server name
         if (
           pgError.code === "23505" &&
-          pgError.constraint === "mcp_servers_name_unique_idx"
+          pgError.constraint === "mcp_servers_name_user_unique_idx"
         ) {
           throw new Error(
-            "One or more server names already exist. Server names must be unique.",
+            "One or more server names already exist. Server names must be unique within your scope.",
           );
         }
 

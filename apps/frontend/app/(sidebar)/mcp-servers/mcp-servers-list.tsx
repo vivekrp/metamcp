@@ -176,6 +176,27 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
       },
     },
     {
+      accessorKey: "user_id",
+      header: "Ownership",
+      cell: ({ row }) => {
+        const server = row.original;
+        const isPublic = server.user_id === null;
+        return (
+          <div className="px-3 py-2">
+            <span
+              className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                isPublic
+                  ? "bg-green-50 text-green-700 ring-green-700/10"
+                  : "bg-gray-50 text-gray-700 ring-gray-700/10"
+              }`}
+            >
+              {isPublic ? "Public" : "Private"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "details",
       header: "Configuration",
       cell: ({ row }) => {

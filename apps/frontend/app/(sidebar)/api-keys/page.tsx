@@ -19,6 +19,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -63,6 +71,7 @@ export default function ApiKeysPage() {
     resolver: zodResolver(CreateApiKeyFormSchema),
     defaultValues: {
       name: "",
+      user_id: undefined, // Will be set based on ownership selection
     },
   });
 
@@ -166,6 +175,32 @@ export default function ApiKeysPage() {
                     </p>
                   )}
                 </div>
+                <div>
+                  <Label htmlFor="ownership" className="text-sm font-medium">
+                    Ownership
+                  </Label>
+                  <Select
+                    value={form.watch("user_id") === null ? "public" : "private"}
+                    onValueChange={(value) => {
+                      form.setValue("user_id", value === "public" ? null : undefined);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select ownership" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">
+                        For myself (Private)
+                      </SelectItem>
+                      <SelectItem value="public">
+                        For everyone (Public)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Private API keys are only visible to you. Public API keys can be used by anyone.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -199,13 +234,14 @@ export default function ApiKeysPage() {
               <TableHead>Key</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Ownership</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {apiKeys?.apiKeys?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
+                <TableCell colSpan={6} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Key className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">No API keys found</p>
@@ -264,6 +300,17 @@ export default function ApiKeysPage() {
                       }`}
                     >
                       {apiKey.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                        apiKey.user_id === null
+                          ? "bg-green-50 text-green-700 ring-green-700/10"
+                          : "bg-gray-50 text-gray-700 ring-gray-700/10"
+                      }`}
+                    >
+                      {apiKey.user_id === null ? "Public" : "Private"}
                     </span>
                   </TableCell>
                   <TableCell>

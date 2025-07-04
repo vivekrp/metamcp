@@ -8,6 +8,7 @@ export const createNamespaceFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export type CreateNamespaceFormData = z.infer<typeof createNamespaceFormSchema>;
@@ -16,6 +17,7 @@ export const editNamespaceFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export type EditNamespaceFormData = z.infer<typeof editNamespaceFormSchema>;
@@ -24,6 +26,7 @@ export const CreateNamespaceRequestSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const NamespaceSchema = z.object({
@@ -32,6 +35,7 @@ export const NamespaceSchema = z.object({
   description: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
+  user_id: z.string().nullable(),
 });
 
 // Server within namespace schema - extends McpServerSchema with namespace-specific status
@@ -84,6 +88,7 @@ export const UpdateNamespaceRequestSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const UpdateNamespaceResponseSchema = z.object({
@@ -197,6 +202,7 @@ export const NamespaceCreateInputSchema = z.object({
   name: z.string(),
   description: z.string().nullable().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const NamespaceUpdateInputSchema = z.object({
@@ -204,6 +210,7 @@ export const NamespaceUpdateInputSchema = z.object({
   name: z.string(),
   description: z.string().nullable().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const NamespaceServerStatusUpdateSchema = z.object({
@@ -235,6 +242,7 @@ export const DatabaseNamespaceSchema = z.object({
   description: z.string().nullable(),
   created_at: z.date(),
   updated_at: z.date(),
+  user_id: z.string().nullable(),
 });
 
 export const DatabaseNamespaceServerSchema = z.object({

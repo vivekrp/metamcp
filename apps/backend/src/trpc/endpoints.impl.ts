@@ -13,6 +13,7 @@ import {
   ApiKeysRepository,
   endpointsRepository,
   mcpServersRepository,
+  namespacesRepository,
 } from "../db/repositories";
 import { EndpointsSerializer } from "../db/serializers";
 
@@ -33,12 +34,42 @@ export const endpointsImplementations = {
         };
       }
 
+      // Determine user ownership based on input.user_id or default to current user
+      const effectiveUserId = input.user_id !== undefined ? input.user_id : userId;
+      const isPublicEndpoint = effectiveUserId === null;
+
+      // Validate namespace accessibility and relationship rules
+      const namespace = await namespacesRepository.findByUuid(input.namespaceUuid);
+      if (!namespace) {
+        return {
+          success: false as const,
+          message: "Selected namespace could not be found",
+        };
+      }
+
+      // Check if user has access to this namespace (own namespace or public namespace)
+      if (namespace.user_id && namespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message: `Access denied: You don't have permission to use namespace "${namespace.name}"`,
+        };
+      }
+
+      // Enforce relationship rules: public endpoints can only use public namespaces
+      if (isPublicEndpoint && namespace.user_id !== null) {
+        return {
+          success: false as const,
+          message: `Access denied: Public endpoints can only use public namespaces. Namespace "${namespace.name}" is private`,
+        };
+      }
+
       const result = await endpointsRepository.create({
         name: input.name,
         description: input.description,
         namespace_uuid: input.namespaceUuid,
         enable_api_key_auth: input.enableApiKeyAuth ?? true,
         use_query_param_auth: input.useQueryParamAuth ?? false,
+        user_id: effectiveUserId,
       });
 
       // Create MCP server if requested
@@ -81,6 +112,7 @@ export const endpointsImplementations = {
             command: "",
             args: [],
             env: {},
+            user_id: effectiveUserId,
           });
         } catch (mcpError) {
           console.error("Error creating MCP server:", mcpError);
@@ -104,9 +136,10 @@ export const endpointsImplementations = {
     }
   },
 
-  list: async (): Promise<z.infer<typeof ListEndpointsResponseSchema>> => {
+  list: async (userId: string): Promise<z.infer<typeof ListEndpointsResponseSchema>> => {
     try {
-      const endpoints = await endpointsRepository.findAllWithNamespaces();
+      // Get endpoints accessible to user (public + user's own)
+      const endpoints = await endpointsRepository.findAllAccessibleToUser(userId);
 
       return {
         success: true as const,
@@ -125,7 +158,7 @@ export const endpointsImplementations = {
 
   get: async (input: {
     uuid: string;
-  }): Promise<z.infer<typeof GetEndpointResponseSchema>> => {
+  }, userId: string): Promise<z.infer<typeof GetEndpointResponseSchema>> => {
     try {
       const endpoint = await endpointsRepository.findByUuidWithNamespace(
         input.uuid,
@@ -135,6 +168,14 @@ export const endpointsImplementations = {
         return {
           success: false as const,
           message: "Endpoint not found",
+        };
+      }
+
+      // Check if user has access to this endpoint (own endpoint or public endpoint)
+      if (endpoint.user_id && endpoint.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only view endpoints you own or public endpoints",
         };
       }
 
@@ -154,8 +195,26 @@ export const endpointsImplementations = {
 
   delete: async (input: {
     uuid: string;
-  }): Promise<z.infer<typeof DeleteEndpointResponseSchema>> => {
+  }, userId: string): Promise<z.infer<typeof DeleteEndpointResponseSchema>> => {
     try {
+      // First, check if the endpoint exists and user has permission to delete it
+      const existingEndpoint = await endpointsRepository.findByUuidWithNamespace(input.uuid);
+      
+      if (!existingEndpoint) {
+        return {
+          success: false as const,
+          message: "Endpoint not found",
+        };
+      }
+      
+      // Check if user owns this endpoint (only owners can delete, protect public endpoints)
+      if (existingEndpoint.user_id && existingEndpoint.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only delete endpoints you own",
+        };
+      }
+
       const deletedEndpoint = await endpointsRepository.deleteByUuid(
         input.uuid,
       );
@@ -183,11 +242,59 @@ export const endpointsImplementations = {
 
   update: async (
     input: z.infer<typeof UpdateEndpointRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof UpdateEndpointResponseSchema>> => {
     try {
+      // First, check if the endpoint exists and user has permission to update it
+      const existingEndpoint = await endpointsRepository.findByUuidWithNamespace(input.uuid);
+      
+      if (!existingEndpoint) {
+        return {
+          success: false as const,
+          message: "Endpoint not found",
+        };
+      }
+      
+      // Check if user owns this endpoint (only owners can update)
+      if (existingEndpoint.user_id && existingEndpoint.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only update endpoints you own",
+        };
+      }
+
+      const isPublicEndpoint = existingEndpoint.user_id === null;
+
+      // Validate namespace accessibility and relationship rules if namespace is being updated
+      if (input.namespaceUuid !== existingEndpoint.namespace_uuid) {
+        const namespace = await namespacesRepository.findByUuid(input.namespaceUuid);
+        if (!namespace) {
+          return {
+            success: false as const,
+            message: "Selected namespace could not be found",
+          };
+        }
+
+        // Check if user has access to this namespace (own namespace or public namespace)
+        if (namespace.user_id && namespace.user_id !== userId) {
+          return {
+            success: false as const,
+            message: `Access denied: You don't have permission to use namespace "${namespace.name}"`,
+          };
+        }
+
+        // Enforce relationship rules: public endpoints can only use public namespaces
+        if (isPublicEndpoint && namespace.user_id !== null) {
+          return {
+            success: false as const,
+            message: `Access denied: Public endpoints can only use public namespaces. Namespace "${namespace.name}" is private`,
+          };
+        }
+      }
+
       // Check if another endpoint with the same name exists (excluding current one)
-      const existingEndpoint = await endpointsRepository.findByName(input.name);
-      if (existingEndpoint && existingEndpoint.uuid !== input.uuid) {
+      const duplicateEndpoint = await endpointsRepository.findByName(input.name);
+      if (duplicateEndpoint && duplicateEndpoint.uuid !== input.uuid) {
         return {
           success: false as const,
           message: "Endpoint name already exists",

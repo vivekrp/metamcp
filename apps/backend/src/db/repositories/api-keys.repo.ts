@@ -1,5 +1,5 @@
 import { ApiKeyCreateInput, ApiKeyUpdateInput } from "@repo/zod-types";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or, isNull } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 
 import { db } from "../index";
@@ -25,7 +25,7 @@ export class ApiKeysRepository {
     uuid: string;
     name: string;
     key: string;
-    user_id: string;
+    user_id: string | null;
     created_at: Date;
   }> {
     const key = this.generateApiKey();
@@ -69,6 +69,58 @@ export class ApiKeysRepository {
       .orderBy(desc(apiKeysTable.created_at));
   }
 
+  // Find all API keys (both public and user-owned)
+  async findAll() {
+    return await db
+      .select({
+        uuid: apiKeysTable.uuid,
+        name: apiKeysTable.name,
+        key: apiKeysTable.key,
+        created_at: apiKeysTable.created_at,
+        is_active: apiKeysTable.is_active,
+        user_id: apiKeysTable.user_id,
+      })
+      .from(apiKeysTable)
+      .orderBy(desc(apiKeysTable.created_at));
+  }
+
+  // Find public API keys (no user ownership)
+  async findPublicApiKeys() {
+    return await db
+      .select({
+        uuid: apiKeysTable.uuid,
+        name: apiKeysTable.name,
+        key: apiKeysTable.key,
+        created_at: apiKeysTable.created_at,
+        is_active: apiKeysTable.is_active,
+        user_id: apiKeysTable.user_id,
+      })
+      .from(apiKeysTable)
+      .where(isNull(apiKeysTable.user_id))
+      .orderBy(desc(apiKeysTable.created_at));
+  }
+
+  // Find API keys accessible to a specific user (public + user's own keys)
+  async findAccessibleToUser(userId: string) {
+    return await db
+      .select({
+        uuid: apiKeysTable.uuid,
+        name: apiKeysTable.name,
+        key: apiKeysTable.key,
+        created_at: apiKeysTable.created_at,
+        is_active: apiKeysTable.is_active,
+        user_id: apiKeysTable.user_id,
+      })
+      .from(apiKeysTable)
+      .where(
+        or(
+          isNull(apiKeysTable.user_id), // Public API keys
+          eq(apiKeysTable.user_id, userId) // User's own API keys
+        )
+      )
+      .orderBy(desc(apiKeysTable.created_at));
+  }
+
   async findByUuid(uuid: string, userId: string) {
     const [apiKey] = await db
       .select({
@@ -87,9 +139,36 @@ export class ApiKeysRepository {
     return apiKey;
   }
 
+  // Find API key by UUID with access control (user can access their own keys + public keys)
+  async findByUuidWithAccess(uuid: string, userId?: string) {
+    const [apiKey] = await db
+      .select({
+        uuid: apiKeysTable.uuid,
+        name: apiKeysTable.name,
+        key: apiKeysTable.key,
+        created_at: apiKeysTable.created_at,
+        is_active: apiKeysTable.is_active,
+        user_id: apiKeysTable.user_id,
+      })
+      .from(apiKeysTable)
+      .where(
+        and(
+          eq(apiKeysTable.uuid, uuid),
+          userId 
+            ? or(
+                isNull(apiKeysTable.user_id), // Public API keys
+                eq(apiKeysTable.user_id, userId) // User's own API keys
+              )
+            : isNull(apiKeysTable.user_id) // Only public if no user context
+        )
+      );
+
+    return apiKey;
+  }
+
   async validateApiKey(key: string): Promise<{
     valid: boolean;
-    user_id?: string;
+    user_id?: string | null;
     key_uuid?: string;
   }> {
     const [apiKey] = await db

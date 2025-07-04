@@ -20,19 +20,22 @@ export const createMcpServersRouter = (
   implementations: {
     create: (
       input: z.infer<typeof CreateMcpServerRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof CreateMcpServerResponseSchema>>;
-    list: () => Promise<z.infer<typeof ListMcpServersResponseSchema>>;
+    list: (userId: string) => Promise<z.infer<typeof ListMcpServersResponseSchema>>;
     bulkImport: (
       input: z.infer<typeof BulkImportMcpServersRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof BulkImportMcpServersResponseSchema>>;
     get: (input: {
       uuid: string;
-    }) => Promise<z.infer<typeof GetMcpServerResponseSchema>>;
+    }, userId: string) => Promise<z.infer<typeof GetMcpServerResponseSchema>>;
     delete: (input: {
       uuid: string;
-    }) => Promise<z.infer<typeof DeleteMcpServerResponseSchema>>;
+    }, userId: string) => Promise<z.infer<typeof DeleteMcpServerResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateMcpServerRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof UpdateMcpServerResponseSchema>>;
   },
 ) => {
@@ -40,48 +43,48 @@ export const createMcpServersRouter = (
     // Protected: List all MCP servers
     list: protectedProcedure
       .output(ListMcpServersResponseSchema)
-      .query(async () => {
-        return await implementations.list();
+      .query(async ({ ctx }) => {
+        return await implementations.list(ctx.user.id);
       }),
 
     // Protected: Get single MCP server by UUID
     get: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(GetMcpServerResponseSchema)
-      .query(async ({ input }) => {
-        return await implementations.get(input);
+      .query(async ({ input, ctx }) => {
+        return await implementations.get(input, ctx.user.id);
       }),
 
     // Protected: Create MCP server
     create: protectedProcedure
       .input(CreateMcpServerRequestSchema)
       .output(CreateMcpServerResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.create(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.create(input, ctx.user.id);
       }),
 
     // Protected: Bulk import MCP servers
     bulkImport: protectedProcedure
       .input(BulkImportMcpServersRequestSchema)
       .output(BulkImportMcpServersResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.bulkImport(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.bulkImport(input, ctx.user.id);
       }),
 
     // Protected: Delete MCP server
     delete: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(DeleteMcpServerResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.delete(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.delete(input, ctx.user.id);
       }),
 
     // Protected: Update MCP server
     update: protectedProcedure
       .input(UpdateMcpServerRequestSchema)
       .output(UpdateMcpServerResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.update(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.update(input, ctx.user.id);
       }),
   });
 };

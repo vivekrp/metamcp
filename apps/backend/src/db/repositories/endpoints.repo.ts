@@ -4,7 +4,7 @@ import {
   EndpointCreateInput,
   EndpointUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, or, isNull, and } from "drizzle-orm";
 
 import { db } from "../index";
 import { endpointsTable, namespacesTable } from "../schema";
@@ -19,6 +19,7 @@ export class EndpointsRepository {
         namespace_uuid: input.namespace_uuid,
         enable_api_key_auth: input.enable_api_key_auth ?? true,
         use_query_param_auth: input.use_query_param_auth ?? false,
+        user_id: input.user_id,
       })
       .returning();
 
@@ -40,8 +41,71 @@ export class EndpointsRepository {
         use_query_param_auth: endpointsTable.use_query_param_auth,
         created_at: endpointsTable.created_at,
         updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
       })
       .from(endpointsTable)
+      .orderBy(desc(endpointsTable.created_at));
+  }
+
+  // Find endpoints accessible to a specific user (public + user's own endpoints)
+  async findAllAccessibleToUser(userId: string): Promise<DatabaseEndpoint[]> {
+    return await db
+      .select({
+        uuid: endpointsTable.uuid,
+        name: endpointsTable.name,
+        description: endpointsTable.description,
+        namespace_uuid: endpointsTable.namespace_uuid,
+        enable_api_key_auth: endpointsTable.enable_api_key_auth,
+        use_query_param_auth: endpointsTable.use_query_param_auth,
+        created_at: endpointsTable.created_at,
+        updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
+      })
+      .from(endpointsTable)
+      .where(
+        or(
+          isNull(endpointsTable.user_id), // Public endpoints
+          eq(endpointsTable.user_id, userId) // User's own endpoints
+        )
+      )
+      .orderBy(desc(endpointsTable.created_at));
+  }
+
+  // Find only public endpoints (no user ownership)
+  async findPublicEndpoints(): Promise<DatabaseEndpoint[]> {
+    return await db
+      .select({
+        uuid: endpointsTable.uuid,
+        name: endpointsTable.name,
+        description: endpointsTable.description,
+        namespace_uuid: endpointsTable.namespace_uuid,
+        enable_api_key_auth: endpointsTable.enable_api_key_auth,
+        use_query_param_auth: endpointsTable.use_query_param_auth,
+        created_at: endpointsTable.created_at,
+        updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
+      })
+      .from(endpointsTable)
+      .where(isNull(endpointsTable.user_id))
+      .orderBy(desc(endpointsTable.created_at));
+  }
+
+  // Find endpoints owned by a specific user
+  async findByUserId(userId: string): Promise<DatabaseEndpoint[]> {
+    return await db
+      .select({
+        uuid: endpointsTable.uuid,
+        name: endpointsTable.name,
+        description: endpointsTable.description,
+        namespace_uuid: endpointsTable.namespace_uuid,
+        enable_api_key_auth: endpointsTable.enable_api_key_auth,
+        use_query_param_auth: endpointsTable.use_query_param_auth,
+        created_at: endpointsTable.created_at,
+        updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
+      })
+      .from(endpointsTable)
+      .where(eq(endpointsTable.user_id, userId))
       .orderBy(desc(endpointsTable.created_at));
   }
 
@@ -57,6 +121,7 @@ export class EndpointsRepository {
         use_query_param_auth: endpointsTable.use_query_param_auth,
         created_at: endpointsTable.created_at,
         updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
         // Namespace fields
         namespace: {
           uuid: namespacesTable.uuid,
@@ -64,6 +129,7 @@ export class EndpointsRepository {
           description: namespacesTable.description,
           created_at: namespacesTable.created_at,
           updated_at: namespacesTable.updated_at,
+          user_id: namespacesTable.user_id,
         },
       })
       .from(endpointsTable)
@@ -87,6 +153,7 @@ export class EndpointsRepository {
         use_query_param_auth: endpointsTable.use_query_param_auth,
         created_at: endpointsTable.created_at,
         updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
       })
       .from(endpointsTable)
       .where(eq(endpointsTable.uuid, uuid));
@@ -108,6 +175,7 @@ export class EndpointsRepository {
         use_query_param_auth: endpointsTable.use_query_param_auth,
         created_at: endpointsTable.created_at,
         updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
         // Namespace fields
         namespace: {
           uuid: namespacesTable.uuid,
@@ -115,6 +183,7 @@ export class EndpointsRepository {
           description: namespacesTable.description,
           created_at: namespacesTable.created_at,
           updated_at: namespacesTable.updated_at,
+          user_id: namespacesTable.user_id,
         },
       })
       .from(endpointsTable)
@@ -138,9 +207,36 @@ export class EndpointsRepository {
         use_query_param_auth: endpointsTable.use_query_param_auth,
         created_at: endpointsTable.created_at,
         updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
       })
       .from(endpointsTable)
       .where(eq(endpointsTable.name, name));
+
+    return endpoint;
+  }
+
+  // Find endpoint by name within user scope (for uniqueness checks)
+  async findByNameAndUserId(name: string, userId: string | null): Promise<DatabaseEndpoint | undefined> {
+    const [endpoint] = await db
+      .select({
+        uuid: endpointsTable.uuid,
+        name: endpointsTable.name,
+        description: endpointsTable.description,
+        namespace_uuid: endpointsTable.namespace_uuid,
+        enable_api_key_auth: endpointsTable.enable_api_key_auth,
+        use_query_param_auth: endpointsTable.use_query_param_auth,
+        created_at: endpointsTable.created_at,
+        updated_at: endpointsTable.updated_at,
+        user_id: endpointsTable.user_id,
+      })
+      .from(endpointsTable)
+      .where(
+        and(
+          eq(endpointsTable.name, name),
+          userId ? eq(endpointsTable.user_id, userId) : isNull(endpointsTable.user_id)
+        )
+      )
+      .limit(1);
 
     return endpoint;
   }
@@ -163,6 +259,7 @@ export class EndpointsRepository {
         namespace_uuid: input.namespace_uuid,
         enable_api_key_auth: input.enable_api_key_auth,
         use_query_param_auth: input.use_query_param_auth,
+        user_id: input.user_id,
         updated_at: new Date(),
       })
       .where(eq(endpointsTable.uuid, input.uuid))

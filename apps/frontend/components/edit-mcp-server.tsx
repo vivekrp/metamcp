@@ -155,6 +155,7 @@ export function EditMcpServer({
       url: "",
       bearerToken: "",
       env: "",
+      user_id: undefined,
     },
   });
 
@@ -194,6 +195,7 @@ export function EditMcpServer({
         env: Object.entries(server.env)
           .map(([key, value]) => `${key}=${value}`)
           .join("\n"),
+        user_id: server.user_id,
       });
     }
   }, [server, isOpen, editForm]);
@@ -239,6 +241,7 @@ export function EditMcpServer({
         env: envObject,
         url: data.url,
         bearerToken: data.bearerToken,
+        user_id: data.user_id,
       };
 
       // Use tRPC mutation instead of direct fetch
@@ -298,6 +301,43 @@ export function EditMcpServer({
               {...editForm.register("description")}
               placeholder="Server description"
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Ownership</label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  type="button"
+                >
+                  {editForm.watch("user_id") === null
+                    ? "Everyone (Public)"
+                    : "For myself (Private)"}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
+                <DropdownMenuItem
+                  onClick={() =>
+                    editForm.setValue("user_id", undefined)
+                  }
+                >
+                  For myself (Private)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    editForm.setValue("user_id", null)
+                  }
+                >
+                  Everyone (Public)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <p className="text-xs text-muted-foreground">
+              Private servers are only accessible to you. Public servers are accessible to all users.
+            </p>
           </div>
 
           <div className="flex flex-col gap-2">
