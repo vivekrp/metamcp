@@ -101,6 +101,14 @@ cp example.env .env
 docker compose up -d
 ```
 
+Note that the pg volume name may collide with your other pg dockers, which is global, consider rename it in `docker-compose.yml`:
+
+```
+volumes:
+  metamcp_postgres_data:
+    driver: local
+```
+
 ### **💻 Local Development**
 
 Still recommend running postgres through docker for easy setup:
