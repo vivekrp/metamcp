@@ -6,7 +6,6 @@ import {
   DeleteMcpServerResponseSchema,
   GetMcpServerResponseSchema,
   ListMcpServersResponseSchema,
-  ServerParameters,
   UpdateMcpServerRequestSchema,
   UpdateMcpServerResponseSchema,
 } from "@repo/zod-types";
@@ -46,9 +45,10 @@ export const mcpServersImplementations = {
       // Ensure idle session for the newly created server
       const serverParams = await convertDbServerToParams(createdServer);
       if (serverParams) {
-        await mcpServerPool.ensureIdleSessions({
-          [createdServer.uuid]: serverParams,
-        });
+        await mcpServerPool.ensureIdleSessionForNewServer(
+          createdServer.uuid,
+          serverParams,
+        );
         console.log(
           `Ensured idle session for newly created server: ${createdServer.name} (${createdServer.uuid})`,
         );
@@ -142,23 +142,35 @@ export const mcpServersImplementations = {
         if (createdServers && createdServers.length > 0) {
           const serverParamsPromises = createdServers.map(async (server) => {
             const params = await convertDbServerToParams(server);
-            return params ? { uuid: server.uuid, params } : null;
+            if (params) {
+              await mcpServerPool.ensureIdleSessionForNewServer(
+                server.uuid,
+                params,
+              );
+              return { uuid: server.uuid, name: server.name };
+            }
+            return null;
           });
 
           const serverParamsResults =
             await Promise.allSettled(serverParamsPromises);
-          const validServerParams: Record<string, ServerParameters> = {};
 
-          serverParamsResults.forEach((result) => {
-            if (result.status === "fulfilled" && result.value) {
-              validServerParams[result.value.uuid] = result.value.params;
-            }
-          });
+          const successfulServers = serverParamsResults
+            .filter((result) => result.status === "fulfilled" && result.value)
+            .map(
+              (result) =>
+                (
+                  result as PromiseFulfilledResult<{
+                    uuid: string;
+                    name: string;
+                  } | null>
+                ).value,
+            )
+            .filter(Boolean) as { uuid: string; name: string }[];
 
-          if (Object.keys(validServerParams).length > 0) {
-            await mcpServerPool.ensureIdleSessions(validServerParams);
+          if (successfulServers.length > 0) {
             console.log(
-              `Ensured idle sessions for ${Object.keys(validServerParams).length} bulk imported servers`,
+              `Ensured idle sessions for ${successfulServers.length} bulk imported servers: ${successfulServers.map((s) => s.name).join(", ")}`,
             );
           }
         }
@@ -253,6 +265,9 @@ export const mcpServersImplementations = {
           input.uuid,
         );
 
+      // Clean up any idle sessions for this server
+      await mcpServerPool.cleanupIdleSession(input.uuid);
+
       const deletedServer = await mcpServersRepository.deleteByUuid(input.uuid);
 
       if (!deletedServer) {
@@ -330,14 +345,15 @@ export const mcpServersImplementations = {
         };
       }
 
-      // Ensure idle session for the updated server
+      // Invalidate idle session for the updated server to refresh with new parameters
       const serverParams = await convertDbServerToParams(updatedServer);
       if (serverParams) {
-        await mcpServerPool.ensureIdleSessions({
-          [updatedServer.uuid]: serverParams,
-        });
+        await mcpServerPool.invalidateIdleSession(
+          updatedServer.uuid,
+          serverParams,
+        );
         console.log(
-          `Ensured idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
+          `Invalidated and refreshed idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
         );
       }
 

@@ -129,6 +129,7 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
 - MetaMCP pre-allocate idle sessions for each configured MCP servers and MetaMCPs. The default idle session for each is 1 and that can help reduce cold start time.
 - If your MCP requires dependencies other than `uvx` or `npx`, you need to customize the Dockerfile to install dependencies on your own.
+- Check [invalidation.md](invalidation.md) for a seq diagram about how idle session invalidates during updates.
 
 🛠️ **Solution**: Customize the Dockerfile to add dependencies or pre-install packages to reduce cold start time.
 
