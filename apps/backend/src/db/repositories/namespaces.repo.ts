@@ -202,6 +202,7 @@ export class NamespacesRepository {
         env: mcpServersTable.env,
         bearerToken: mcpServersTable.bearerToken,
         created_at: mcpServersTable.created_at,
+        user_id: mcpServersTable.user_id,
         status: namespaceServerMappingsTable.status,
       })
       .from(mcpServersTable)
@@ -223,6 +224,7 @@ export class NamespacesRepository {
       env: server.env || {},
       bearerToken: server.bearerToken,
       created_at: server.created_at,
+      user_id: server.user_id,
       status: server.status,
     }));
 

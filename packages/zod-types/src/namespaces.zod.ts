@@ -256,6 +256,7 @@ export const DatabaseNamespaceServerSchema = z.object({
   env: z.record(z.string()),
   bearerToken: z.string().nullable(),
   created_at: z.date(),
+  user_id: z.string().nullable(),
   status: McpServerStatusEnum,
 });
 
