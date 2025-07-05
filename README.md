@@ -3,13 +3,13 @@
 <div align="center">
 
 <p align="center">
-  <a href="https://discord.gg/mNsyat7mFX">
+  <a href="https://discord.gg/mNsyat7mFX" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" style="max-width: 100%;">
   </a>
-  <a href="https://opensource.org/licenses/MIT">
+  <a href="https://opensource.org/licenses/MIT" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License" style="max-width: 100%;">
   </a>
-  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp">
+  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR" style="max-width: 100%;">
   </a>
 </p>
