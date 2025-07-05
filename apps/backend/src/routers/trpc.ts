@@ -8,6 +8,7 @@ import { createContext } from "../trpc";
 import { apiKeysImplementations } from "../trpc/api-keys.impl";
 import { configImplementations } from "../trpc/config.impl";
 import { endpointsImplementations } from "../trpc/endpoints.impl";
+import { logsImplementations } from "../trpc/logs.impl";
 import { mcpServersImplementations } from "../trpc/mcp-servers.impl";
 import { namespacesImplementations } from "../trpc/namespaces.impl";
 import { oauthImplementations } from "../trpc/oauth.impl";
@@ -23,6 +24,7 @@ const appRouter = createAppRouter({
     tools: toolsImplementations,
     apiKeys: apiKeysImplementations,
     config: configImplementations,
+    logs: logsImplementations,
   },
 });
 

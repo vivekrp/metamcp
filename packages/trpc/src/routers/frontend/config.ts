@@ -1,5 +1,5 @@
+import { SetConfigRequest, SetConfigRequestSchema } from "@repo/zod-types";
 import { z } from "zod";
-import { SetConfigRequestSchema, SetConfigRequest } from "@repo/zod-types";
 
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 

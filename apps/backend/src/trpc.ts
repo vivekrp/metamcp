@@ -27,7 +27,6 @@ export const createContext = async ({
     // Check if we have cookies in the request
     if (req.headers.cookie) {
       // Create a proper Request object for better-auth
-      console.log("req.headers.host", req.headers.host);
       const sessionUrl = new URL(
         "/api/auth/get-session",
         `http://${req.headers.host}`,

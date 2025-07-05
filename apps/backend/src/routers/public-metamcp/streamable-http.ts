@@ -6,8 +6,7 @@ import express from "express";
 
 import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
-import { createServer } from "../../lib/metamcp/index";
-import { cleanupSessionConnections } from "../../lib/metamcp/sessions";
+import { metaMcpServerPool } from "../../lib/metamcp/metamcp-server-pool";
 
 // Extend Express Request interface for our custom properties
 interface AuthenticatedRequest extends express.Request {
@@ -22,61 +21,9 @@ const streamableHttpRouter = express.Router();
 const apiKeysRepository = new ApiKeysRepository();
 
 const transports: Record<string, StreamableHTTPServerTransport> = {}; // Web app transports by sessionId
-const metamcpServers: Record<
-  string,
-  {
-    server: Awaited<ReturnType<typeof createServer>>["server"];
-    cleanup: () => Promise<void>;
-  }
-> = {}; // MetaMCP servers by endpoint name
-
-// Track active sessions per endpoint for cleanup purposes
-const endpointSessionCounts: Record<string, number> = {};
-
-// Create a MetaMCP server instance
-const createMetaMcpServer = async (
-  namespaceUuid: string,
-  sessionId: string,
-  endpointName: string,
-) => {
-  // Check if we already have a server for this endpoint
-  if (metamcpServers[endpointName]) {
-    console.log(
-      `Reusing existing MetaMCP server for endpoint: ${endpointName}`,
-    );
-    return metamcpServers[endpointName];
-  }
-
-  const { server, cleanup } = await createServer(namespaceUuid, sessionId);
-  const serverInstance = { server, cleanup };
-
-  // Cache by endpoint name
-  metamcpServers[endpointName] = serverInstance;
-  console.log(
-    `Created and cached new MetaMCP server for endpoint: ${endpointName}`,
-  );
-
-  return serverInstance;
-};
-
-// Cleanup endpoint server if no more sessions are using it
-const cleanupEndpointIfUnused = async (endpointName: string) => {
-  const sessionCount = endpointSessionCounts[endpointName] || 0;
-  if (sessionCount <= 0) {
-    const serverInstance = metamcpServers[endpointName];
-    if (serverInstance) {
-      console.log(
-        `Cleaning up unused MetaMCP server for endpoint: ${endpointName}`,
-      );
-      await serverInstance.cleanup();
-      delete metamcpServers[endpointName];
-      delete endpointSessionCounts[endpointName];
-    }
-  }
-};
 
 // Cleanup function for a specific session
-const cleanupSession = async (sessionId: string, endpointName: string) => {
+const cleanupSession = async (sessionId: string) => {
   console.log(`Cleaning up StreamableHTTP session ${sessionId}`);
 
   // Clean up transport
@@ -86,16 +33,8 @@ const cleanupSession = async (sessionId: string, endpointName: string) => {
     await transport.close();
   }
 
-  // Decrement session count for this endpoint
-  if (endpointSessionCounts[endpointName] > 0) {
-    endpointSessionCounts[endpointName]--;
-  }
-
-  // Clean up session connections (but keep the server instance cached by endpoint)
-  await cleanupSessionConnections(sessionId);
-
-  // Cleanup endpoint server if no more sessions are using it
-  await cleanupEndpointIfUnused(endpointName);
+  // Clean up MetaMCP server pool session
+  await metaMcpServerPool.cleanupSession(sessionId);
 };
 
 // Middleware to lookup endpoint by name and add namespace info to request
@@ -208,9 +147,9 @@ streamableHttpRouter.get(
     const { namespaceUuid, endpointName } = authReq;
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    console.log(
-      `Received GET message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received GET message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
 
     try {
       const transport = transports[sessionId];
@@ -245,22 +184,17 @@ streamableHttpRouter.post(
         // Generate session ID upfront
         const newSessionId = randomUUID();
 
-        // Get or create MetaMCP server instance for this endpoint
-        const mcpServerInstance = await createMetaMcpServer(
-          namespaceUuid,
+        // Get or create MetaMCP server instance from the pool
+        const mcpServerInstance = await metaMcpServerPool.getServer(
           newSessionId,
-          endpointName,
+          namespaceUuid,
         );
         if (!mcpServerInstance) {
-          throw new Error("Failed to create MetaMCP server instance");
+          throw new Error("Failed to get MetaMCP server instance from pool");
         }
 
-        // Increment session count for this endpoint
-        endpointSessionCounts[endpointName] =
-          (endpointSessionCounts[endpointName] || 0) + 1;
-
         console.log(
-          `Using MetaMCP server instance for public endpoint session ${newSessionId} (endpoint: ${endpointName}, sessions: ${endpointSessionCounts[endpointName]})`,
+          `Using MetaMCP server instance for public endpoint session ${newSessionId} (endpoint: ${endpointName})`,
         );
 
         // Create transport with the predetermined session ID
@@ -301,9 +235,9 @@ streamableHttpRouter.post(
         res.status(500).json(error);
       }
     } else {
-      console.log(
-        `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
-      );
+      // console.log(
+      //   `Received POST message for public endpoint ${endpointName} -> namespace ${namespaceUuid} sessionId ${sessionId}`,
+      // );
       console.log(`Available session IDs:`, Object.keys(transports));
       console.log(`Looking for sessionId: ${sessionId}`);
       try {
@@ -340,7 +274,7 @@ streamableHttpRouter.delete(
 
     if (sessionId) {
       try {
-        await cleanupSession(sessionId, endpointName);
+        await cleanupSession(sessionId);
         console.log(
           `Public endpoint session ${sessionId} cleaned up successfully`,
         );

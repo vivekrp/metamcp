@@ -2,7 +2,17 @@
 
 <div align="center">
 
-[![](https://dcbadge.limes.pink/api/server/mNsyat7mFX)](https://discord.gg/mNsyat7mFX)
+<p align="center">
+  <a href="https://discord.gg/mNsyat7mFX">
+    <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
+  </a>
+  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp">
+    <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR">
+  </a>
+</p>
 
 </div>
 
@@ -68,7 +78,7 @@ A MCP server configuration that tells MetaMCP how to start a MCP server.
 - Create endpoints and assign namespace to endpoints
 - Multiple MCP servers in the namespace will be aggregated and emitted as a MetaMCP endpoint
 - Choose auth level and strategy
-- Host through **SSE** or **Streamable HTTP** transports
+- Host through **SSE** or **Streamable HTTP** transports in MCP and **OpenAPI** endpoints for clients like [Open WebUI](https://github.com/open-webui/open-webui)
 
 ### ⚙️ **Middleware**
 - Intercepts and transforms MCP requests and responses at namespace level
@@ -91,6 +101,14 @@ cp example.env .env
 docker compose up -d
 ```
 
+Note that the pg volume name may collide with your other pg dockers, which is global, consider rename it in `docker-compose.yml`:
+
+```
+volumes:
+  metamcp_postgres_data:
+    driver: local
+```
+
 ### **💻 Local Development**
 
 Still recommend running postgres through docker for easy setup:
@@ -109,9 +127,9 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
 ## ❄️ Cold Start Problem and Custom Dockerfile
 
-⚠️ **Cold start issue** for hosting `stdio` type MCP servers:
-- First run will be slow as package managers (uvx, npx) install dependencies
-- Happens again on docker restart
+- MetaMCP pre-allocate idle sessions for each configured MCP servers and MetaMCPs. The default idle session for each is 1 and that can help reduce cold start time.
+- If your MCP requires dependencies other than `uvx` or `npx`, you need to customize the Dockerfile to install dependencies on your own.
+- Check [invalidation.md](invalidation.md) for a seq diagram about how idle session invalidates during updates.
 
 🛠️ **Solution**: Customize the Dockerfile to add dependencies or pre-install packages to reduce cold start time.
 
@@ -185,3 +203,7 @@ Would appreciate if you mentioned with back links if your projects use the code.
 Some code inspired by:
 - [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
 - [MCP Proxy Server](https://github.com/adamwattis/mcp-proxy-server)
+
+Not directly used the code by took ideas from
+- https://github.com/open-webui/openapi-servers
+- https://github.com/open-webui/mcpo

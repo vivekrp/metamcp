@@ -51,7 +51,7 @@ export default function mcpProxy({
     if (!reportedServerSession) {
       if (transportToServer.sessionId) {
         // Can only report for StreamableHttp
-        console.error(
+        console.log(
           "Proxy  <-> Server sessionId: " + transportToServer.sessionId,
         );
       }

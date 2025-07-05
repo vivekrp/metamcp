@@ -11,8 +11,14 @@ import {
 } from "@repo/zod-types";
 import { z } from "zod";
 
-import { mcpServersRepository } from "../db/repositories";
+import {
+  mcpServersRepository,
+  namespaceMappingsRepository,
+} from "../db/repositories";
 import { McpServersSerializer } from "../db/serializers";
+import { mcpServerPool } from "../lib/metamcp/mcp-server-pool";
+import { metaMcpServerPool } from "../lib/metamcp/metamcp-server-pool";
+import { convertDbServerToParams } from "../lib/metamcp/utils";
 
 export const mcpServersImplementations = {
   create: async (
@@ -26,6 +32,18 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "Failed to create MCP server",
         };
+      }
+
+      // Ensure idle session for the newly created server
+      const serverParams = await convertDbServerToParams(createdServer);
+      if (serverParams) {
+        await mcpServerPool.ensureIdleSessionForNewServer(
+          createdServer.uuid,
+          serverParams,
+        );
+        console.log(
+          `Ensured idle session for newly created server: ${createdServer.name} (${createdServer.uuid})`,
+        );
       }
 
       return {
@@ -102,8 +120,46 @@ export const mcpServersImplementations = {
       }
 
       if (serversToInsert.length > 0) {
-        await mcpServersRepository.bulkCreate(serversToInsert);
+        const createdServers =
+          await mcpServersRepository.bulkCreate(serversToInsert);
         imported = serversToInsert.length;
+
+        // Ensure idle sessions for all imported servers
+        if (createdServers && createdServers.length > 0) {
+          const serverParamsPromises = createdServers.map(async (server) => {
+            const params = await convertDbServerToParams(server);
+            if (params) {
+              await mcpServerPool.ensureIdleSessionForNewServer(
+                server.uuid,
+                params,
+              );
+              return { uuid: server.uuid, name: server.name };
+            }
+            return null;
+          });
+
+          const serverParamsResults =
+            await Promise.allSettled(serverParamsPromises);
+
+          const successfulServers = serverParamsResults
+            .filter((result) => result.status === "fulfilled" && result.value)
+            .map(
+              (result) =>
+                (
+                  result as PromiseFulfilledResult<{
+                    uuid: string;
+                    name: string;
+                  } | null>
+                ).value,
+            )
+            .filter(Boolean) as { uuid: string; name: string }[];
+
+          if (successfulServers.length > 0) {
+            console.log(
+              `Ensured idle sessions for ${successfulServers.length} bulk imported servers: ${successfulServers.map((s) => s.name).join(", ")}`,
+            );
+          }
+        }
       }
 
       return {
@@ -156,6 +212,15 @@ export const mcpServersImplementations = {
     uuid: string;
   }): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
     try {
+      // Find affected namespaces before deleting the server
+      const affectedNamespaceUuids =
+        await namespaceMappingsRepository.findNamespacesByServerUuid(
+          input.uuid,
+        );
+
+      // Clean up any idle sessions for this server
+      await mcpServerPool.cleanupIdleSession(input.uuid);
+
       const deletedServer = await mcpServersRepository.deleteByUuid(input.uuid);
 
       if (!deletedServer) {
@@ -163,6 +228,21 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "MCP server not found",
         };
+      }
+
+      // Invalidate idle MetaMCP servers for all affected namespaces
+      if (affectedNamespaceUuids.length > 0) {
+        try {
+          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
+          console.log(
+            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
+          );
+        } catch (error) {
+          console.error(
+            `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
+            error,
+          );
+        }
       }
 
       return {
@@ -190,6 +270,38 @@ export const mcpServersImplementations = {
           success: false as const,
           message: "MCP server not found",
         };
+      }
+
+      // Invalidate idle session for the updated server to refresh with new parameters
+      const serverParams = await convertDbServerToParams(updatedServer);
+      if (serverParams) {
+        await mcpServerPool.invalidateIdleSession(
+          updatedServer.uuid,
+          serverParams,
+        );
+        console.log(
+          `Invalidated and refreshed idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
+        );
+      }
+
+      // Find affected namespaces and invalidate their idle MetaMCP servers
+      const affectedNamespaceUuids =
+        await namespaceMappingsRepository.findNamespacesByServerUuid(
+          updatedServer.uuid,
+        );
+
+      if (affectedNamespaceUuids.length > 0) {
+        try {
+          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
+          console.log(
+            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
+          );
+        } catch (error) {
+          console.error(
+            `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
+            error,
+          );
+        }
       }
 
       return {

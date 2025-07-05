@@ -60,6 +60,20 @@ export class NamespaceMappingsRepository {
     return mapping;
   }
 
+  /**
+   * Find all namespace UUIDs that use a specific MCP server
+   */
+  async findNamespacesByServerUuid(serverUuid: string): Promise<string[]> {
+    const mappings = await db
+      .select({
+        namespace_uuid: namespaceServerMappingsTable.namespace_uuid,
+      })
+      .from(namespaceServerMappingsTable)
+      .where(eq(namespaceServerMappingsTable.mcp_server_uuid, serverUuid));
+
+    return mappings.map((mapping) => mapping.namespace_uuid);
+  }
+
   async findToolMapping(
     namespaceUuid: string,
     toolUuid: string,
