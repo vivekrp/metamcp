@@ -299,6 +299,107 @@ export class McpServerPool {
   getActiveSessionIds(): string[] {
     return Object.keys(this.activeSessions);
   }
+
+  /**
+   * Invalidate and refresh idle session for a specific server
+   * This should be called when a server's parameters (command, args, etc.) change
+   */
+  async invalidateIdleSession(
+    serverUuid: string,
+    params: ServerParameters,
+  ): Promise<void> {
+    console.log(`Invalidating idle session for server ${serverUuid}`);
+
+    // Update server params cache
+    this.serverParamsCache[serverUuid] = params;
+
+    // Cleanup existing idle session if it exists
+    const existingIdleSession = this.idleSessions[serverUuid];
+    if (existingIdleSession) {
+      try {
+        await existingIdleSession.cleanup();
+        console.log(
+          `Cleaned up existing idle session for server ${serverUuid}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error cleaning up existing idle session for server ${serverUuid}:`,
+          error,
+        );
+      }
+      delete this.idleSessions[serverUuid];
+    }
+
+    // Remove from creating set if it's in progress
+    this.creatingIdleSessions.delete(serverUuid);
+
+    // Create a new idle session with updated parameters
+    await this.createIdleSession(serverUuid, params);
+  }
+
+  /**
+   * Invalidate and refresh idle sessions for multiple servers
+   */
+  async invalidateIdleSessions(
+    serverParams: Record<string, ServerParameters>,
+  ): Promise<void> {
+    const promises = Object.entries(serverParams).map(([serverUuid, params]) =>
+      this.invalidateIdleSession(serverUuid, params),
+    );
+
+    await Promise.allSettled(promises);
+  }
+
+  /**
+   * Clean up idle session for a specific server without creating a new one
+   * This should be called when a server is being deleted
+   */
+  async cleanupIdleSession(serverUuid: string): Promise<void> {
+    console.log(`Cleaning up idle session for server ${serverUuid}`);
+
+    // Cleanup existing idle session if it exists
+    const existingIdleSession = this.idleSessions[serverUuid];
+    if (existingIdleSession) {
+      try {
+        await existingIdleSession.cleanup();
+        console.log(`Cleaned up idle session for server ${serverUuid}`);
+      } catch (error) {
+        console.error(
+          `Error cleaning up idle session for server ${serverUuid}:`,
+          error,
+        );
+      }
+      delete this.idleSessions[serverUuid];
+    }
+
+    // Remove from creating set if it's in progress
+    this.creatingIdleSessions.delete(serverUuid);
+
+    // Remove from server params cache
+    delete this.serverParamsCache[serverUuid];
+  }
+
+  /**
+   * Ensure idle session exists for a newly created server
+   * This should be called when a new server is created
+   */
+  async ensureIdleSessionForNewServer(
+    serverUuid: string,
+    params: ServerParameters,
+  ): Promise<void> {
+    console.log(`Ensuring idle session exists for new server ${serverUuid}`);
+
+    // Update server params cache
+    this.serverParamsCache[serverUuid] = params;
+
+    // Only create if we don't already have one
+    if (
+      !this.idleSessions[serverUuid] &&
+      !this.creatingIdleSessions.has(serverUuid)
+    ) {
+      await this.createIdleSession(serverUuid, params);
+    }
+  }
 }
 
 // Create a singleton instance
