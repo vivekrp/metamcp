@@ -36,4 +36,25 @@ export const configService = {
   > {
     return await configRepo.getAllConfigs();
   },
+
+  async getAuthProviders(): Promise<Array<{ id: string; name: string; enabled: boolean }>> {
+    const providers = [];
+
+    // Check if OIDC is configured
+    const isOidcEnabled = !!(
+      process.env.OIDC_CLIENT_ID && 
+      process.env.OIDC_CLIENT_SECRET &&
+      process.env.OIDC_DISCOVERY_URL
+    );
+
+    if (isOidcEnabled) {
+      providers.push({
+        id: "oidc",
+        name: "OIDC",
+        enabled: true,
+      });
+    }
+
+    return providers;
+  },
 };

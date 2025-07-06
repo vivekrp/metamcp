@@ -16,27 +16,39 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [isSignupDisabled, setIsSignupDisabled] = useState(false);
   const [isOidcLoading, setIsOidcLoading] = useState(false);
-  const isOidcEnabled = !!process.env.OIDC_DISCOVERY_URL;
+  const [isOidcEnabled, setIsOidcEnabled] = useState(false);
+  const [authProvidersLoading, setAuthProvidersLoading] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  // Check if signup is disabled
+  // Check auth providers and signup status
   useEffect(() => {
-    const checkSignupStatus = async () => {
+    const checkAuthConfig = async () => {
       try {
-        const isDisabled =
-          await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
-        setIsSignupDisabled(isDisabled);
+        const [authProviders, signupDisabled] = await Promise.all([
+          vanillaTrpcClient.frontend.config.getAuthProviders.query(),
+          vanillaTrpcClient.frontend.config.getSignupDisabled.query(),
+        ]);
+
+        // Check if OIDC is in the list of enabled providers
+        const oidcProvider = authProviders.find(
+          (provider) => provider.id === "oidc" && provider.enabled,
+        );
+        setIsOidcEnabled(!!oidcProvider);
+        setIsSignupDisabled(signupDisabled);
       } catch (error) {
-        console.error("Failed to check signup status:", error);
-        // If we can't check, assume signup is enabled (fail open)
+        console.error("Failed to check auth configuration:", error);
+        // If we can't check, assume OIDC is disabled and signup is enabled (fail safe)
+        setIsOidcEnabled(false);
         setIsSignupDisabled(false);
+      } finally {
+        setAuthProvidersLoading(false);
       }
     };
 
-    checkSignupStatus();
+    checkAuthConfig();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,6 +92,21 @@ function LoginForm() {
       setIsOidcLoading(false);
     }
   };
+
+  // Show loading state while checking auth providers
+  if (authProvidersLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
