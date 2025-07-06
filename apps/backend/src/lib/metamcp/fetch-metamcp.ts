@@ -1,4 +1,4 @@
-import { McpServerStatusEnum } from "@repo/zod-types";
+import { McpServerStatusEnum, ServerParameters } from "@repo/zod-types";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../db/index";
@@ -8,28 +8,6 @@ import { getDefaultEnvironment } from "./utils";
 
 // Define IOType for stderr handling
 export type IOType = "overlapped" | "pipe" | "ignore" | "inherit";
-
-// Define a new interface for server parameters that can be STDIO, SSE or STREAMABLE_HTTP
-export interface ServerParameters {
-  uuid: string;
-  name: string;
-  description: string;
-  type?: "STDIO" | "SSE" | "STREAMABLE_HTTP"; // Optional field, defaults to "STDIO" when undefined
-  command?: string | null;
-  args?: string[] | null;
-  env?: Record<string, string> | null;
-  stderr?: IOType; // Optional field for stderr handling, defaults to "ignore"
-  url?: string | null;
-  created_at: string;
-  status: string;
-  oauth_tokens?: {
-    access_token: string;
-    token_type: string;
-    expires_in?: number | undefined;
-    scope?: string | undefined;
-    refresh_token?: string | undefined;
-  } | null;
-}
 
 export async function getMcpServers(
   namespaceUuid: string,
@@ -103,7 +81,9 @@ export async function getMcpServers(
         created_at:
           server.created_at?.toISOString() || new Date().toISOString(),
         status: server.status.toLowerCase(),
+        stderr: "inherit" as IOType,
         oauth_tokens: oauthTokens,
+        bearerToken: server.bearerToken,
       };
 
       // Process based on server type

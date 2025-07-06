@@ -4,6 +4,7 @@ export * from "./namespaces.zod";
 export * from "./endpoints.zod";
 export * from "./oauth.zod";
 export * from "./tools.zod";
+export * from "./logs.zod";
 export * from "./metamcp.zod";
 export * from "./api-keys.zod";
 export * from "./config.zod";

@@ -1,17 +1,12 @@
 import express from "express";
 
 import { auth } from "./auth";
+import { initializeIdleServers } from "./lib/startup";
 import mcpProxyRouter from "./routers/mcp-proxy";
 import publicEndpointsRouter from "./routers/public-metamcp";
 import trpcRouter from "./routers/trpc";
 
 const app = express();
-
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  next();
-});
 
 // Global JSON middleware for non-proxy routes
 app.use((req, res, next) => {
@@ -83,7 +78,7 @@ app.use("/mcp-proxy", mcpProxyRouter);
 // Mount tRPC routes
 app.use("/trpc", trpcRouter);
 
-app.listen(12009, () => {
+app.listen(12009, async () => {
   console.log(`Server is running on port 12009`);
   console.log(`Auth routes available at: http://localhost:12009/api/auth`);
   console.log(
@@ -93,6 +88,9 @@ app.listen(12009, () => {
     `MCP Proxy routes available at: http://localhost:12009/mcp-proxy`,
   );
   console.log(`tRPC routes available at: http://localhost:12009/trpc`);
+
+  // Initialize idle servers after server starts
+  await initializeIdleServers();
 });
 
 app.get("/health", (req, res) => {

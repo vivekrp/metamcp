@@ -6,7 +6,7 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import express from "express";
 
 import { createServer } from "../../lib/metamcp/index";
-import { cleanupSessionConnections } from "../../lib/metamcp/sessions";
+import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
 import { betterAuthMcpMiddleware } from "../../middleware/better-auth-mcp.middleware";
 
 const metamcpRouter = express.Router();
@@ -56,15 +56,15 @@ const cleanupSession = async (sessionId: string) => {
   }
 
   // Clean up session connections
-  await cleanupSessionConnections(sessionId);
+  await mcpServerPool.cleanupSession(sessionId);
 };
 
 metamcpRouter.get("/:uuid/mcp", async (req, res) => {
   const namespaceUuid = req.params.uuid;
   const sessionId = req.headers["mcp-session-id"] as string;
-  console.log(
-    `Received GET message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
-  );
+  // console.log(
+  //   `Received GET message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
+  // );
   try {
     const transport = webAppTransports.get(
       sessionId,
@@ -148,9 +148,9 @@ metamcpRouter.post("/:uuid/mcp", async (req, res) => {
       res.status(500).json(error);
     }
   } else {
-    console.log(
-      `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
     try {
       const transport = webAppTransports.get(
         sessionId,
@@ -236,9 +236,9 @@ metamcpRouter.post("/:uuid/message", async (req, res) => {
   const namespaceUuid = req.params.uuid;
   try {
     const sessionId = req.query.sessionId;
-    console.log(
-      `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
-    );
+    // console.log(
+    //   `Received POST message for MetaMCP namespace ${namespaceUuid} sessionId ${sessionId}`,
+    // );
 
     const transport = webAppTransports.get(
       sessionId as string,

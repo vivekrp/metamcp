@@ -6,8 +6,9 @@ import {
 } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { ServerParameters } from "@repo/zod-types";
 
-import { IOType, ServerParameters } from "./fetch-metamcp";
+import { metamcpLogStore } from "./log-store";
 
 const sleep = (time: number) =>
   new Promise<void>((resolve) => setTimeout(() => resolve(), time));
@@ -25,10 +26,8 @@ export const transformDockerUrl = (url: string): string => {
       /localhost|127\.0\.0\.1/g,
       "host.docker.internal",
     );
-    console.log(`Docker URL transformation: ${url} -> ${transformed}`);
     return transformed;
   }
-  console.log(`Docker URL transformation disabled: ${url}`);
   return url;
 };
 
@@ -40,41 +39,53 @@ export const createMetaMcpClient = (
   // Create the appropriate transport based on server type
   // Default to "STDIO" if type is undefined
   if (!serverParams.type || serverParams.type === "STDIO") {
-    // Get stderr value from serverParams, environment variable, or default to "ignore"
-    // TODO: improve error handling, piping and reporting
-    const _stderrValue: IOType = "pipe";
-
     const stdioParams: StdioServerParameters = {
       command: serverParams.command || "",
       args: serverParams.args || undefined,
       env: serverParams.env || undefined,
-      stderr: "ignore",
+      stderr: "pipe",
     };
     transport = new StdioClientTransport(stdioParams);
 
     // Handle stderr stream when set to "pipe"
-    // if ((transport as StdioClientTransport).stderr) {
-    //   const stderrStream = (transport as StdioClientTransport).stderr;
+    if ((transport as StdioClientTransport).stderr) {
+      const stderrStream = (transport as StdioClientTransport).stderr;
 
-    //   stderrStream?.on("data", (chunk: Buffer) => {
-    //     console.error(`[${serverParams.name}] ${chunk.toString().trim()}`);
-    //   });
+      stderrStream?.on("data", (chunk: Buffer) => {
+        metamcpLogStore.addLog(
+          serverParams.name,
+          "error",
+          chunk.toString().trim(),
+        );
+      });
 
-    //   stderrStream?.on("error", (error: Error) => {
-    //     console.error(`[${serverParams.name}] stderr error:`, error);
-    //   });
-    // }
+      stderrStream?.on("error", (error: Error) => {
+        metamcpLogStore.addLog(
+          serverParams.name,
+          "error",
+          "stderr error",
+          error,
+        );
+      });
+    }
   } else if (serverParams.type === "SSE" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    console.log(`Creating SSE transport for: ${transformedUrl}`);
 
-    if (!serverParams.oauth_tokens) {
+    // Check for authentication - prioritize OAuth tokens, fallback to bearerToken
+    const hasAuth =
+      serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+
+    if (!hasAuth) {
       transport = new SSEClientTransport(new URL(transformedUrl));
     } else {
       const headers: Record<string, string> = {};
-      headers["Authorization"] =
-        `Bearer ${serverParams.oauth_tokens.access_token}`;
+
+      // Use OAuth access token if available, otherwise use bearerToken
+      const authToken =
+        serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+      headers["Authorization"] = `Bearer ${authToken}`;
+
       transport = new SSEClientTransport(new URL(transformedUrl), {
         requestInit: {
           headers,
@@ -87,14 +98,21 @@ export const createMetaMcpClient = (
   } else if (serverParams.type === "STREAMABLE_HTTP" && serverParams.url) {
     // Transform the URL if TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL is set to "true"
     const transformedUrl = transformDockerUrl(serverParams.url);
-    console.log(`Creating StreamableHTTP transport for: ${transformedUrl}`);
 
-    if (!serverParams.oauth_tokens) {
+    // Check for authentication - prioritize OAuth tokens, fallback to bearerToken
+    const hasAuth =
+      serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+
+    if (!hasAuth) {
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl));
     } else {
       const headers: Record<string, string> = {};
-      headers["Authorization"] =
-        `Bearer ${serverParams.oauth_tokens.access_token}`;
+
+      // Use OAuth access token if available, otherwise use bearerToken
+      const authToken =
+        serverParams.oauth_tokens?.access_token || serverParams.bearerToken;
+      headers["Authorization"] = `Bearer ${authToken}`;
+
       transport = new StreamableHTTPClientTransport(new URL(transformedUrl), {
         requestInit: {
           headers,
@@ -102,7 +120,11 @@ export const createMetaMcpClient = (
       });
     }
   } else {
-    console.error(`Unsupported server type: ${serverParams.type}`);
+    metamcpLogStore.addLog(
+      serverParams.name,
+      "error",
+      `Unsupported server type: ${serverParams.type}`,
+    );
     return { client: undefined, transport: undefined };
   }
 
@@ -123,8 +145,7 @@ export const createMetaMcpClient = (
 };
 
 export const connectMetaMcpClient = async (
-  client: Client,
-  transport: Transport,
+  serverParams: ServerParameters,
 ): Promise<ConnectedClient | undefined> => {
   const waitFor = 2500;
   const retries = 3;
@@ -133,6 +154,12 @@ export const connectMetaMcpClient = async (
 
   while (retry) {
     try {
+      // Create fresh client and transport for each attempt
+      const { client, transport } = createMetaMcpClient(serverParams);
+      if (!client || !transport) {
+        return undefined;
+      }
+
       await client.connect(transport);
 
       return {
@@ -143,17 +170,19 @@ export const connectMetaMcpClient = async (
         },
       };
     } catch (error) {
-      console.error(`Error connecting to MetaMCP client: ${error}`);
+      metamcpLogStore.addLog(
+        "client",
+        "error",
+        `Error connecting to MetaMCP client (attempt ${count + 1}/${retries})`,
+        error,
+      );
       count++;
       retry = count < retries;
       if (retry) {
-        try {
-          await client.close();
-        } catch {
-          /* empty */
-        }
         await sleep(waitFor);
       }
     }
   }
+
+  return undefined;
 };

@@ -149,6 +149,10 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
               Streamable HTTP: {getAppUrl()}/metamcp/
               {endpoint.name}
               /mcp
+              <br />
+              OpenAPI: {getAppUrl()}/metamcp/{endpoint.name}/api
+              <br />
+              Schema: {getAppUrl()}/metamcp/{endpoint.name}/api/openapi.json
             </div>
           </div>
         );
@@ -230,6 +234,18 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
           toast.success("SHTTP URL copied to clipboard");
         };
 
+        const copyFullApiUrl = () => {
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api`;
+          navigator.clipboard.writeText(baseUrl);
+          toast.success("OpenAPI URL copied to clipboard");
+        };
+
+        const copyFullOpenApiSchemaUrl = () => {
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json`;
+          navigator.clipboard.writeText(baseUrl);
+          toast.success("OpenAPI Schema URL copied to clipboard");
+        };
+
         const getApiKey = () => {
           const apiKeys = apiKeysResponse?.apiKeys || [];
           const activeApiKey = apiKeys.find((key) => key.is_active);
@@ -248,6 +264,24 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/mcp?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
           toast.success("SHTTP URL with API key parameter copied to clipboard");
+        };
+
+        const copyFullApiUrlWithApiKey = () => {
+          const apiKey = getApiKey();
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api?api_key=${apiKey}`;
+          navigator.clipboard.writeText(baseUrl);
+          toast.success(
+            "OpenAPI URL with API key parameter copied to clipboard",
+          );
+        };
+
+        const copyFullOpenApiSchemaUrlWithApiKey = () => {
+          const apiKey = getApiKey();
+          const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json?api_key=${apiKey}`;
+          navigator.clipboard.writeText(baseUrl);
+          toast.success(
+            "OpenAPI Schema URL with API key parameter copied to clipboard",
+          );
         };
 
         return (
@@ -277,6 +311,14 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
                 <Link className="mr-2 h-4 w-4" />
                 Copy full SHTTP URL
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyFullApiUrl}>
+                <Link className="mr-2 h-4 w-4" />
+                Copy full OpenAPI URL
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyFullOpenApiSchemaUrl}>
+                <Link className="mr-2 h-4 w-4" />
+                Copy OpenAPI Schema URL
+              </DropdownMenuItem>
               {endpoint.use_query_param_auth && (
                 <>
                   <DropdownMenuItem onClick={copyFullSseUrlWithApiKey}>
@@ -286,6 +328,16 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
                   <DropdownMenuItem onClick={copyFullShttpUrlWithApiKey}>
                     <Link className="mr-2 h-4 w-4" />
                     Copy SHTTP URL with API key
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={copyFullApiUrlWithApiKey}>
+                    <Link className="mr-2 h-4 w-4" />
+                    Copy OpenAPI URL with API key
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={copyFullOpenApiSchemaUrlWithApiKey}
+                  >
+                    <Link className="mr-2 h-4 w-4" />
+                    Copy OpenAPI Schema URL with API key
                   </DropdownMenuItem>
                 </>
               )}

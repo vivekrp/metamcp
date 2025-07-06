@@ -180,7 +180,7 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
 
 serverRouter.get("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string;
-  console.log(`Received GET message for sessionId ${sessionId}`);
+  // console.log(`Received GET message for sessionId ${sessionId}`);
   try {
     const transport = webAppTransports.get(
       sessionId,
@@ -263,7 +263,7 @@ serverRouter.post("/mcp", async (req, res) => {
       res.status(500).json(error);
     }
   } else {
-    console.log(`Received POST message for sessionId ${sessionId}`);
+    // console.log(`Received POST message for sessionId ${sessionId}`);
     try {
       const transport = webAppTransports.get(
         sessionId,
@@ -487,7 +487,7 @@ serverRouter.get("/sse", async (req, res) => {
 serverRouter.post("/message", async (req, res) => {
   try {
     const sessionId = req.query.sessionId;
-    console.log(`Received POST message for sessionId ${sessionId}`);
+    // console.log(`Received POST message for sessionId ${sessionId}`);
 
     const transport = webAppTransports.get(
       sessionId as string,

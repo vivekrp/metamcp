@@ -120,6 +120,7 @@ export function InspectorTools({
     setTools([]);
     setSelectedTool(null);
     setNextCursor(undefined);
+    setExecutions([]);
   };
 
   // Update argument inputs when selected tool changes
