@@ -5,7 +5,5 @@ import { getAppUrl } from "./env";
 
 export const authClient = createAuthClient({
   baseURL: getAppUrl(),
-  plugins: [
-    genericOAuthClient(),
-  ],
+  plugins: [genericOAuthClient()],
 }) as ReturnType<typeof createAuthClient>;

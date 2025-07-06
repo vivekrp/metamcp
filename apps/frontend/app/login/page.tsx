@@ -15,26 +15,28 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSignupDisabled, setIsSignupDisabled] = useState(false);
+  const [isOidcLoading, setIsOidcLoading] = useState(false);
   const isOidcEnabled = !!process.env.OIDC_DISCOVERY_URL;
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  // Check if signup is disabled and if OIDC is enabled
+  // Check if signup is disabled
   useEffect(() => {
-    const checkSettings = async () => {
+    const checkSignupStatus = async () => {
       try {
         const isDisabled =
           await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
         setIsSignupDisabled(isDisabled);
       } catch (error) {
-        console.error("Failed to check settings:", error);
+        console.error("Failed to check signup status:", error);
+        // If we can't check, assume signup is enabled (fail open)
         setIsSignupDisabled(false);
       }
     };
 
-    checkSettings();
+    checkSignupStatus();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,13 +102,15 @@ function LoginForm() {
             >
               {isOidcLoading ? "Signing in with OIDC..." : "Sign in with OIDC"}
             </Button>
-            
+
             <div className="mt-4 relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with email</span>
+                <span className="px-2 bg-gray-50 text-gray-500">
+                  Or continue with email
+                </span>
               </div>
             </div>
           </div>
@@ -153,7 +157,12 @@ function LoginForm() {
           )}
 
           <div>
-            <Button type="submit" className="w-full" disabled={isLoading || isOidcLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || isOidcLoading}
+              onClick={handleSubmit}
+            >
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </div>
