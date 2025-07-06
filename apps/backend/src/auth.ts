@@ -22,40 +22,15 @@ const oidcProviders = [];
 
 // Add OIDC provider if configured
 if (process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET) {
-  const oidcConfig = {
+  const oidcConfig: any = {
     providerId: process.env.OIDC_PROVIDER_ID || "oidc",
     clientId: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
     scopes: (process.env.OIDC_SCOPES || "openid email profile").split(" "),
-    pkce: process.env.OIDC_PKCE === "true" || true, // Enable PKCE by default for security
+    pkce: process.env.OIDC_PKCE !== "false", // Enable PKCE by default for security
+    discoveryUrl: process.env.OIDC_DISCOVERY_URL,
+    authorizationUrl: process.env.OIDC_AUTHORIZATION_URL, //this is required due to a bug in better-auth: https://github.com/better-auth/better-auth/issues/3278
   };
-
-  // Use discovery URL if provided, otherwise manual configuration
-  if (process.env.OIDC_DISCOVERY_URL) {
-    oidcConfig.discoveryUrl = process.env.OIDC_DISCOVERY_URL;
-  } else {
-    // Manual endpoint configuration
-    if (process.env.OIDC_AUTHORIZATION_URL) {
-      oidcConfig.authorizationUrl = process.env.OIDC_AUTHORIZATION_URL;
-    }
-    if (process.env.OIDC_TOKEN_URL) {
-      oidcConfig.tokenUrl = process.env.OIDC_TOKEN_URL;
-    }
-    if (process.env.OIDC_USERINFO_URL) {
-      oidcConfig.userInfoUrl = process.env.OIDC_USERINFO_URL;
-    }
-  }
-
-  // Optional: Custom user info mapping
-  if (process.env.OIDC_CUSTOM_USER_MAPPING === "true") {
-    oidcConfig.mapProfileToUser = async (profile) => {
-      return {
-        firstName: profile.given_name || profile.first_name,
-        lastName: profile.family_name || profile.last_name,
-        // Add any other custom field mappings here
-      };
-    };
-  }
 
   oidcProviders.push(oidcConfig);
 }

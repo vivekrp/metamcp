@@ -135,8 +135,6 @@ Add the following environment variables to your `.env` file:
 # Required
 OIDC_CLIENT_ID=your-oidc-client-id
 OIDC_CLIENT_SECRET=your-oidc-client-secret
-
-# Recommended: Auto-discovery
 OIDC_DISCOVERY_URL=https://your-provider.com/.well-known/openid-configuration
 
 # Optional customization

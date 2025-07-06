@@ -37,21 +37,12 @@ To enable OIDC authentication, add the following environment variables to your `
 ```bash
 OIDC_CLIENT_ID=your-oidc-client-id
 OIDC_CLIENT_SECRET=your-oidc-client-secret
-```
-
-#### Discovery URL (Recommended)
-```bash
 OIDC_DISCOVERY_URL=https://your-provider.com/.well-known/openid-configuration
 ```
 
-The discovery URL allows MetaMCP to automatically discover all required endpoints. This is the recommended approach as it's more maintainable.
-
-#### Manual Endpoint Configuration
-If your OIDC provider doesn't support discovery, you can configure endpoints manually:
+For now full endpoints discovery is not supported, so you'll need to provide the authorization endpoint:
 ```bash
 OIDC_AUTHORIZATION_URL=https://your-provider.com/auth/authorize
-OIDC_TOKEN_URL=https://your-provider.com/auth/token
-OIDC_USERINFO_URL=https://your-provider.com/auth/userinfo
 ```
 
 #### Optional Configuration
@@ -59,58 +50,25 @@ OIDC_USERINFO_URL=https://your-provider.com/auth/userinfo
 OIDC_PROVIDER_ID=oidc                    # Default: "oidc"
 OIDC_SCOPES=openid email profile         # Default: "openid email profile"
 OIDC_PKCE=true                          # Default: true (recommended for security)
-OIDC_CUSTOM_USER_MAPPING=true           # Enable custom user field mapping
 ```
-
-### Supported OIDC Providers
-
-MetaMCP has been tested with the following OIDC providers:
-
-- **Auth0**: Use discovery URL `https://your-domain.auth0.com/.well-known/openid-configuration`
-- **Keycloak**: Use discovery URL `https://your-keycloak.com/realms/your-realm/.well-known/openid-configuration`
-- **Azure AD**: Use discovery URL `https://login.microsoftonline.com/your-tenant-id/v2.0/.well-known/openid-configuration`
-- **Google**: Use discovery URL `https://accounts.google.com/.well-known/openid-configuration`
-- **Okta**: Use discovery URL `https://your-domain.okta.com/.well-known/openid-configuration`
 
 ### Usage
 
 Once configured, users will see a "Login with OIDC" button on the login page. The authentication flow follows the OpenID Connect Authorization Code flow with PKCE for enhanced security.
-
-#### Frontend Integration
-
-To trigger OIDC authentication programmatically:
-
-```typescript
-import { authClient } from '@/lib/auth-client';
-
-// Initiate OIDC authentication
-const handleOIDCLogin = async () => {
-  try {
-    await authClient.signIn.oauth2({
-      providerId: "oidc", // or your custom OIDC_PROVIDER_ID
-      callbackURL: "/dashboard" // where to redirect after successful login
-    });
-  } catch (error) {
-    console.error('OIDC login failed:', error);
-  }
-};
-```
 
 ### Security Considerations
 
 - PKCE (Proof Key for Code Exchange) is enabled by default for enhanced security
 - The redirect URI is automatically configured as `${APP_URL}/api/auth/oauth2/callback/oidc`
 - Ensure your OIDC provider is configured to allow this redirect URI
-- Store client secrets securely and never commit them to version control
 
 ### Troubleshooting
 
 **Common Issues:**
 
 1. **Invalid Redirect URI**: Ensure your OIDC provider allows `${APP_URL}/api/auth/oauth2/callback/oidc`
-2. **Discovery Failed**: If auto-discovery fails, configure endpoints manually
-3. **Scope Issues**: Some providers require specific scopes beyond the default `openid email profile`
-4. **User Creation**: Users are automatically created on first login. Ensure your provider returns email and name claims
+2. **Scope Issues**: Some providers require specific scopes beyond the default `openid email profile`
+3. **User Creation**: Users are automatically created on first login. Ensure your provider returns email and name claims
 
 **Debug Mode:**
 

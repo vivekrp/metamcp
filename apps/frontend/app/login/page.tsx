@@ -13,10 +13,9 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isOidcLoading, setIsOidcLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSignupDisabled, setIsSignupDisabled] = useState(false);
-  const [isOidcEnabled, setIsOidcEnabled] = useState(false);
+  const isOidcEnabled = !!process.env.OIDC_DISCOVERY_URL;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,24 +28,9 @@ function LoginForm() {
         const isDisabled =
           await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
         setIsSignupDisabled(isDisabled);
-
-        // Check if OIDC is configured by trying to determine if the backend has OIDC routes
-        // This is a simple check - in production you might want a dedicated endpoint
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:12008";
-        try {
-          const response = await fetch(`${baseUrl}/api/auth/.well-known/openid-configuration`, {
-            method: 'HEAD',
-          });
-          // If the endpoint exists and doesn't return 404, OIDC might be available
-          setIsOidcEnabled(response.status !== 404);
-        } catch {
-          // If fetch fails, assume OIDC is not configured
-          setIsOidcEnabled(false);
-        }
       } catch (error) {
         console.error("Failed to check settings:", error);
         setIsSignupDisabled(false);
-        setIsOidcEnabled(false);
       }
     };
 
@@ -84,8 +68,8 @@ function LoginForm() {
     setError("");
 
     try {
-      await authClient.signIn.oauth2({
-        providerId: "oidc",
+      await authClient.signIn.social({
+        provider: "oidc",
         callbackURL: callbackUrl,
       });
     } catch (err) {
