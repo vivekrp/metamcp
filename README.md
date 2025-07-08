@@ -20,6 +20,12 @@
 
 ![MetaMCP Diagram](metamcp.svg)
 
+---
+
+English | [中文](./README_cn.md)
+
+
+
 
 ## 📋 Table of Contents
 
