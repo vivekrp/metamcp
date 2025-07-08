@@ -168,6 +168,7 @@ streamableHttpRouter.get(
 
 streamableHttpRouter.post(
   "/:endpoint_name/mcp",
+  express.json(),
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {

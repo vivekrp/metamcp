@@ -197,7 +197,7 @@ serverRouter.get("/mcp", async (req, res) => {
   }
 });
 
-serverRouter.post("/mcp", async (req, res) => {
+serverRouter.post("/mcp", express.json(), async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   let serverTransport: Transport | undefined;
   if (!sessionId) {
