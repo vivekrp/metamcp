@@ -24,4 +24,8 @@ export const configImplementations = {
     await configService.setConfig(input.key, input.value, input.description);
     return { success: true };
   },
+
+  getAuthProviders: async (): Promise<Array<{ id: string; name: string; enabled: boolean }>> => {
+    return await configService.getAuthProviders();
+  },
 };

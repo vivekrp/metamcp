@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { genericOAuth } from "better-auth/plugins";
 
 import { db } from "./db/index";
 import * as schema from "./db/schema";
@@ -16,6 +17,24 @@ if (!process.env.APP_URL) {
 const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET;
 const BETTER_AUTH_URL = process.env.APP_URL;
 
+// OIDC Provider configuration - optional, only if environment variables are provided
+const oidcProviders = [];
+
+// Add OIDC provider if configured
+if (process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET) {
+  const oidcConfig: any = {
+    providerId: process.env.OIDC_PROVIDER_ID || "oidc",
+    clientId: process.env.OIDC_CLIENT_ID,
+    clientSecret: process.env.OIDC_CLIENT_SECRET,
+    scopes: (process.env.OIDC_SCOPES || "openid email profile").split(" "),
+    pkce: process.env.OIDC_PKCE !== "false", // Enable PKCE by default for security
+    discoveryUrl: process.env.OIDC_DISCOVERY_URL,
+    authorizationUrl: process.env.OIDC_AUTHORIZATION_URL, //this is required due to a bug in better-auth: https://github.com/better-auth/better-auth/issues/3278
+  };
+
+  oidcProviders.push(oidcConfig);
+}
+
 export const auth = betterAuth({
   secret: BETTER_AUTH_SECRET,
   baseURL: BETTER_AUTH_URL,
@@ -28,6 +47,10 @@ export const auth = betterAuth({
       verification: schema.verificationsTable,
     },
   }),
+  plugins: [
+    // Add generic OAuth plugin for OIDC support
+    ...(oidcProviders.length > 0 ? [genericOAuth({ config: oidcProviders })] : []),
+  ],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // Set to true if you want email verification
@@ -69,6 +92,7 @@ export const auth = betterAuth({
 });
 
 console.log("✓ Better Auth instance created successfully");
+console.log(`✓ OIDC Providers configured: ${oidcProviders.length}`);
 
 export type Session = typeof auth.$Infer.Session;
 // Note: User type needs to be inferred from Session.user
