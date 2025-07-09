@@ -3,14 +3,14 @@
 <div align="center">
 
 <p align="center">
-  <a href="https://discord.gg/mNsyat7mFX">
-    <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord">
+  <a href="https://discord.gg/mNsyat7mFX" style="text-decoration: none;">
+    <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" style="max-width: 100%;">
   </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
+  <a href="https://opensource.org/licenses/MIT" style="text-decoration: none;">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License" style="max-width: 100%;">
   </a>
-  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp">
-    <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR">
+  <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp" style="text-decoration: none;">
+    <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR" style="max-width: 100%;">
   </a>
 </p>
 
@@ -19,6 +19,12 @@
 **MetaMCP** is a MCP proxy that lets you dynamically aggregate MCP servers into a unified MCP server, and apply middlewares. MetaMCP itself is a MCP server so it can be easily plugged into **ANY** MCP clients.
 
 ![MetaMCP Diagram](metamcp.svg)
+
+---
+
+English | [中文](./README_cn.md)
+
+
 
 
 ## 📋 Table of Contents
@@ -36,6 +42,7 @@
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
 - [❄️ Cold Start Problem and Custom Dockerfile](#️-cold-start-problem-and-custom-dockerfile)
 - [🔐 Authentication](#-authentication)
+- [🔗 OpenID Connect (OIDC) Provider Support](#-openid-connect-oidc-provider-support)
 - [🏗️ Architecture](#️-architecture)
   - [📊 Sequence Diagram](#-sequence-diagram)
 - [🗺️ Roadmap](#️-roadmap)
@@ -139,6 +146,49 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 - 🍪 **Session cookies** enforce internal MCP proxy connections  
 - 🔑 **API key auth** for external access via `Authorization: Bearer <api-key>` header
 - Note though: the repo is not designed for multi-tenancy and each org should self-host an instance for org wide. E.g., MCP server has no user_id association, so every account have access to every MCP server configs hosted on the instance.
+
+## 🔗 OpenID Connect (OIDC) Provider Support
+
+MetaMCP supports **OpenID Connect authentication** for enterprise SSO integration. This allows organizations to use their existing identity providers (Auth0, Keycloak, Azure AD, etc.) for authentication.
+
+### 🛠️ **Configuration**
+
+Add the following environment variables to your `.env` file:
+
+```bash
+# Required
+OIDC_CLIENT_ID=your-oidc-client-id
+OIDC_CLIENT_SECRET=your-oidc-client-secret
+OIDC_DISCOVERY_URL=https://your-provider.com/.well-known/openid-configuration
+
+# Optional customization
+OIDC_PROVIDER_ID=oidc
+OIDC_SCOPES=openid email profile
+OIDC_PKCE=true
+```
+
+### 🏢 **Supported Providers**
+
+MetaMCP has been tested with popular OIDC providers:
+
+- **Auth0**: `https://your-domain.auth0.com/.well-known/openid-configuration`
+- **Keycloak**: `https://your-keycloak.com/realms/your-realm/.well-known/openid-configuration`
+- **Azure AD**: `https://login.microsoftonline.com/your-tenant-id/v2.0/.well-known/openid-configuration`
+- **Google**: `https://accounts.google.com/.well-known/openid-configuration`
+- **Okta**: `https://your-domain.okta.com/.well-known/openid-configuration`
+
+### 🔒 **Security Features**
+
+- 🔐 **PKCE (Proof Key for Code Exchange)** enabled by default
+- 🛡️ **Authorization Code Flow** with automatic user creation
+- 🔄 **Auto-discovery** of OIDC endpoints
+- 🍪 **Seamless session management** with existing auth system
+
+### 📱 **Usage**
+
+Once configured, users will see a **"Sign in with OIDC"** button on the login page alongside the email/password form. The authentication flow automatically creates new users on first login.
+
+For more detailed configuration examples and troubleshooting, see **[CONTRIBUTING.md](CONTRIBUTING.md#openid-connect-oidc-provider-setup)**.
 
 ## SSE conf for Nginx
 

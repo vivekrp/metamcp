@@ -12,6 +12,9 @@ export const createConfigRouter = (implementations: {
     Array<{ id: string; value: string; description?: string | null }>
   >;
   setConfig: (input: SetConfigRequest) => Promise<{ success: boolean }>;
+  getAuthProviders: () => Promise<
+    Array<{ id: string; name: string; enabled: boolean }>
+  >;
 }) =>
   router({
     getSignupDisabled: publicProcedure.query(async () => {
@@ -33,4 +36,8 @@ export const createConfigRouter = (implementations: {
       .mutation(async ({ input }) => {
         return await implementations.setConfig(input);
       }),
+
+    getAuthProviders: publicProcedure.query(async () => {
+      return await implementations.getAuthProviders();
+    }),
   });

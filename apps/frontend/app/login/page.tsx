@@ -15,26 +15,40 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSignupDisabled, setIsSignupDisabled] = useState(false);
+  const [isOidcLoading, setIsOidcLoading] = useState(false);
+  const [isOidcEnabled, setIsOidcEnabled] = useState(false);
+  const [authProvidersLoading, setAuthProvidersLoading] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  // Check if signup is disabled
+  // Check auth providers and signup status
   useEffect(() => {
-    const checkSignupStatus = async () => {
+    const checkAuthConfig = async () => {
       try {
-        const isDisabled =
-          await vanillaTrpcClient.frontend.config.getSignupDisabled.query();
-        setIsSignupDisabled(isDisabled);
+        const [authProviders, signupDisabled] = await Promise.all([
+          vanillaTrpcClient.frontend.config.getAuthProviders.query(),
+          vanillaTrpcClient.frontend.config.getSignupDisabled.query(),
+        ]);
+
+        // Check if OIDC is in the list of enabled providers
+        const oidcProvider = authProviders.find(
+          (provider) => provider.id === "oidc" && provider.enabled,
+        );
+        setIsOidcEnabled(!!oidcProvider);
+        setIsSignupDisabled(signupDisabled);
       } catch (error) {
-        console.error("Failed to check signup status:", error);
-        // If we can't check, assume signup is enabled (fail open)
+        console.error("Failed to check auth configuration:", error);
+        // If we can't check, assume OIDC is disabled and signup is enabled (fail safe)
+        setIsOidcEnabled(false);
         setIsSignupDisabled(false);
+      } finally {
+        setAuthProvidersLoading(false);
       }
     };
 
-    checkSignupStatus();
+    checkAuthConfig();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +77,37 @@ function LoginForm() {
     }
   };
 
+  const handleOidcLogin = async () => {
+    setIsOidcLoading(true);
+    setError("");
+
+    try {
+      await authClient.signIn.social({
+        provider: "oidc",
+        callbackURL: callbackUrl,
+      });
+    } catch (err) {
+      setError("OIDC login failed");
+      console.error("OIDC login error:", err);
+      setIsOidcLoading(false);
+    }
+  };
+
+  // Show loading state while checking auth providers
+  if (authProvidersLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
@@ -71,6 +116,33 @@ function LoginForm() {
             Sign in to your account
           </h2>
         </div>
+
+        {/* OIDC Login Button */}
+        {isOidcEnabled && (
+          <div className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleOidcLogin}
+              disabled={isOidcLoading || isLoading}
+            >
+              {isOidcLoading ? "Signing in with OIDC..." : "Sign in with OIDC"}
+            </Button>
+
+            <div className="mt-4 relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-50 text-gray-500">
+                  Or continue with email
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -86,7 +158,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                disabled={isLoading}
+                disabled={isLoading || isOidcLoading}
               />
             </div>
             <div>
@@ -102,7 +174,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                disabled={isLoading}
+                disabled={isLoading || isOidcLoading}
               />
             </div>
           </div>
@@ -112,7 +184,12 @@ function LoginForm() {
           )}
 
           <div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || isOidcLoading}
+              onClick={handleSubmit}
+            >
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </div>
