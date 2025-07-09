@@ -58,18 +58,18 @@ export default function LiveLogsPage() {
     }
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "error":
-        return "destructive";
-      case "warn":
-        return "secondary";
-      case "info":
-        return "default";
-      default:
-        return "outline";
-    }
-  };
+  // const getLevelColor = (level: string) => {
+  //   switch (level) {
+  //     case "error":
+  //       return "outline"; // Changed from "destructive" to "outline"
+  //     case "warn":
+  //       return "secondary";
+  //     case "info":
+  //       return "default";
+  //     default:
+  //       return "outline";
+  //   }
+  // };
 
   const formatTimestamp = (timestamp: Date) => {
     return new Date(timestamp).toLocaleString();
@@ -147,20 +147,15 @@ export default function LiveLogsPage() {
                     <span className="text-gray-500 text-xs whitespace-nowrap">
                       {formatTimestamp(new Date(log.timestamp))}
                     </span>
-                    <Badge
-                      variant={getLevelColor(log.level)}
-                      className="text-xs"
-                    >
-                      {log.level.toUpperCase()}
-                    </Badge>
                     <span className="text-blue-400 font-medium">
                       [{log.serverName}]
                     </span>
                     <span className="flex-1">
                       {log.message}
-                      {log.error && (
+                      {/* Removed red error text display */}
+                      {/* {log.error && (
                         <span className="text-red-400 ml-2">{log.error}</span>
-                      )}
+                      )} */}
                     </span>
                   </div>
                 ))}
