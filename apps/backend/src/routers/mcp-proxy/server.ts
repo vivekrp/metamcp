@@ -197,7 +197,7 @@ serverRouter.get("/mcp", async (req, res) => {
   }
 });
 
-serverRouter.post("/mcp", express.json(), async (req, res) => {
+serverRouter.post("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   let serverTransport: Transport | undefined;
   if (!sessionId) {
@@ -252,11 +252,10 @@ serverRouter.post("/mcp", express.json(), async (req, res) => {
         throw error;
       }
 
-      // Handle the actual request
+      // Handle the actual request - don't pass req.body since it wasn't parsed
       await (webAppTransport as StreamableHTTPServerTransport).handleRequest(
         req,
         res,
-        req.body,
       );
     } catch (error) {
       console.error("Error in /mcp POST route:", error);

@@ -92,7 +92,6 @@ streamableHttpRouter.get(
 
 streamableHttpRouter.post(
   "/:endpoint_name/mcp",
-  express.json(),
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
@@ -154,7 +153,7 @@ streamableHttpRouter.post(
         await mcpServerInstance.server.connect(transport);
 
         // Now handle the request - server is guaranteed to be ready
-        await transport.handleRequest(req, res, req.body);
+        await transport.handleRequest(req, res);
       } catch (error) {
         console.error("Error in public endpoint /mcp POST route:", error);
         res.status(500).json(error);
@@ -174,7 +173,7 @@ streamableHttpRouter.post(
           );
           res.status(404).end("Transport not found for sessionId " + sessionId);
         } else {
-          await transport.handleRequest(req, res, req.body);
+          await transport.handleRequest(req, res);
         }
       } catch (error) {
         console.error("Error in public endpoint /mcp route:", error);
