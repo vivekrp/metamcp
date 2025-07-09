@@ -47,9 +47,22 @@ export const auth = betterAuth({
       verification: schema.verificationsTable,
     },
   }),
+  trustedOrigins: [
+    "http://localhost", // Added this line to fix the "Invalid origin" error
+    "http://localhost:3000",
+    "http://localhost:12008",
+    "http://127.0.0.1", // Also added this for good measure
+    "http://127.0.0.1:12008",
+    "http://127.0.0.1:3000",
+    "http://0.0.0.0",
+    "http://0.0.0.0:3000",
+    "http://0.0.0.0:12008",
+  ],
   plugins: [
     // Add generic OAuth plugin for OIDC support
-    ...(oidcProviders.length > 0 ? [genericOAuth({ config: oidcProviders })] : []),
+    ...(oidcProviders.length > 0
+      ? [genericOAuth({ config: oidcProviders })]
+      : []),
   ],
   emailAndPassword: {
     enabled: true,
