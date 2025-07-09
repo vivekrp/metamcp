@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { useLogsStore } from "@/lib/stores/logs-store";
 
 export function LogsStatusIndicator() {
-  const { logs, totalCount, isAutoRefreshing } = useLogsStore();
+  const { totalCount, isAutoRefreshing } = useLogsStore();
   // const [recentErrorCount, setRecentErrorCount] = useState(0);
 
   // Count recent errors (last 5 minutes) - REMOVED
