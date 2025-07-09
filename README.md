@@ -108,6 +108,8 @@ cp example.env .env
 docker compose up -d
 ```
 
+If you modify APP_URL env vars, make sure you only access from the APP_URL, because MetaMCP enforces CORS policy on the URL, so no other URL is accessible.
+
 Note that the pg volume name may collide with your other pg dockers, which is global, consider rename it in `docker-compose.yml`:
 
 ```
