@@ -110,8 +110,35 @@ const authenticateApiKey = async (
     }
 
     // Add API key info to request
-    authReq.apiKeyUserId = apiKeyValidation.user_id;
+    authReq.apiKeyUserId = apiKeyValidation.user_id || undefined;
     authReq.apiKeyUuid = apiKeyValidation.key_uuid;
+
+    // Check access control: ensure API key can access this endpoint
+    // Public API keys (user_id = null) can only access public endpoints (user_id = null)
+    // Private API keys can access public endpoints and their own private endpoints
+    const isPublicApiKey = apiKeyValidation.user_id === null;
+    const isPrivateEndpoint = endpoint.user_id !== null;
+
+    if (isPublicApiKey && isPrivateEndpoint) {
+      return res.status(403).json({
+        error: "Access denied",
+        message:
+          "Public API keys cannot access private endpoints. Use a private API key owned by the endpoint owner.",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (
+      !isPublicApiKey &&
+      isPrivateEndpoint &&
+      endpoint.user_id !== apiKeyValidation.user_id
+    ) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "You can only access endpoints you own or public endpoints.",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     next();
   } catch (error) {
