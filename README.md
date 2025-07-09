@@ -144,10 +144,10 @@ If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
 ## 🔐 Authentication
 
-- 🛡️ **Better Auth** for frontend and backend (trpc procedures)
-- 🍪 **Session cookies** enforce internal MCP proxy connections  
-- 🔑 **API key auth** for external access via `Authorization: Bearer <api-key>` header
-- Note though: the repo is not designed for multi-tenancy and each org should self-host an instance for org wide. E.g., MCP server has no user_id association, so every account have access to every MCP server configs hosted on the instance.
+- 🛡️ **Better Auth** for frontend & backend (TRPC procedures)
+- 🍪 **Session cookies** enforce secure internal MCP proxy connections
+- 🔑 **API key authentication** for external access via `Authorization: Bearer <api-key>` header
+- 🏢 **Multi-tenancy**: Designed for organizations to deploy on their own machines. Supports both private and public access scopes. Users can create MCPs, namespaces, endpoints, and API keys for themselves or for everyone. Public API keys cannot access private MetaMCPs.
 
 ## 🔗 OpenID Connect (OIDC) Provider Support
 
