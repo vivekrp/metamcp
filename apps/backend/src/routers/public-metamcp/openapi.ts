@@ -329,250 +329,153 @@ openApiRouter.get(
   },
 );
 
-// Tool execution endpoint (mounted directly to /{endpoint}/api/{tool_name})
-openApiRouter.post(
-  "/:endpoint_name/api/:tool_name",
-  lookupEndpoint,
-  authenticateApiKey,
-  async (req, res) => {
-    const authReq = req as ApiKeyAuthenticatedRequest;
-    const { namespaceUuid, endpointName } = authReq;
-    const toolName = req.params.tool_name;
-    const toolArguments = req.body || {};
+// Refactored tool execution logic to avoid duplication
+const executeTool = async (
+  req: ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
+  res: express.Response,
+  toolArguments: Record<string, unknown>,
+) => {
+  const { namespaceUuid, endpointName } = req;
+  const toolName = req.params.tool_name;
+
+  try {
+    console.log(
+      `Tool execution request for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
+    );
+
+    // Create a temporary session for this tool call
+    const sessionId = randomUUID();
 
     try {
-      console.log(
-        `Tool execution request for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
+      // Initialize session connections
+      const mcpServerInstance = await metaMcpServerPool.getServer(
+        sessionId,
+        namespaceUuid,
       );
-
-      // Create a temporary session for this tool call
-      const sessionId = randomUUID();
-
-      try {
-        // Initialize session connections
-        const mcpServerInstance = await metaMcpServerPool.getServer(
-          sessionId,
-          namespaceUuid,
-        );
-        if (!mcpServerInstance) {
-          throw new Error("Failed to get MetaMCP server instance from pool");
-        }
-
-        // Extract the original tool name by removing the server prefix
-        const firstDoubleUnderscoreIndex = toolName.indexOf("__");
-        if (firstDoubleUnderscoreIndex === -1) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found - invalid name format`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
-        const originalToolName = toolName.substring(
-          firstDoubleUnderscoreIndex + 2,
-        );
-
-        // Get server parameters and find the right session for this tool
-        const serverParams = await getMcpServers(namespaceUuid);
-        let targetSession = null;
-
-        for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
-          const session = await mcpServerPool.getSession(
-            sessionId,
-            mcpServerUuid,
-            params,
-          );
-          if (!session) continue;
-
-          const capabilities = session.client.getServerCapabilities();
-          if (!capabilities?.tools) continue;
-
-          // Use name assigned by user, fallback to name from server
-          const serverName =
-            params.name || session.client.getServerVersion()?.name || "";
-
-          if (sanitizeName(serverName) === serverPrefix) {
-            targetSession = session;
-            break;
-          }
-        }
-
-        if (!targetSession) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Execute the tool through the individual MCP client
-        const result = await targetSession.client.request(
-          {
-            method: "tools/call",
-            params: {
-              name: originalToolName,
-              arguments: toolArguments,
-            },
-          },
-          CompatibilityCallToolResultSchema,
-        );
-
-        // Return the result directly (simplified format)
-        res.json(result);
-      } finally {
-        // Cleanup the temporary session
-        await metaMcpServerPool.cleanupSession(sessionId);
+      if (!mcpServerInstance) {
+        throw new Error("Failed to get MetaMCP server instance from pool");
       }
-    } catch (error) {
-      console.error(`Error executing tool ${toolName}:`, error);
 
-      // Handle different types of errors
-      if (error instanceof Error) {
-        if (error.message.includes("Unknown tool")) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        return res.status(500).json({
-          error: "Tool execution failed",
-          message: error.message,
+      // Extract the original tool name by removing the server prefix
+      const firstDoubleUnderscoreIndex = toolName.indexOf("__");
+      if (firstDoubleUnderscoreIndex === -1) {
+        return res.status(404).json({
+          error: "Tool not found",
+          message: `Tool '${toolName}' not found - invalid name format`,
           timestamp: new Date().toISOString(),
         });
       }
 
-      res.status(500).json({
-        error: "Internal server error",
-        message: "Failed to execute tool",
+      const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
+      const originalToolName = toolName.substring(
+        firstDoubleUnderscoreIndex + 2,
+      );
+
+      // Get server parameters and find the right session for this tool
+      const serverParams = await getMcpServers(namespaceUuid);
+      let targetSession = null;
+
+      for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
+        const session = await mcpServerPool.getSession(
+          sessionId,
+          mcpServerUuid,
+          params,
+        );
+        if (!session) continue;
+
+        const capabilities = session.client.getServerCapabilities();
+        if (!capabilities?.tools) continue;
+
+        // Use name assigned by user, fallback to name from server
+        const serverName =
+          params.name || session.client.getServerVersion()?.name || "";
+
+        if (sanitizeName(serverName) === serverPrefix) {
+          targetSession = session;
+          break;
+        }
+      }
+
+      if (!targetSession) {
+        return res.status(404).json({
+          error: "Tool not found",
+          message: `Tool '${toolName}' not found`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Execute the tool through the individual MCP client
+      const result = await targetSession.client.request(
+        {
+          method: "tools/call",
+          params: {
+            name: originalToolName,
+            arguments: toolArguments,
+          },
+        },
+        CompatibilityCallToolResultSchema,
+      );
+
+      // Return the result directly (simplified format)
+      res.json(result);
+    } finally {
+      // Cleanup the temporary session
+      await metaMcpServerPool.cleanupSession(sessionId);
+    }
+  } catch (error) {
+    console.error(`Error executing tool ${toolName}:`, error);
+
+    // Handle different types of errors
+    if (error instanceof Error) {
+      if (error.message.includes("Unknown tool")) {
+        return res.status(404).json({
+          error: "Tool not found",
+          message: `Tool '${toolName}' not found`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return res.status(500).json({
+        error: "Tool execution failed",
+        message: error.message,
         timestamp: new Date().toISOString(),
       });
     }
+
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to execute tool",
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Tool execution endpoint for POST requests
+openApiRouter.post(
+  "/:endpoint_name/api/:tool_name",
+  express.json(),
+  lookupEndpoint,
+  authenticateApiKey,
+  async (req, res) => {
+    await executeTool(
+      req as ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
+      res,
+      req.body || {},
+    );
   },
 );
 
-// Support GET requests for tools that don't require parameters
+// Tool execution endpoint for GET requests (for tools with no parameters)
 openApiRouter.get(
   "/:endpoint_name/api/:tool_name",
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    const authReq = req as ApiKeyAuthenticatedRequest;
-    const { namespaceUuid, endpointName } = authReq;
-    const toolName = req.params.tool_name;
-
-    try {
-      console.log(
-        `Tool execution request (GET) for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
-      );
-
-      // Create a temporary session for this tool call
-      const sessionId = randomUUID();
-
-      try {
-        // Initialize session connections
-        const mcpServerInstance = await metaMcpServerPool.getServer(
-          sessionId,
-          namespaceUuid,
-        );
-        if (!mcpServerInstance) {
-          throw new Error("Failed to get MetaMCP server instance from pool");
-        }
-
-        // Extract the original tool name by removing the server prefix
-        const firstDoubleUnderscoreIndex = toolName.indexOf("__");
-        if (firstDoubleUnderscoreIndex === -1) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found - invalid name format`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
-        const originalToolName = toolName.substring(
-          firstDoubleUnderscoreIndex + 2,
-        );
-
-        // Get server parameters and find the right session for this tool
-        const serverParams = await getMcpServers(namespaceUuid);
-        let targetSession = null;
-
-        for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
-          const session = await mcpServerPool.getSession(
-            sessionId,
-            mcpServerUuid,
-            params,
-          );
-          if (!session) continue;
-
-          const capabilities = session.client.getServerCapabilities();
-          if (!capabilities?.tools) continue;
-
-          // Use name assigned by user, fallback to name from server
-          const serverName =
-            params.name || session.client.getServerVersion()?.name || "";
-
-          if (sanitizeName(serverName) === serverPrefix) {
-            targetSession = session;
-            break;
-          }
-        }
-
-        if (!targetSession) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Execute the tool through the individual MCP client
-        const result = await targetSession.client.request(
-          {
-            method: "tools/call",
-            params: {
-              name: originalToolName,
-              arguments: {},
-            },
-          },
-          CompatibilityCallToolResultSchema,
-        );
-
-        // Return the result directly (simplified format)
-        res.json(result);
-      } finally {
-        // Cleanup the temporary session
-        await metaMcpServerPool.cleanupSession(sessionId);
-      }
-    } catch (error) {
-      console.error(`Error executing tool ${toolName}:`, error);
-
-      // Handle different types of errors
-      if (error instanceof Error) {
-        if (error.message.includes("Unknown tool")) {
-          return res.status(404).json({
-            error: "Tool not found",
-            message: `Tool '${toolName}' not found`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        return res.status(500).json({
-          error: "Tool execution failed",
-          message: error.message,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      res.status(500).json({
-        error: "Internal server error",
-        message: "Failed to execute tool",
-        timestamp: new Date().toISOString(),
-      });
-    }
+    await executeTool(
+      req as ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
+      res,
+      {},
+    );
   },
 );
 
