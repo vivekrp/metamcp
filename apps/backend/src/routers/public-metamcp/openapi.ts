@@ -5,27 +5,19 @@ import {
   ListToolsResultSchema,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import { DatabaseEndpoint } from "@repo/zod-types";
 import express from "express";
 
-import { ApiKeysRepository } from "../../db/repositories/api-keys.repo";
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
 import { getMcpServers } from "../../lib/metamcp/fetch-metamcp";
 import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
 import { metaMcpServerPool } from "../../lib/metamcp/metamcp-server-pool";
 import { sanitizeName } from "../../lib/metamcp/utils";
-
-// Extend Express Request interface for our custom properties
-interface AuthenticatedRequest extends express.Request {
-  namespaceUuid: string;
-  endpointName: string;
-  endpoint: DatabaseEndpoint;
-  apiKeyUserId?: string;
-  apiKeyUuid?: string;
-}
+import {
+  ApiKeyAuthenticatedRequest,
+  authenticateApiKey,
+} from "../../middleware/api-key-auth.middleware";
 
 const openApiRouter = express.Router();
-const apiKeysRepository = new ApiKeysRepository();
 
 // Middleware to lookup endpoint by name and add namespace info to request
 const lookupEndpoint = async (
@@ -46,7 +38,7 @@ const lookupEndpoint = async (
     }
 
     // Add the endpoint info to the request for use in handlers
-    const authReq = req as AuthenticatedRequest;
+    const authReq = req as ApiKeyAuthenticatedRequest;
     authReq.namespaceUuid = endpoint.namespace_uuid;
     authReq.endpointName = endpointName;
     authReq.endpoint = endpoint;
@@ -57,95 +49,6 @@ const lookupEndpoint = async (
     return res.status(500).json({
       error: "Internal server error",
       message: "Failed to lookup endpoint",
-      timestamp: new Date().toISOString(),
-    });
-  }
-};
-
-// Authentication middleware for API key
-const authenticateApiKey = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) => {
-  const authReq = req as AuthenticatedRequest;
-  const endpoint = authReq.endpoint;
-
-  // Check if endpoint requires authentication
-  if (!endpoint.enable_api_key_auth && !endpoint.use_query_param_auth) {
-    return next();
-  }
-
-  let apiKey: string | undefined;
-
-  // Check for API key in header
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    apiKey = authHeader.substring(7);
-  } else if (req.headers["x-api-key"]) {
-    apiKey = req.headers["x-api-key"] as string;
-  }
-
-  // Check for API key in query params if endpoint allows it
-  if (!apiKey && endpoint.use_query_param_auth && req.query.api_key) {
-    apiKey = req.query.api_key as string;
-  }
-
-  if (!apiKey) {
-    return res.status(401).json({
-      error: "Unauthorized",
-      message: "API key required",
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  try {
-    const apiKeyValidation = await apiKeysRepository.validateApiKey(apiKey);
-    if (!apiKeyValidation.valid) {
-      return res.status(401).json({
-        error: "Unauthorized",
-        message: "Invalid or inactive API key",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Add API key info to request
-    authReq.apiKeyUserId = apiKeyValidation.user_id || undefined;
-    authReq.apiKeyUuid = apiKeyValidation.key_uuid;
-
-    // Check access control: ensure API key can access this endpoint
-    // Public API keys (user_id = null) can only access public endpoints (user_id = null)
-    // Private API keys can access public endpoints and their own private endpoints
-    const isPublicApiKey = apiKeyValidation.user_id === null;
-    const isPrivateEndpoint = endpoint.user_id !== null;
-
-    if (isPublicApiKey && isPrivateEndpoint) {
-      return res.status(403).json({
-        error: "Access denied",
-        message:
-          "Public API keys cannot access private endpoints. Use a private API key owned by the endpoint owner.",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (
-      !isPublicApiKey &&
-      isPrivateEndpoint &&
-      endpoint.user_id !== apiKeyValidation.user_id
-    ) {
-      return res.status(403).json({
-        error: "Access denied",
-        message: "You can only access endpoints you own or public endpoints.",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    next();
-  } catch (error) {
-    console.error("Error authenticating API key:", error);
-    return res.status(500).json({
-      error: "Internal server error",
-      message: "Failed to authenticate API key",
       timestamp: new Date().toISOString(),
     });
   }
@@ -278,7 +181,7 @@ openApiRouter.get(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
+    const authReq = req as ApiKeyAuthenticatedRequest;
     const { endpointName } = authReq;
 
     // Return a simple HTML page with Swagger UI
@@ -338,7 +241,7 @@ openApiRouter.get(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
+    const authReq = req as ApiKeyAuthenticatedRequest;
     const { namespaceUuid, endpointName } = authReq;
 
     try {
@@ -432,7 +335,7 @@ openApiRouter.post(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
+    const authReq = req as ApiKeyAuthenticatedRequest;
     const { namespaceUuid, endpointName } = authReq;
     const toolName = req.params.tool_name;
     const toolArguments = req.body || {};
@@ -556,7 +459,7 @@ openApiRouter.get(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
+    const authReq = req as ApiKeyAuthenticatedRequest;
     const { namespaceUuid, endpointName } = authReq;
     const toolName = req.params.tool_name;
 
