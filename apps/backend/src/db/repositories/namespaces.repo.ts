@@ -5,7 +5,7 @@ import {
   NamespaceCreateInput,
   NamespaceUpdateInput,
 } from "@repo/zod-types";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { db } from "../index";
 import {
@@ -25,6 +25,7 @@ export class NamespacesRepository {
         .values({
           name: input.name,
           description: input.description,
+          user_id: input.user_id,
         })
         .returning();
 
@@ -75,8 +76,62 @@ export class NamespacesRepository {
         description: namespacesTable.description,
         created_at: namespacesTable.created_at,
         updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
       })
       .from(namespacesTable)
+      .orderBy(desc(namespacesTable.created_at));
+  }
+
+  // Find namespaces accessible to a specific user (public + user's own namespaces)
+  async findAllAccessibleToUser(userId: string): Promise<DatabaseNamespace[]> {
+    return await db
+      .select({
+        uuid: namespacesTable.uuid,
+        name: namespacesTable.name,
+        description: namespacesTable.description,
+        created_at: namespacesTable.created_at,
+        updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
+      })
+      .from(namespacesTable)
+      .where(
+        or(
+          isNull(namespacesTable.user_id), // Public namespaces
+          eq(namespacesTable.user_id, userId), // User's own namespaces
+        ),
+      )
+      .orderBy(desc(namespacesTable.created_at));
+  }
+
+  // Find only public namespaces (no user ownership)
+  async findPublicNamespaces(): Promise<DatabaseNamespace[]> {
+    return await db
+      .select({
+        uuid: namespacesTable.uuid,
+        name: namespacesTable.name,
+        description: namespacesTable.description,
+        created_at: namespacesTable.created_at,
+        updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
+      })
+      .from(namespacesTable)
+      .where(isNull(namespacesTable.user_id))
+      .orderBy(desc(namespacesTable.created_at));
+  }
+
+  // Find namespaces owned by a specific user
+  async findByUserId(userId: string): Promise<DatabaseNamespace[]> {
+    return await db
+      .select({
+        uuid: namespacesTable.uuid,
+        name: namespacesTable.name,
+        description: namespacesTable.description,
+        created_at: namespacesTable.created_at,
+        updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
+      })
+      .from(namespacesTable)
+      .where(eq(namespacesTable.user_id, userId))
       .orderBy(desc(namespacesTable.created_at));
   }
 
@@ -88,9 +143,38 @@ export class NamespacesRepository {
         description: namespacesTable.description,
         created_at: namespacesTable.created_at,
         updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
       })
       .from(namespacesTable)
       .where(eq(namespacesTable.uuid, uuid));
+
+    return namespace;
+  }
+
+  // Find namespace by name within user scope (for uniqueness checks)
+  async findByNameAndUserId(
+    name: string,
+    userId: string | null,
+  ): Promise<DatabaseNamespace | undefined> {
+    const [namespace] = await db
+      .select({
+        uuid: namespacesTable.uuid,
+        name: namespacesTable.name,
+        description: namespacesTable.description,
+        created_at: namespacesTable.created_at,
+        updated_at: namespacesTable.updated_at,
+        user_id: namespacesTable.user_id,
+      })
+      .from(namespacesTable)
+      .where(
+        and(
+          eq(namespacesTable.name, name),
+          userId
+            ? eq(namespacesTable.user_id, userId)
+            : isNull(namespacesTable.user_id),
+        ),
+      )
+      .limit(1);
 
     return namespace;
   }
@@ -118,6 +202,7 @@ export class NamespacesRepository {
         env: mcpServersTable.env,
         bearerToken: mcpServersTable.bearerToken,
         created_at: mcpServersTable.created_at,
+        user_id: mcpServersTable.user_id,
         status: namespaceServerMappingsTable.status,
       })
       .from(mcpServersTable)
@@ -139,6 +224,7 @@ export class NamespacesRepository {
       env: server.env || {},
       bearerToken: server.bearerToken,
       created_at: server.created_at,
+      user_id: server.user_id,
       status: server.status,
     }));
 
@@ -198,6 +284,7 @@ export class NamespacesRepository {
         .set({
           name: input.name,
           description: input.description,
+          user_id: input.user_id,
           updated_at: new Date(),
         })
         .where(eq(namespacesTable.uuid, input.uuid))

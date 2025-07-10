@@ -65,6 +65,7 @@ export default function EndpointsPage() {
         name: "",
         description: "",
         namespaceUuid: "",
+        user_id: undefined, // Default to "For myself" (Private)
       });
       setSelectedNamespaceUuid("");
       setSelectedNamespaceName("");
@@ -91,6 +92,7 @@ export default function EndpointsPage() {
       enableApiKeyAuth: true,
       useQueryParamAuth: false,
       createMcpServer: true,
+      user_id: undefined, // Default to "For myself" (Private)
     },
   });
 
@@ -105,6 +107,7 @@ export default function EndpointsPage() {
         enableApiKeyAuth: data.enableApiKeyAuth,
         useQueryParamAuth: data.useQueryParamAuth,
         createMcpServer: data.createMcpServer,
+        user_id: data.user_id,
       };
 
       // Use tRPC mutation
@@ -140,6 +143,7 @@ export default function EndpointsPage() {
       enableApiKeyAuth: true,
       useQueryParamAuth: false,
       createMcpServer: true,
+      user_id: undefined, // Default to "For myself" (Private)
     });
     setSelectedNamespaceUuid("");
     setSelectedNamespaceName("");
@@ -210,6 +214,40 @@ export default function EndpointsPage() {
                     placeholder="Endpoint description"
                     className="h-20"
                   />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Ownership</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                        type="button"
+                      >
+                        {form.watch("user_id") === null
+                          ? "Everyone (Public)"
+                          : "For myself (Private)"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuItem
+                        onClick={() => form.setValue("user_id", undefined)}
+                      >
+                        For myself (Private)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => form.setValue("user_id", null)}
+                      >
+                        Everyone (Public)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <p className="text-xs text-muted-foreground">
+                    Private endpoints are only accessible to you. Public
+                    endpoints are accessible to all users.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">

@@ -74,12 +74,22 @@ export function NamespacesList() {
 
   // tRPC mutation for deleting namespace
   const deleteNamespaceMutation = trpc.frontend.namespaces.delete.useMutation({
-    onSuccess: () => {
-      // Invalidate and refetch the namespace list
-      utils.frontend.namespaces.list.invalidate();
-      setDeleteDialogOpen(false);
-      setNamespaceToDelete(null);
-      toast.success("Namespace deleted successfully");
+    onSuccess: (result) => {
+      // Check if the operation was actually successful
+      if (result.success) {
+        // Invalidate and refetch the namespace list
+        utils.frontend.namespaces.list.invalidate();
+        setDeleteDialogOpen(false);
+        setNamespaceToDelete(null);
+        toast.success("Namespace deleted successfully");
+      } else {
+        // Handle business logic failures
+        console.error("Delete failed:", result.message);
+        toast.error("Failed to delete namespace", {
+          description:
+            result.message || "An error occurred while deleting the namespace",
+        });
+      }
     },
     onError: (error) => {
       console.error("Error deleting namespace:", error);
@@ -157,6 +167,27 @@ export function NamespacesList() {
                 No description
               </div>
             )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "user_id",
+      header: "Ownership",
+      cell: ({ row }) => {
+        const namespace = row.original;
+        const isPublic = namespace.user_id === null;
+        return (
+          <div className="px-3 py-2">
+            <span
+              className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                isPublic
+                  ? "bg-green-50 text-green-700 ring-green-700/10"
+                  : "bg-gray-50 text-gray-700 ring-gray-700/10"
+              }`}
+            >
+              {isPublic ? "Public" : "Private"}
+            </span>
           </div>
         );
       },

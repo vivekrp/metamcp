@@ -86,12 +86,22 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
 
   // tRPC mutation for deleting server
   const deleteServerMutation = trpc.frontend.mcpServers.delete.useMutation({
-    onSuccess: () => {
-      // Invalidate and refetch the server list
-      utils.frontend.mcpServers.list.invalidate();
-      setDeleteDialogOpen(false);
-      setServerToDelete(null);
-      toast.success("Server deleted successfully");
+    onSuccess: (result) => {
+      // Check if the operation was actually successful
+      if (result.success) {
+        // Invalidate and refetch the server list
+        utils.frontend.mcpServers.list.invalidate();
+        setDeleteDialogOpen(false);
+        setServerToDelete(null);
+        toast.success("Server deleted successfully");
+      } else {
+        // Handle business logic failures
+        console.error("Delete failed:", result.message);
+        toast.error("Failed to delete server", {
+          description:
+            result.message || "An error occurred while deleting the server",
+        });
+      }
     },
     onError: (error) => {
       console.error("Error deleting server:", error);
@@ -170,6 +180,27 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
           <div className="px-3 py-2">
             <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
               {type.toUpperCase()}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "user_id",
+      header: "Ownership",
+      cell: ({ row }) => {
+        const server = row.original;
+        const isPublic = server.user_id === null;
+        return (
+          <div className="px-3 py-2">
+            <span
+              className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                isPublic
+                  ? "bg-green-50 text-green-700 ring-green-700/10"
+                  : "bg-gray-50 text-gray-700 ring-gray-700/10"
+              }`}
+            >
+              {isPublic ? "Public" : "Private"}
             </span>
           </div>
         );

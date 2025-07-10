@@ -22,9 +22,12 @@ export const apiKeysImplementations = {
     userId: string,
   ): Promise<z.infer<typeof CreateApiKeyResponseSchema>> => {
     try {
+      // Use input.user_id if provided, otherwise default to current user (private)
+      const apiKeyUserId = input.user_id !== undefined ? input.user_id : userId;
+
       const result = await apiKeysRepository.create({
         name: input.name,
-        user_id: userId,
+        user_id: apiKeyUserId,
         is_active: true,
       });
 
@@ -41,7 +44,7 @@ export const apiKeysImplementations = {
     userId: string,
   ): Promise<z.infer<typeof ListApiKeysResponseSchema>> => {
     try {
-      const apiKeys = await apiKeysRepository.findByUserId(userId);
+      const apiKeys = await apiKeysRepository.findAccessibleToUser(userId);
 
       return {
         apiKeys: ApiKeysSerializer.serializeApiKeyList(apiKeys),
@@ -96,7 +99,12 @@ export const apiKeysImplementations = {
     input: z.infer<typeof ValidateApiKeyRequestSchema>,
   ): Promise<z.infer<typeof ValidateApiKeyResponseSchema>> => {
     try {
-      return await apiKeysRepository.validateApiKey(input.key);
+      const result = await apiKeysRepository.validateApiKey(input.key);
+      return {
+        valid: result.valid,
+        user_id: result.user_id ?? undefined,
+        key_uuid: result.key_uuid,
+      };
     } catch (error) {
       console.error("Error validating API key:", error);
       return { valid: false };

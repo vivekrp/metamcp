@@ -24,6 +24,7 @@ export const createServerFormSchema = z
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     env: z.string().optional(),
+    user_id: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -88,6 +89,7 @@ export const EditServerFormSchema = z
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     env: z.string().optional(),
+    user_id: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -151,6 +153,7 @@ export const CreateMcpServerRequestSchema = z
     env: z.record(z.string()).optional(),
     url: z.string().optional(),
     bearerToken: z.string().optional(),
+    user_id: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -188,6 +191,7 @@ export const McpServerSchema = z.object({
   url: z.string().nullable(),
   created_at: z.string(),
   bearerToken: z.string().nullable(),
+  user_id: z.string().nullable(),
 });
 
 export const CreateMcpServerResponseSchema = z.object({
@@ -220,10 +224,10 @@ export const BulkImportMcpServerSchema = z
   })
   .refine(
     (data) => {
-      const serverType = data.type || "stdio";
+      const serverType = data.type || McpServerTypeEnum.Enum.STDIO;
 
-      // For stdio type, URL can be empty
-      if (serverType === "stdio") {
+      // For STDIO type, URL can be empty
+      if (serverType === McpServerTypeEnum.Enum.STDIO) {
         return true;
       }
 
@@ -309,6 +313,7 @@ export const UpdateMcpServerRequestSchema = z
     env: z.record(z.string()).optional(),
     url: z.string().optional(),
     bearerToken: z.string().optional(),
+    user_id: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -377,6 +382,7 @@ export const McpServerCreateInputSchema = z.object({
   env: z.record(z.string()).optional(),
   url: z.string().nullable().optional(),
   bearerToken: z.string().nullable().optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export const McpServerUpdateInputSchema = z.object({
@@ -399,6 +405,7 @@ export const McpServerUpdateInputSchema = z.object({
   env: z.record(z.string()).optional(),
   url: z.string().nullable().optional(),
   bearerToken: z.string().nullable().optional(),
+  user_id: z.string().nullable().optional(),
 });
 
 export type McpServerCreateInput = z.infer<typeof McpServerCreateInputSchema>;
@@ -416,6 +423,7 @@ export const DatabaseMcpServerSchema = z.object({
   url: z.string().nullable(),
   created_at: z.date(),
   bearerToken: z.string().nullable(),
+  user_id: z.string().nullable(),
 });
 
 export type DatabaseMcpServer = z.infer<typeof DatabaseMcpServerSchema>;

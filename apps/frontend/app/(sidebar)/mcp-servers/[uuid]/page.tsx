@@ -77,12 +77,23 @@ export default function McpServerDetailPage({
 
   // tRPC mutation for deleting server
   const deleteMutation = trpc.frontend.mcpServers.delete.useMutation({
-    onSuccess: () => {
-      // Invalidate the list cache since server was deleted
-      utils.frontend.mcpServers.list.invalidate();
-      toast.success("Server deleted successfully");
-      // Navigate back to the servers list
-      router.push("/mcp-servers");
+    onSuccess: (result) => {
+      // Check if the operation was actually successful
+      if (result.success) {
+        // Invalidate the list cache since server was deleted
+        utils.frontend.mcpServers.list.invalidate();
+        toast.success("Server deleted successfully");
+        // Navigate back to the servers list
+        router.push("/mcp-servers");
+      } else {
+        // Handle business logic failures
+        console.error("Delete failed:", result.message);
+        toast.error("Failed to delete server", {
+          description:
+            result.message || "An error occurred while deleting the server",
+        });
+        setShowDeleteDialog(false);
+      }
     },
     onError: (error) => {
       console.error("Error deleting server:", error);

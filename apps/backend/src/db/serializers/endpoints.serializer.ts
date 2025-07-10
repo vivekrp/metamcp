@@ -16,6 +16,7 @@ export class EndpointsSerializer {
       use_query_param_auth: dbEndpoint.use_query_param_auth,
       created_at: dbEndpoint.created_at.toISOString(),
       updated_at: dbEndpoint.updated_at.toISOString(),
+      user_id: dbEndpoint.user_id,
     };
   }
 
@@ -35,6 +36,7 @@ export class EndpointsSerializer {
       use_query_param_auth: dbEndpoint.use_query_param_auth,
       created_at: dbEndpoint.created_at.toISOString(),
       updated_at: dbEndpoint.updated_at.toISOString(),
+      user_id: dbEndpoint.user_id,
       namespace: {
         uuid: dbEndpoint.namespace.uuid,
         name: dbEndpoint.namespace.name,

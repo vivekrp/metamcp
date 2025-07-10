@@ -23,9 +23,17 @@ import { convertDbServerToParams } from "../lib/metamcp/utils";
 export const mcpServersImplementations = {
   create: async (
     input: z.infer<typeof CreateMcpServerRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof CreateMcpServerResponseSchema>> => {
     try {
-      const createdServer = await mcpServersRepository.create(input);
+      // Determine user ownership based on input.user_id or default to current user
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : userId;
+
+      const createdServer = await mcpServersRepository.create({
+        ...input,
+        user_id: effectiveUserId,
+      });
 
       if (!createdServer) {
         return {
@@ -34,16 +42,22 @@ export const mcpServersImplementations = {
         };
       }
 
-      // Ensure idle session for the newly created server
+      // Ensure idle session for the newly created server (async)
       const serverParams = await convertDbServerToParams(createdServer);
       if (serverParams) {
-        await mcpServerPool.ensureIdleSessionForNewServer(
-          createdServer.uuid,
-          serverParams,
-        );
-        console.log(
-          `Ensured idle session for newly created server: ${createdServer.name} (${createdServer.uuid})`,
-        );
+        mcpServerPool
+          .ensureIdleSessionForNewServer(createdServer.uuid, serverParams)
+          .then(() => {
+            console.log(
+              `Ensured idle session for newly created server: ${createdServer.name} (${createdServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error ensuring idle session for newly created server ${createdServer.name} (${createdServer.uuid}):`,
+              error,
+            );
+          });
       }
 
       return {
@@ -61,9 +75,13 @@ export const mcpServersImplementations = {
     }
   },
 
-  list: async (): Promise<z.infer<typeof ListMcpServersResponseSchema>> => {
+  list: async (
+    userId: string,
+  ): Promise<z.infer<typeof ListMcpServersResponseSchema>> => {
     try {
-      const servers = await mcpServersRepository.findAll();
+      // Find servers accessible to user (public + user's own)
+      const servers =
+        await mcpServersRepository.findAllAccessibleToUser(userId);
 
       return {
         success: true as const,
@@ -82,6 +100,7 @@ export const mcpServersImplementations = {
 
   bulkImport: async (
     input: z.infer<typeof BulkImportMcpServersRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof BulkImportMcpServersResponseSchema>> => {
     try {
       const serversToInsert = [];
@@ -109,6 +128,7 @@ export const mcpServersImplementations = {
             env: serverConfig.env || {},
             url: serverConfig.url || null,
             bearerToken: undefined,
+            user_id: userId, // Default bulk imported servers to current user
           };
 
           serversToInsert.push(serverWithDefaults);
@@ -124,41 +144,33 @@ export const mcpServersImplementations = {
           await mcpServersRepository.bulkCreate(serversToInsert);
         imported = serversToInsert.length;
 
-        // Ensure idle sessions for all imported servers
+        // Ensure idle sessions for all imported servers (async)
         if (createdServers && createdServers.length > 0) {
-          const serverParamsPromises = createdServers.map(async (server) => {
-            const params = await convertDbServerToParams(server);
-            if (params) {
-              await mcpServerPool.ensureIdleSessionForNewServer(
-                server.uuid,
-                params,
+          createdServers.forEach(async (server) => {
+            try {
+              const params = await convertDbServerToParams(server);
+              if (params) {
+                mcpServerPool
+                  .ensureIdleSessionForNewServer(server.uuid, params)
+                  .then(() => {
+                    console.log(
+                      `Ensured idle session for bulk imported server: ${server.name} (${server.uuid})`,
+                    );
+                  })
+                  .catch((error) => {
+                    console.error(
+                      `Error ensuring idle session for bulk imported server ${server.name} (${server.uuid}):`,
+                      error,
+                    );
+                  });
+              }
+            } catch (error) {
+              console.error(
+                `Error processing idle session for bulk imported server ${server.name} (${server.uuid}):`,
+                error,
               );
-              return { uuid: server.uuid, name: server.name };
             }
-            return null;
           });
-
-          const serverParamsResults =
-            await Promise.allSettled(serverParamsPromises);
-
-          const successfulServers = serverParamsResults
-            .filter((result) => result.status === "fulfilled" && result.value)
-            .map(
-              (result) =>
-                (
-                  result as PromiseFulfilledResult<{
-                    uuid: string;
-                    name: string;
-                  } | null>
-                ).value,
-            )
-            .filter(Boolean) as { uuid: string; name: string }[];
-
-          if (successfulServers.length > 0) {
-            console.log(
-              `Ensured idle sessions for ${successfulServers.length} bulk imported servers: ${successfulServers.map((s) => s.name).join(", ")}`,
-            );
-          }
         }
       }
 
@@ -181,11 +193,23 @@ export const mcpServersImplementations = {
     }
   },
 
-  get: async (input: {
-    uuid: string;
-  }): Promise<z.infer<typeof GetMcpServerResponseSchema>> => {
+  get: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof GetMcpServerResponseSchema>> => {
     try {
       const server = await mcpServersRepository.findByUuid(input.uuid);
+
+      // Check if user has access to this server (own server or public server)
+      if (server && server.user_id && server.user_id !== userId) {
+        return {
+          success: false as const,
+          message:
+            "Access denied: You can only view servers you own or public servers",
+        };
+      }
 
       if (!server) {
         return {
@@ -208,10 +232,31 @@ export const mcpServersImplementations = {
     }
   },
 
-  delete: async (input: {
-    uuid: string;
-  }): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
+  delete: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof DeleteMcpServerResponseSchema>> => {
     try {
+      // Check if server exists and user has permission to delete it
+      const server = await mcpServersRepository.findByUuid(input.uuid);
+
+      if (!server) {
+        return {
+          success: false as const,
+          message: "MCP server not found",
+        };
+      }
+
+      // Only server owner can delete their own servers, only admin can delete public servers
+      if (server.user_id && server.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only delete servers you own",
+        };
+      }
+
       // Find affected namespaces before deleting the server
       const affectedNamespaceUuids =
         await namespaceMappingsRepository.findNamespacesByServerUuid(
@@ -230,19 +275,21 @@ export const mcpServersImplementations = {
         };
       }
 
-      // Invalidate idle MetaMCP servers for all affected namespaces
+      // Invalidate idle MetaMCP servers for all affected namespaces (async)
       if (affectedNamespaceUuids.length > 0) {
-        try {
-          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
-          console.log(
-            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
-          );
-        } catch (error) {
-          console.error(
-            `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
-            error,
-          );
-        }
+        metaMcpServerPool
+          .invalidateIdleServers(affectedNamespaceUuids)
+          .then(() => {
+            console.log(
+              `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
+              error,
+            );
+          });
       }
 
       return {
@@ -261,9 +308,35 @@ export const mcpServersImplementations = {
 
   update: async (
     input: z.infer<typeof UpdateMcpServerRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof UpdateMcpServerResponseSchema>> => {
     try {
-      const updatedServer = await mcpServersRepository.update(input);
+      // Check if server exists and user has permission to update it
+      const server = await mcpServersRepository.findByUuid(input.uuid);
+
+      if (!server) {
+        return {
+          success: false as const,
+          message: "MCP server not found",
+        };
+      }
+
+      // Only server owner can update their own servers, only admin can update public servers
+      if (server.user_id && server.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only update servers you own",
+        };
+      }
+
+      // Determine user ownership based on input.user_id or keep existing ownership
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : server.user_id;
+
+      const updatedServer = await mcpServersRepository.update({
+        ...input,
+        user_id: effectiveUserId,
+      });
 
       if (!updatedServer) {
         return {
@@ -272,36 +345,44 @@ export const mcpServersImplementations = {
         };
       }
 
-      // Invalidate idle session for the updated server to refresh with new parameters
+      // Invalidate idle session for the updated server to refresh with new parameters (async)
       const serverParams = await convertDbServerToParams(updatedServer);
       if (serverParams) {
-        await mcpServerPool.invalidateIdleSession(
-          updatedServer.uuid,
-          serverParams,
-        );
-        console.log(
-          `Invalidated and refreshed idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
-        );
+        mcpServerPool
+          .invalidateIdleSession(updatedServer.uuid, serverParams)
+          .then(() => {
+            console.log(
+              `Invalidated and refreshed idle session for updated server: ${updatedServer.name} (${updatedServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error invalidating idle session for updated server ${updatedServer.name} (${updatedServer.uuid}):`,
+              error,
+            );
+          });
       }
 
-      // Find affected namespaces and invalidate their idle MetaMCP servers
+      // Find affected namespaces and invalidate their idle MetaMCP servers (async)
       const affectedNamespaceUuids =
         await namespaceMappingsRepository.findNamespacesByServerUuid(
           updatedServer.uuid,
         );
 
       if (affectedNamespaceUuids.length > 0) {
-        try {
-          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
-          console.log(
-            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
-          );
-        } catch (error) {
-          console.error(
-            `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
-            error,
-          );
-        }
+        metaMcpServerPool
+          .invalidateIdleServers(affectedNamespaceUuids)
+          .then(() => {
+            console.log(
+              `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
+              error,
+            );
+          });
       }
 
       return {

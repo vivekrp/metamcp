@@ -147,7 +147,7 @@ export const createMetaMcpClient = (
 export const connectMetaMcpClient = async (
   serverParams: ServerParameters,
 ): Promise<ConnectedClient | undefined> => {
-  const waitFor = 2500;
+  const waitFor = 5000;
   const retries = 3;
   let count = 0;
   let retry = true;

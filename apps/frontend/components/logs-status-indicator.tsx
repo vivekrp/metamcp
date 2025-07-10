@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { useLogsStore } from "@/lib/stores/logs-store";
 
 export function LogsStatusIndicator() {
-  const { logs, totalCount, isAutoRefreshing } = useLogsStore();
-  const [recentErrorCount, setRecentErrorCount] = useState(0);
+  const { totalCount, isAutoRefreshing } = useLogsStore();
+  // const [recentErrorCount, setRecentErrorCount] = useState(0);
 
-  // Count recent errors (last 5 minutes)
-  useEffect(() => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const recentErrors = logs.filter(
-      (log) =>
-        log.level === "error" && new Date(log.timestamp) > fiveMinutesAgo,
-    ).length;
-    setRecentErrorCount(recentErrors);
-  }, [logs]);
+  // Count recent errors (last 5 minutes) - REMOVED
+  // useEffect(() => {
+  //   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  //   const recentErrors = logs.filter(
+  //     (log) =>
+  //       log.level === "error" && new Date(log.timestamp) > fiveMinutesAgo,
+  //   ).length;
+  //   setRecentErrorCount(recentErrors);
+  // }, [logs]);
 
   if (totalCount === 0) {
     return (
@@ -37,11 +37,12 @@ export function LogsStatusIndicator() {
       <Badge variant="outline" className="text-xs px-1.5 py-0.5">
         {totalCount}
       </Badge>
-      {recentErrorCount > 0 && (
+      {/* Removed red error badge */}
+      {/* {recentErrorCount > 0 && (
         <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
           {recentErrorCount}
         </Badge>
-      )}
+      )} */}
       {isAutoRefreshing && (
         <div
           className="w-2 h-2 bg-green-500 rounded-full animate-pulse"

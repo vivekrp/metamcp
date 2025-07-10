@@ -5,7 +5,7 @@ export const ApiKeySchema = z.object({
   uuid: z.string().uuid(),
   name: z.string(),
   key: z.string(),
-  user_id: z.string(),
+  user_id: z.string().nullable(),
   created_at: z.date(),
   is_active: z.boolean(),
 });
@@ -19,6 +19,7 @@ export const CreateApiKeyFormSchema = z.object({
       /^[a-zA-Z0-9_\s-]+$/,
       "Name can only contain letters, numbers, spaces, underscores, and hyphens",
     ),
+  user_id: z.string().nullable().optional(),
 });
 
 export const CreateApiKeyRequestSchema = z.object({
@@ -30,6 +31,7 @@ export const CreateApiKeyRequestSchema = z.object({
       /^[a-zA-Z0-9_\s-]+$/,
       "Name can only contain letters, numbers, spaces, underscores, and hyphens",
     ),
+  user_id: z.string().nullable().optional(),
 });
 
 export const CreateApiKeyResponseSchema = z.object({
@@ -78,6 +80,7 @@ export const ListApiKeysResponseSchema = z.object({
       key: z.string(),
       created_at: z.date(),
       is_active: z.boolean(),
+      user_id: z.string().nullable(),
     }),
   ),
 });
@@ -95,7 +98,7 @@ export const ValidateApiKeyResponseSchema = z.object({
 // Repository schemas
 export const ApiKeyCreateInputSchema = z.object({
   name: z.string(),
-  user_id: z.string(),
+  user_id: z.string().nullable().optional(),
   is_active: z.boolean().optional().default(true),
 });
 

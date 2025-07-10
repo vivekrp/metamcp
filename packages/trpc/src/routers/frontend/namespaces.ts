@@ -26,28 +26,42 @@ export const createNamespacesRouter = (
   implementations: {
     create: (
       input: z.infer<typeof CreateNamespaceRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof CreateNamespaceResponseSchema>>;
-    list: () => Promise<z.infer<typeof ListNamespacesResponseSchema>>;
-    get: (input: {
-      uuid: string;
-    }) => Promise<z.infer<typeof GetNamespaceResponseSchema>>;
+    list: (
+      userId: string,
+    ) => Promise<z.infer<typeof ListNamespacesResponseSchema>>;
+    get: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof GetNamespaceResponseSchema>>;
     getTools: (
       input: z.infer<typeof GetNamespaceToolsRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof GetNamespaceToolsResponseSchema>>;
-    delete: (input: {
-      uuid: string;
-    }) => Promise<z.infer<typeof DeleteNamespaceResponseSchema>>;
+    delete: (
+      input: {
+        uuid: string;
+      },
+      userId: string,
+    ) => Promise<z.infer<typeof DeleteNamespaceResponseSchema>>;
     update: (
       input: z.infer<typeof UpdateNamespaceRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof UpdateNamespaceResponseSchema>>;
     updateServerStatus: (
       input: z.infer<typeof UpdateNamespaceServerStatusRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof UpdateNamespaceServerStatusResponseSchema>>;
     updateToolStatus: (
       input: z.infer<typeof UpdateNamespaceToolStatusRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof UpdateNamespaceToolStatusResponseSchema>>;
     refreshTools: (
       input: z.infer<typeof RefreshNamespaceToolsRequestSchema>,
+      userId: string,
     ) => Promise<z.infer<typeof RefreshNamespaceToolsResponseSchema>>;
   },
 ) => {
@@ -55,72 +69,72 @@ export const createNamespacesRouter = (
     // Protected: List all namespaces
     list: protectedProcedure
       .output(ListNamespacesResponseSchema)
-      .query(async () => {
-        return await implementations.list();
+      .query(async ({ ctx }) => {
+        return await implementations.list(ctx.user.id);
       }),
 
     // Protected: Get single namespace by UUID
     get: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(GetNamespaceResponseSchema)
-      .query(async ({ input }) => {
-        return await implementations.get(input);
+      .query(async ({ input, ctx }) => {
+        return await implementations.get(input, ctx.user.id);
       }),
 
     // Protected: Get tools for namespace from mapping table
     getTools: protectedProcedure
       .input(GetNamespaceToolsRequestSchema)
       .output(GetNamespaceToolsResponseSchema)
-      .query(async ({ input }) => {
-        return await implementations.getTools(input);
+      .query(async ({ input, ctx }) => {
+        return await implementations.getTools(input, ctx.user.id);
       }),
 
     // Protected: Create namespace
     create: protectedProcedure
       .input(CreateNamespaceRequestSchema)
       .output(CreateNamespaceResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.create(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.create(input, ctx.user.id);
       }),
 
     // Protected: Delete namespace
     delete: protectedProcedure
       .input(z.object({ uuid: z.string() }))
       .output(DeleteNamespaceResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.delete(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.delete(input, ctx.user.id);
       }),
 
     // Protected: Update namespace
     update: protectedProcedure
       .input(UpdateNamespaceRequestSchema)
       .output(UpdateNamespaceResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.update(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.update(input, ctx.user.id);
       }),
 
     // Protected: Update server status within namespace
     updateServerStatus: protectedProcedure
       .input(UpdateNamespaceServerStatusRequestSchema)
       .output(UpdateNamespaceServerStatusResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.updateServerStatus(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.updateServerStatus(input, ctx.user.id);
       }),
 
     // Protected: Update tool status within namespace
     updateToolStatus: protectedProcedure
       .input(UpdateNamespaceToolStatusRequestSchema)
       .output(UpdateNamespaceToolStatusResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.updateToolStatus(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.updateToolStatus(input, ctx.user.id);
       }),
 
     // Protected: Refresh tools from MetaMCP connection
     refreshTools: protectedProcedure
       .input(RefreshNamespaceToolsRequestSchema)
       .output(RefreshNamespaceToolsResponseSchema)
-      .mutation(async ({ input }) => {
-        return await implementations.refreshTools(input);
+      .mutation(async ({ input, ctx }) => {
+        return await implementations.refreshTools(input, ctx.user.id);
       }),
   });
 };

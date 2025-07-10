@@ -29,27 +29,76 @@ import { metaMcpServerPool } from "../lib/metamcp/metamcp-server-pool";
 export const namespacesImplementations = {
   create: async (
     input: z.infer<typeof CreateNamespaceRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof CreateNamespaceResponseSchema>> => {
     try {
+      // Determine user ownership based on input.user_id or default to current user
+      const effectiveUserId =
+        input.user_id !== undefined ? input.user_id : userId;
+      const isPublicNamespace = effectiveUserId === null;
+
+      // Validate server accessibility and relationship rules
+      if (input.mcpServerUuids && input.mcpServerUuids.length > 0) {
+        // Get detailed server information to validate access and ownership
+        const serverPromises = input.mcpServerUuids.map((uuid) =>
+          mcpServersRepository.findByUuid(uuid),
+        );
+        const servers = await Promise.all(serverPromises);
+
+        // Check if any servers don't exist
+        const missingServers = servers.some((server) => !server);
+        if (missingServers) {
+          return {
+            success: false as const,
+            message: "One or more selected MCP servers could not be found",
+          };
+        }
+
+        // Validate access and relationship rules
+        for (const server of servers) {
+          if (!server) continue;
+
+          // Check if user has access to this server (own server or public server)
+          if (server.user_id && server.user_id !== userId) {
+            return {
+              success: false as const,
+              message: `Access denied: You don't have permission to use server "${server.name}"`,
+            };
+          }
+
+          // Enforce relationship rules: public namespaces can only contain public servers
+          if (isPublicNamespace && server.user_id !== null) {
+            return {
+              success: false as const,
+              message: `Access denied: Public namespaces can only contain public MCP servers. Server "${server.name}" is private`,
+            };
+          }
+        }
+      }
+
       const result = await namespacesRepository.create({
         name: input.name,
         description: input.description,
         mcpServerUuids: input.mcpServerUuids,
+        user_id: effectiveUserId,
       });
 
       // Ensure idle MetaMCP server exists for the new namespace to improve performance
-      try {
-        await metaMcpServerPool.ensureIdleServerForNewNamespace(result.uuid);
-        console.log(
-          `Ensured idle MetaMCP server exists for new namespace ${result.uuid}`,
-        );
-      } catch (error) {
-        console.error(
-          `Error ensuring idle MetaMCP server for new namespace ${result.uuid}:`,
-          error,
-        );
-        // Don't fail the entire create operation if idle server creation fails
-      }
+      // Run this asynchronously to avoid blocking the response
+      metaMcpServerPool
+        .ensureIdleServerForNewNamespace(result.uuid)
+        .then(() => {
+          console.log(
+            `Ensured idle MetaMCP server exists for new namespace ${result.uuid}`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Error ensuring idle MetaMCP server for new namespace ${result.uuid}:`,
+            error,
+          );
+          // Don't fail the entire create operation if idle server creation fails
+        });
 
       return {
         success: true as const,
@@ -66,9 +115,13 @@ export const namespacesImplementations = {
     }
   },
 
-  list: async (): Promise<z.infer<typeof ListNamespacesResponseSchema>> => {
+  list: async (
+    userId: string,
+  ): Promise<z.infer<typeof ListNamespacesResponseSchema>> => {
     try {
-      const namespaces = await namespacesRepository.findAll();
+      // Find namespaces accessible to user (public + user's own)
+      const namespaces =
+        await namespacesRepository.findAllAccessibleToUser(userId);
 
       return {
         success: true as const,
@@ -85,9 +138,12 @@ export const namespacesImplementations = {
     }
   },
 
-  get: async (input: {
-    uuid: string;
-  }): Promise<z.infer<typeof GetNamespaceResponseSchema>> => {
+  get: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof GetNamespaceResponseSchema>> => {
     try {
       const namespaceWithServers =
         await namespacesRepository.findByUuidWithServers(input.uuid);
@@ -96,6 +152,18 @@ export const namespacesImplementations = {
         return {
           success: false as const,
           message: "Namespace not found",
+        };
+      }
+
+      // Check if user has access to this namespace (own namespace or public namespace)
+      if (
+        namespaceWithServers.user_id &&
+        namespaceWithServers.user_id !== userId
+      ) {
+        return {
+          success: false as const,
+          message:
+            "Access denied: You can only view namespaces you own or public namespaces",
         };
       }
 
@@ -117,8 +185,32 @@ export const namespacesImplementations = {
 
   getTools: async (
     input: z.infer<typeof GetNamespaceToolsRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof GetNamespaceToolsResponseSchema>> => {
     try {
+      // First, check if user has access to this namespace
+      const namespace = await namespacesRepository.findByUuid(
+        input.namespaceUuid,
+      );
+
+      if (!namespace) {
+        return {
+          success: false as const,
+          data: [],
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user has access to this namespace (own namespace or public namespace)
+      if (namespace.user_id && namespace.user_id !== userId) {
+        return {
+          success: false as const,
+          data: [],
+          message:
+            "Access denied: You can only view tools for namespaces you own or public namespaces",
+        };
+      }
+
       const toolsData = await namespacesRepository.findToolsByNamespaceUuid(
         input.namespaceUuid,
       );
@@ -138,10 +230,33 @@ export const namespacesImplementations = {
     }
   },
 
-  delete: async (input: {
-    uuid: string;
-  }): Promise<z.infer<typeof DeleteNamespaceResponseSchema>> => {
+  delete: async (
+    input: {
+      uuid: string;
+    },
+    userId: string,
+  ): Promise<z.infer<typeof DeleteNamespaceResponseSchema>> => {
     try {
+      // First, check if the namespace exists and user has permission to delete it
+      const existingNamespace = await namespacesRepository.findByUuid(
+        input.uuid,
+      );
+
+      if (!existingNamespace) {
+        return {
+          success: false as const,
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user owns this namespace (only owners can delete, protect public namespaces)
+      if (existingNamespace.user_id && existingNamespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only delete namespaces you own",
+        };
+      }
+
       const deletedNamespace = await namespacesRepository.deleteByUuid(
         input.uuid,
       );
@@ -183,8 +298,70 @@ export const namespacesImplementations = {
 
   update: async (
     input: z.infer<typeof UpdateNamespaceRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof UpdateNamespaceResponseSchema>> => {
     try {
+      // First, check if the namespace exists and user has permission to update it
+      const existingNamespace = await namespacesRepository.findByUuid(
+        input.uuid,
+      );
+
+      if (!existingNamespace) {
+        return {
+          success: false as const,
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user owns this namespace (only owners can update)
+      if (existingNamespace.user_id && existingNamespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message: "Access denied: You can only update namespaces you own",
+        };
+      }
+
+      const isPublicNamespace = existingNamespace.user_id === null;
+
+      // Validate server accessibility and relationship rules if servers are being updated
+      if (input.mcpServerUuids && input.mcpServerUuids.length > 0) {
+        // Get detailed server information to validate access and ownership
+        const serverPromises = input.mcpServerUuids.map((uuid) =>
+          mcpServersRepository.findByUuid(uuid),
+        );
+        const servers = await Promise.all(serverPromises);
+
+        // Check if any servers don't exist
+        const missingServers = servers.some((server) => !server);
+        if (missingServers) {
+          return {
+            success: false as const,
+            message: "One or more selected MCP servers could not be found",
+          };
+        }
+
+        // Validate access and relationship rules
+        for (const server of servers) {
+          if (!server) continue;
+
+          // Check if user has access to this server (own server or public server)
+          if (server.user_id && server.user_id !== userId) {
+            return {
+              success: false as const,
+              message: `Access denied: You don't have permission to use server "${server.name}"`,
+            };
+          }
+
+          // Enforce relationship rules: public namespaces can only contain public servers
+          if (isPublicNamespace && server.user_id !== null) {
+            return {
+              success: false as const,
+              message: `Access denied: Public namespaces can only contain public MCP servers. Server "${server.name}" is private`,
+            };
+          }
+        }
+      }
+
       const result = await namespacesRepository.update({
         uuid: input.uuid,
         name: input.name,
@@ -193,18 +370,21 @@ export const namespacesImplementations = {
       });
 
       // Invalidate idle MetaMCP server for this namespace since the MCP servers list may have changed
-      try {
-        await metaMcpServerPool.invalidateIdleServer(input.uuid);
-        console.log(
-          `Invalidated idle MetaMCP server for updated namespace ${input.uuid}`,
-        );
-      } catch (error) {
-        console.error(
-          `Error invalidating idle MetaMCP server for namespace ${input.uuid}:`,
-          error,
-        );
-        // Don't fail the entire update operation if idle server invalidation fails
-      }
+      // Run this asynchronously to avoid blocking the response
+      metaMcpServerPool
+        .invalidateIdleServer(input.uuid)
+        .then(() => {
+          console.log(
+            `Invalidated idle MetaMCP server for updated namespace ${input.uuid}`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Error invalidating idle MetaMCP server for namespace ${input.uuid}:`,
+            error,
+          );
+          // Don't fail the entire update operation if idle server invalidation fails
+        });
 
       return {
         success: true as const,
@@ -223,8 +403,30 @@ export const namespacesImplementations = {
 
   updateServerStatus: async (
     input: z.infer<typeof UpdateNamespaceServerStatusRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof UpdateNamespaceServerStatusResponseSchema>> => {
     try {
+      // First, check if user has permission to update this namespace
+      const namespace = await namespacesRepository.findByUuid(
+        input.namespaceUuid,
+      );
+
+      if (!namespace) {
+        return {
+          success: false as const,
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user owns this namespace (only owners can update server status)
+      if (namespace.user_id && namespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message:
+            "Access denied: You can only update server status for namespaces you own",
+        };
+      }
+
       const updatedMapping =
         await namespaceMappingsRepository.updateServerStatus({
           namespaceUuid: input.namespaceUuid,
@@ -240,18 +442,21 @@ export const namespacesImplementations = {
       }
 
       // Invalidate idle MetaMCP server for this namespace since server status changed
-      try {
-        await metaMcpServerPool.invalidateIdleServer(input.namespaceUuid);
-        console.log(
-          `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after server status update`,
-        );
-      } catch (error) {
-        console.error(
-          `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
-          error,
-        );
-        // Don't fail the entire operation if idle server invalidation fails
-      }
+      // Run this asynchronously to avoid blocking the response
+      metaMcpServerPool
+        .invalidateIdleServer(input.namespaceUuid)
+        .then(() => {
+          console.log(
+            `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after server status update`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
+            error,
+          );
+          // Don't fail the entire operation if idle server invalidation fails
+        });
 
       return {
         success: true as const,
@@ -269,8 +474,30 @@ export const namespacesImplementations = {
 
   updateToolStatus: async (
     input: z.infer<typeof UpdateNamespaceToolStatusRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof UpdateNamespaceToolStatusResponseSchema>> => {
     try {
+      // First, check if user has permission to update this namespace
+      const namespace = await namespacesRepository.findByUuid(
+        input.namespaceUuid,
+      );
+
+      if (!namespace) {
+        return {
+          success: false as const,
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user owns this namespace (only owners can update tool status)
+      if (namespace.user_id && namespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message:
+            "Access denied: You can only update tool status for namespaces you own",
+        };
+      }
+
       const updatedMapping = await namespaceMappingsRepository.updateToolStatus(
         {
           namespaceUuid: input.namespaceUuid,
@@ -303,8 +530,30 @@ export const namespacesImplementations = {
 
   refreshTools: async (
     input: z.infer<typeof RefreshNamespaceToolsRequestSchema>,
+    userId: string,
   ): Promise<z.infer<typeof RefreshNamespaceToolsResponseSchema>> => {
     try {
+      // First, check if user has permission to refresh tools for this namespace
+      const namespace = await namespacesRepository.findByUuid(
+        input.namespaceUuid,
+      );
+
+      if (!namespace) {
+        return {
+          success: false as const,
+          message: "Namespace not found",
+        };
+      }
+
+      // Check if user owns this namespace (only owners can refresh tools)
+      if (namespace.user_id && namespace.user_id !== userId) {
+        return {
+          success: false as const,
+          message:
+            "Access denied: You can only refresh tools for namespaces you own",
+        };
+      }
+
       if (!input.tools || input.tools.length === 0) {
         return {
           success: true as const,
@@ -474,18 +723,21 @@ export const namespacesImplementations = {
       }
 
       // Invalidate idle MetaMCP server for this namespace since tools were refreshed
-      try {
-        await metaMcpServerPool.invalidateIdleServer(input.namespaceUuid);
-        console.log(
-          `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after tools refresh`,
-        );
-      } catch (error) {
-        console.error(
-          `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
-          error,
-        );
-        // Don't fail the entire operation if idle server invalidation fails
-      }
+      // Run this asynchronously to avoid blocking the response
+      metaMcpServerPool
+        .invalidateIdleServer(input.namespaceUuid)
+        .then(() => {
+          console.log(
+            `Invalidated idle MetaMCP server for namespace ${input.namespaceUuid} after tools refresh`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Error invalidating idle MetaMCP server for namespace ${input.namespaceUuid}:`,
+            error,
+          );
+          // Don't fail the entire operation if idle server invalidation fails
+        });
 
       return {
         success: true as const,

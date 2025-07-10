@@ -51,12 +51,23 @@ export default function NamespaceDetailPage({
 
   // tRPC mutation for deleting namespace
   const deleteMutation = trpc.frontend.namespaces.delete.useMutation({
-    onSuccess: () => {
-      // Invalidate the list cache since namespace was deleted
-      utils.frontend.namespaces.list.invalidate();
-      toast.success("Namespace deleted successfully");
-      // Navigate back to the namespaces list
-      router.push("/namespaces");
+    onSuccess: (result) => {
+      // Check if the operation was actually successful
+      if (result.success) {
+        // Invalidate the list cache since namespace was deleted
+        utils.frontend.namespaces.list.invalidate();
+        toast.success("Namespace deleted successfully");
+        // Navigate back to the namespaces list
+        router.push("/namespaces");
+      } else {
+        // Handle business logic failures
+        console.error("Delete failed:", result.message);
+        toast.error("Failed to delete namespace", {
+          description:
+            result.message || "An error occurred while deleting the namespace",
+        });
+        setShowDeleteDialog(false);
+      }
     },
     onError: (error) => {
       console.error("Error deleting namespace:", error);

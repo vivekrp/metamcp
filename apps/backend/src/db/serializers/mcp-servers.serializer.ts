@@ -13,6 +13,7 @@ export class McpServersSerializer {
       url: dbServer.url,
       created_at: dbServer.created_at.toISOString(),
       bearerToken: dbServer.bearerToken,
+      user_id: dbServer.user_id,
     };
   }
 

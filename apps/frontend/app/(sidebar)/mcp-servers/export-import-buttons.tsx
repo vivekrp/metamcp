@@ -31,24 +31,40 @@ export function ExportImportButtons() {
   const { data: serversResponse } = trpc.frontend.mcpServers.list.useQuery();
   const servers = serversResponse?.success ? serversResponse.data : [];
 
+  // Get the utils for invalidating queries
+  const utils = trpc.useUtils();
+
   // Use tRPC mutation for bulk import
   const bulkImportMutation = trpc.frontend.mcpServers.bulkImport.useMutation({
     onSuccess: (result) => {
-      console.log(`Successfully imported ${result.imported} MCP servers`);
-      toast.success("MCP Servers Imported", {
-        description: `Successfully imported ${result.imported} server${result.imported !== 1 ? "s" : ""}`,
-      });
-      if (result.errors && result.errors.length > 0) {
-        console.warn("Import errors:", result.errors);
-        toast.warning("Import Completed with Warnings", {
-          description: `${result.errors.length} server${result.errors.length !== 1 ? "s" : ""} failed to import`,
+      // Check if the operation was actually successful
+      if (result.success) {
+        console.log(`Successfully imported ${result.imported} MCP servers`);
+        toast.success("MCP Servers Imported", {
+          description: `Successfully imported ${result.imported} server${result.imported !== 1 ? "s" : ""}`,
         });
-      }
+        if (result.errors && result.errors.length > 0) {
+          console.warn("Import errors:", result.errors);
+          toast.warning("Import Completed with Warnings", {
+            description: `${result.errors.length} server${result.errors.length !== 1 ? "s" : ""} failed to import`,
+          });
+        }
 
-      // Close the dialog and reset
-      setImportOpen(false);
-      setImportJson("");
-      setImportError("");
+        // Invalidate the MCP servers list query to refetch data
+        utils.frontend.mcpServers.list.invalidate();
+
+        // Close the dialog and reset
+        setImportOpen(false);
+        setImportJson("");
+        setImportError("");
+      } else {
+        // Handle business logic failures
+        console.error("Import failed:", result.message);
+        toast.error("Import Failed", {
+          description: result.message || "Failed to import servers",
+        });
+        setImportError(result.message || "Failed to import servers");
+      }
     },
     onError: (error) => {
       console.error("Error importing MCP servers:", error);
