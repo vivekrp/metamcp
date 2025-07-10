@@ -86,12 +86,22 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
 
   // tRPC mutation for deleting server
   const deleteServerMutation = trpc.frontend.mcpServers.delete.useMutation({
-    onSuccess: () => {
-      // Invalidate and refetch the server list
-      utils.frontend.mcpServers.list.invalidate();
-      setDeleteDialogOpen(false);
-      setServerToDelete(null);
-      toast.success("Server deleted successfully");
+    onSuccess: (result) => {
+      // Check if the operation was actually successful
+      if (result.success) {
+        // Invalidate and refetch the server list
+        utils.frontend.mcpServers.list.invalidate();
+        setDeleteDialogOpen(false);
+        setServerToDelete(null);
+        toast.success("Server deleted successfully");
+      } else {
+        // Handle business logic failures
+        console.error("Delete failed:", result.message);
+        toast.error("Failed to delete server", {
+          description:
+            result.message || "An error occurred while deleting the server",
+        });
+      }
     },
     onError: (error) => {
       console.error("Error deleting server:", error);
