@@ -224,10 +224,10 @@ export const BulkImportMcpServerSchema = z
   })
   .refine(
     (data) => {
-      const serverType = data.type || "stdio";
+      const serverType = data.type || McpServerTypeEnum.Enum.STDIO;
 
-      // For stdio type, URL can be empty
-      if (serverType === "stdio") {
+      // For STDIO type, URL can be empty
+      if (serverType === McpServerTypeEnum.Enum.STDIO) {
         return true;
       }
 
