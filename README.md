@@ -134,6 +134,27 @@ pnpm dev
 
 If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
+## Connect to MetaMCP
+
+### E.g., Cursor via mcp.json
+
+Example `mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12008/metamcp/<endpoint_name>/sse"
+    }
+  }
+}
+```
+
+### Via a local proxy
+
+Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), for clients that only supports stdio servers then you can use a local proxy.
+Checkout https://www.npmjs.com/package/mcp-remote or https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532
+
 ## ❄️ Cold Start Problem and Custom Dockerfile
 
 - MetaMCP pre-allocate idle sessions for each configured MCP servers and MetaMCPs. The default idle session for each is 1 and that can help reduce cold start time.
