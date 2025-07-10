@@ -40,8 +40,10 @@
   - [🐳 使用 Docker Compose 运行（推荐）](#-使用-docker-compose-运行推荐)
   - [💻 本地开发](#-本地开发)
 - [🔌 MCP 协议兼容性](#-mcp-协议兼容性)
+- [连接到 MetaMCP](#连接到-metamcp)
 - [❄️ 冷启动问题与自定义 Dockerfile](#️-冷启动问题与自定义-dockerfile)
 - [🔐 认证](#-认证)
+- [🔗 OpenID Connect (OIDC) 提供商支持](#-openid-connect-oidc-提供商支持)
 - [🏗️ 架构](#️-架构)
   - [📊 时序图](#-时序图)
 - [🗺️ 路线图](#️-路线图)
@@ -88,7 +90,7 @@ MCP 服务器配置，告诉 MetaMCP 如何启动 MCP 服务器。
 
 ### ⚙️ **中间件**
 - 在命名空间级别拦截并转换 MCP 请求和响应
-- **内置示例**：“过滤非活跃工具”——为 LLM 优化工具上下文
+- **内置示例**："过滤非活跃工具"——为 LLM 优化工具上下文
 - **未来方向**：工具日志、错误追踪、校验、扫描等
 
 ### 🔍 **检查器**
@@ -106,6 +108,8 @@ cd metamcp
 cp example.env .env
 docker compose up -d
 ```
+
+如果你修改了 APP_URL 环境变量，确保只从 APP_URL 访问，因为 MetaMCP 在该 URL 上强制执行 CORS 策略，其他 URL 无法访问。
 
 注意：pg 卷名可能与其他 pg docker 冲突（全局），可在 `docker-compose.yml` 中重命名：
 
@@ -131,6 +135,33 @@ pnpm dev
 
 如有疑问，欢迎提交 **GitHub issues** 或 **PR**。
 
+## 连接到 MetaMCP
+
+### 例如，通过 mcp.json 连接 Cursor
+
+示例 `mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12008/metamcp/<endpoint_name>/sse"
+    }
+  }
+}
+```
+
+### 通过本地代理
+
+由于 MetaMCP 端点仅支持远程连接（SSE、Streamable HTTP、OpenAPI），对于仅支持 stdio 服务器的客户端，可以使用本地代理。
+查看 https://www.npmjs.com/package/mcp-remote 或 https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532
+
+### API Key 认证故障排除
+
+- `?api_key=` 参数 API key 认证不适用于 SSE。仅适用于 Streamable HTTP 和 OpenAPI。
+- 最佳实践是在 `Authorization: Bearer <API_KEY>` 头部中使用 API key。
+- 遇到连接问题时，可以临时禁用认证以查看是否为认证问题。
+
 ## ❄️ 冷启动问题与自定义 Dockerfile
 
 - MetaMCP 会为每个已配置的 MCP 服务器和 MetaMCP 预分配空闲会话。每个默认空闲会话为 1，可减少冷启动时间。
@@ -141,10 +172,53 @@ pnpm dev
 
 ## 🔐 认证
 
-- 🛡️ **Better Auth** 用于前后端（trpc 方法）
-- 🍪 **会话 Cookie** 强制内部 MCP 代理连接
+- 🛡️ **Better Auth** 用于前后端（TRPC 方法）
+- 🍪 **会话 Cookie** 强制内部 MCP 代理连接安全
 - 🔑 **API key 认证**，外部访问时通过 `Authorization: Bearer <api-key>` 头部
-- 注意：本仓库不支持多租户，每个组织应自建实例。例如 MCP 服务器未与 user_id 关联，所有账号可访问实例上所有 MCP 服务器配置。
+- 🏢 **多租户**：为组织部署在自己的机器上而设计。支持私有和公共访问范围。用户可以为自己或为所有人创建 MCP、命名空间、端点和 API key。公共 API key 无法访问私有 MetaMCP。
+
+## 🔗 OpenID Connect (OIDC) 提供商支持
+
+MetaMCP 支持 **OpenID Connect 认证**，用于企业 SSO 集成。这允许组织使用其现有的身份提供商（Auth0、Keycloak、Azure AD 等）进行认证。
+
+### 🛠️ **配置**
+
+在 `.env` 文件中添加以下环境变量：
+
+```bash
+# 必需
+OIDC_CLIENT_ID=your-oidc-client-id
+OIDC_CLIENT_SECRET=your-oidc-client-secret
+OIDC_DISCOVERY_URL=https://your-provider.com/.well-known/openid-configuration
+
+# 可选自定义
+OIDC_PROVIDER_ID=oidc
+OIDC_SCOPES=openid email profile
+OIDC_PKCE=true
+```
+
+### 🏢 **支持的提供商**
+
+MetaMCP 已通过主流 OIDC 提供商测试：
+
+- **Auth0**: `https://your-domain.auth0.com/.well-known/openid-configuration`
+- **Keycloak**: `https://your-keycloak.com/realms/your-realm/.well-known/openid-configuration`
+- **Azure AD**: `https://login.microsoftonline.com/your-tenant-id/v2.0/.well-known/openid-configuration`
+- **Google**: `https://accounts.google.com/.well-known/openid-configuration`
+- **Okta**: `https://your-domain.okta.com/.well-known/openid-configuration`
+
+### 🔒 **安全特性**
+
+- 🔐 **PKCE（代码交换证明密钥）**默认启用
+- 🛡️ **授权码流程**，支持自动用户创建
+- 🔄 **OIDC 端点自动发现**
+- 🍪 **与现有认证系统的无缝会话管理**
+
+### 📱 **使用方法**
+
+配置完成后，用户将在登录页面看到 **"使用 OIDC 登录"** 按钮，与邮箱/密码表单并列。认证流程会在首次登录时自动创建新用户。
+
+更详细的配置示例和故障排除，请参见 **[CONTRIBUTING.md](CONTRIBUTING.md#openid-connect-oidc-provider-setup)**。
 
 ## SSE 的 Nginx 配置
 
