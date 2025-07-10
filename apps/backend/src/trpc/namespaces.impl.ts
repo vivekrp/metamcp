@@ -84,18 +84,21 @@ export const namespacesImplementations = {
       });
 
       // Ensure idle MetaMCP server exists for the new namespace to improve performance
-      try {
-        await metaMcpServerPool.ensureIdleServerForNewNamespace(result.uuid);
-        console.log(
-          `Ensured idle MetaMCP server exists for new namespace ${result.uuid}`,
-        );
-      } catch (error) {
-        console.error(
-          `Error ensuring idle MetaMCP server for new namespace ${result.uuid}:`,
-          error,
-        );
-        // Don't fail the entire create operation if idle server creation fails
-      }
+      // Run this asynchronously to avoid blocking the response
+      metaMcpServerPool
+        .ensureIdleServerForNewNamespace(result.uuid)
+        .then(() => {
+          console.log(
+            `Ensured idle MetaMCP server exists for new namespace ${result.uuid}`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Error ensuring idle MetaMCP server for new namespace ${result.uuid}:`,
+            error,
+          );
+          // Don't fail the entire create operation if idle server creation fails
+        });
 
       return {
         success: true as const,
