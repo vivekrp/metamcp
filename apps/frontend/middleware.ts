@@ -1,5 +1,6 @@
 import { betterFetch } from "@better-fetch/fetch";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "next-runtime-env";
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,6 +15,31 @@ export default async function middleware(request: NextRequest) {
     pathname.includes(".")
   ) {
     return NextResponse.next();
+  }
+
+  // Skip CORS check for the CORS error page itself to prevent infinite redirect
+  if (pathname === "/cors-error") {
+    return NextResponse.next();
+  }
+
+  // Check for CORS violations by comparing request origin with configured APP_URL
+  const configuredAppUrl = env("NEXT_PUBLIC_APP_URL");
+  if (configuredAppUrl) {
+    try {
+      const configuredUrl = new URL(configuredAppUrl);
+      const requestUrl = new URL(request.url);
+
+      // Check if the request is coming from a different origin than configured
+      if (requestUrl.origin !== configuredUrl.origin) {
+        // Redirect to CORS error page with the attempted path
+        const corsErrorUrl = new URL("/cors-error", configuredAppUrl);
+        corsErrorUrl.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(corsErrorUrl);
+      }
+    } catch (error) {
+      console.error("Error checking CORS policy:", error);
+      // If there's an error parsing URLs, log it but continue processing
+    }
   }
 
   // Skip auth check for public routes
