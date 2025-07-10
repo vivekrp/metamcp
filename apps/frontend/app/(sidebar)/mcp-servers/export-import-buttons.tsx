@@ -31,6 +31,9 @@ export function ExportImportButtons() {
   const { data: serversResponse } = trpc.frontend.mcpServers.list.useQuery();
   const servers = serversResponse?.success ? serversResponse.data : [];
 
+  // Get the utils for invalidating queries
+  const utils = trpc.useUtils();
+
   // Use tRPC mutation for bulk import
   const bulkImportMutation = trpc.frontend.mcpServers.bulkImport.useMutation({
     onSuccess: (result) => {
@@ -44,6 +47,9 @@ export function ExportImportButtons() {
           description: `${result.errors.length} server${result.errors.length !== 1 ? "s" : ""} failed to import`,
         });
       }
+
+      // Invalidate the MCP servers list query to refetch data
+      utils.frontend.mcpServers.list.invalidate();
 
       // Close the dialog and reset
       setImportOpen(false);
