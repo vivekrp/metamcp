@@ -155,6 +155,12 @@ Example `mcp.json`
 Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), for clients that only supports stdio servers then you can use a local proxy.
 Checkout https://www.npmjs.com/package/mcp-remote or https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532
 
+### API Key Auth Troubleshooting
+
+- `?api_key=` param api key auth doesn't work for SSE. It only works for Streamable HTTP and OpenAPI.
+- Best practice is to use the API key in `Authorization: Bearer <API_KEY>` header.
+- Try disable auth temporarily when you face connection issues to see if it is an auth issue.
+
 ## ❄️ Cold Start Problem and Custom Dockerfile
 
 - MetaMCP pre-allocate idle sessions for each configured MCP servers and MetaMCPs. The default idle session for each is 1 and that can help reduce cold start time.
