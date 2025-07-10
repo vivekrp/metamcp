@@ -275,19 +275,21 @@ export const mcpServersImplementations = {
         };
       }
 
-      // Invalidate idle MetaMCP servers for all affected namespaces
+      // Invalidate idle MetaMCP servers for all affected namespaces (async)
       if (affectedNamespaceUuids.length > 0) {
-        try {
-          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
-          console.log(
-            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
-          );
-        } catch (error) {
-          console.error(
-            `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
-            error,
-          );
-        }
+        metaMcpServerPool
+          .invalidateIdleServers(affectedNamespaceUuids)
+          .then(() => {
+            console.log(
+              `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after deleting server: ${deletedServer.name} (${deletedServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error invalidating idle MetaMCP servers after deleting server ${deletedServer.uuid}:`,
+              error,
+            );
+          });
       }
 
       return {
@@ -361,24 +363,26 @@ export const mcpServersImplementations = {
           });
       }
 
-      // Find affected namespaces and invalidate their idle MetaMCP servers
+      // Find affected namespaces and invalidate their idle MetaMCP servers (async)
       const affectedNamespaceUuids =
         await namespaceMappingsRepository.findNamespacesByServerUuid(
           updatedServer.uuid,
         );
 
       if (affectedNamespaceUuids.length > 0) {
-        try {
-          await metaMcpServerPool.invalidateIdleServers(affectedNamespaceUuids);
-          console.log(
-            `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
-          );
-        } catch (error) {
-          console.error(
-            `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
-            error,
-          );
-        }
+        metaMcpServerPool
+          .invalidateIdleServers(affectedNamespaceUuids)
+          .then(() => {
+            console.log(
+              `Invalidated idle MetaMCP servers for ${affectedNamespaceUuids.length} namespaces after updating server: ${updatedServer.name} (${updatedServer.uuid})`,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error invalidating idle MetaMCP servers after updating server ${updatedServer.uuid}:`,
+              error,
+            );
+          });
       }
 
       return {
