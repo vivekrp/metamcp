@@ -203,6 +203,7 @@ function CreateServerDialog({
         env: envObject,
         url: data.url,
         bearerToken: data.bearerToken,
+        user_id: data.user_id,
       };
 
       // Use tRPC mutation
@@ -278,7 +279,10 @@ function CreateServerDialog({
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
+                    <DropdownMenuContent
+                      className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                      align="start"
+                    >
                       {Object.values(McpServerTypeEnum.Enum).map((type) => (
                         <DropdownMenuItem
                           key={type}
@@ -289,6 +293,47 @@ function CreateServerDialog({
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="user_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ownership</FormLabel>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
+                        {field.value === null
+                          ? "Everyone (Public)"
+                          : "For myself (Private)"}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                      align="start"
+                    >
+                      <DropdownMenuItem
+                        onClick={() => field.onChange(undefined)}
+                      >
+                        For myself (Private)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => field.onChange(null)}>
+                        Everyone (Public)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Private servers are only accessible to you. Public servers
+                    are accessible to all users.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -431,6 +476,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
       url: "",
       bearerToken: "",
       env: envString,
+      user_id: undefined, // Default to private
     };
 
     setSelectedItem(defaultValues);
