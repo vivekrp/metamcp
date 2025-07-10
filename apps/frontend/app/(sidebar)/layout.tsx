@@ -8,6 +8,7 @@ import {
   Search,
   SearchCode,
   Server,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -62,6 +63,11 @@ const items = [
     title: "API Keys",
     url: "/api-keys",
     icon: Key,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
   },
 ];
 
