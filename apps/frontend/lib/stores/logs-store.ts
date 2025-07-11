@@ -66,6 +66,22 @@ export const useLogsStore = create<LogsState>()(
       } catch (error) {
         console.error("Failed to fetch logs:", error);
         set({ isLoading: false });
+
+        // Check if it's an authentication error
+        if (error && typeof error === "object" && "message" in error) {
+          const errorMessage = String(error.message);
+          if (
+            errorMessage.includes("UNAUTHORIZED") ||
+            errorMessage.includes("You must be logged in")
+          ) {
+            // Stop auto-refresh if user is not authenticated
+            const currentState = get();
+            if (currentState.isAutoRefreshing) {
+              currentState.stopAutoRefresh();
+              console.log("Auto-refresh stopped due to authentication error");
+            }
+          }
+        }
       }
     },
 
@@ -75,6 +91,24 @@ export const useLogsStore = create<LogsState>()(
         set({ logs: [], totalCount: 0 });
       } catch (error) {
         console.error("Failed to clear logs:", error);
+
+        // Check if it's an authentication error
+        if (error && typeof error === "object" && "message" in error) {
+          const errorMessage = String(error.message);
+          if (
+            errorMessage.includes("UNAUTHORIZED") ||
+            errorMessage.includes("You must be logged in")
+          ) {
+            // Stop auto-refresh if user is not authenticated
+            const currentState = get();
+            if (currentState.isAutoRefreshing) {
+              currentState.stopAutoRefresh();
+              console.log(
+                "Auto-refresh stopped due to authentication error in clearLogs",
+              );
+            }
+          }
+        }
       }
     },
 

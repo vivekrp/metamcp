@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { DomainWarningBanner } from "@/components/domain-warning-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
@@ -36,14 +37,9 @@ export default function RegisterPage() {
     }
   };
 
-  // Check if signup is disabled on mount and periodically
+  // Check signup status on mount
   useEffect(() => {
     checkSignupStatus();
-
-    // Check every 30 seconds for admin changes
-    const interval = setInterval(checkSignupStatus, 30000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,6 +166,9 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
+        {/* Domain Warning Banner */}
+        <DomainWarningBanner />
+
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Create your account
