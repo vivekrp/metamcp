@@ -145,16 +145,65 @@ pnpm dev
 {
   "mcpServers": {
     "MetaMCP": {
-      "url": "http://localhost:12008/metamcp/<endpoint_name>/sse"
+      "url": "http://localhost:12008/metamcp/<YOUR_ENDPOINT_NAME>/sse"
     }
   }
 }
 ```
 
-### 通过本地代理
+### 连接 Claude Desktop 和其他仅支持 STDIO 的客户端
 
-由于 MetaMCP 端点仅支持远程连接（SSE、Streamable HTTP、OpenAPI），对于仅支持 stdio 服务器的客户端，可以使用本地代理。
-查看 https://www.npmjs.com/package/mcp-remote 或 https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532
+由于 MetaMCP 端点仅支持远程连接（SSE、Streamable HTTP、OpenAPI），仅支持 stdio 服务器的客户端（如 Claude Desktop）需要本地代理来连接。
+
+**注意：** 虽然有时会建议使用 `mcp-remote` 来实现此目的，但它是为基于 OAuth 的认证设计的，无法与 MetaMCP 的 API key 认证配合使用。根据测试，`mcp-proxy` 是推荐的解决方案。
+
+以下是使用 `mcp-proxy` 为 Claude Desktop 配置的工作示例：
+
+使用 Streamable HTTP
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "http://localhost:12008/metamcp/<YOUR_ENDPOINT_NAME>/mcp"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "<YOUR_API_KEY_HERE>"
+      }
+    }
+  }
+}
+```
+
+使用 SSE
+
+```json
+{
+  "mcpServers": {
+    "ehn": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/<YOUR_ENDPOINT_NAME>/sse"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "<YOUR_API_KEY_HERE>"
+      }
+    }
+  }
+}
+```
+
+**重要说明：**
+- 将 `<YOUR_ENDPOINT_NAME>` 替换为你的实际端点名称
+- 将 `<YOUR_API_KEY_HERE>` 替换为你的 MetaMCP API key（格式：`sk_mt_...`）
+
+更多详细信息和替代方法，请参见 [issue #76](https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532)。
 
 ### API Key 认证故障排除
 
