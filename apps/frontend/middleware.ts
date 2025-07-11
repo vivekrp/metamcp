@@ -24,41 +24,16 @@ export default async function middleware(request: NextRequest) {
 
   // Check for CORS violations by comparing request origin with configured APP_URL
   const configuredAppUrl = env("NEXT_PUBLIC_APP_URL");
-
-  // Get the original request URL considering nginx proxy headers
-  const originalHost =
-    request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const originalProto = request.headers.get("x-forwarded-proto") || "http";
-  const originalPort = request.headers.get("x-forwarded-port");
-
-  // Construct the original URL with proper port handling
-  let originalUrl;
-  if (originalHost) {
-    let hostWithPort = originalHost;
-    // If nginx forwarded the port separately and it's not already in the host, add it
-    if (originalPort && !originalHost.includes(":")) {
-      hostWithPort = `${originalHost}:${originalPort}`;
-    }
-    originalUrl = `${originalProto}://${hostWithPort}${request.nextUrl.pathname}${request.nextUrl.search}`;
-  } else {
-    originalUrl = request.url;
-  }
-
   if (configuredAppUrl) {
     try {
       const configuredUrl = new URL(configuredAppUrl);
-      const requestUrl = new URL(originalUrl);
+      const requestUrl = new URL(request.url);
 
       // Check if the request is coming from a different origin than configured
-      // This includes different protocol, hostname, or port
       if (requestUrl.origin !== configuredUrl.origin) {
         // Redirect to CORS error page with the attempted path
-        // Use the configured origin so the redirect goes to the authorized domain
-        const corsErrorUrl = new URL("/cors-error", configuredUrl.origin);
+        const corsErrorUrl = new URL("/cors-error", configuredAppUrl);
         corsErrorUrl.searchParams.set("callbackUrl", pathname);
-        corsErrorUrl.searchParams.set("requestedOrigin", requestUrl.origin);
-        corsErrorUrl.searchParams.set("configuredOrigin", configuredUrl.origin);
-
         return NextResponse.redirect(corsErrorUrl);
       }
     } catch (error) {
@@ -67,7 +42,7 @@ export default async function middleware(request: NextRequest) {
     }
   }
 
-  // Skip auth check for public routes (but CORS check still applies above)
+  // Skip auth check for public routes
   const publicRoutes = ["/login", "/register", "/"];
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next();
