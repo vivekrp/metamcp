@@ -150,10 +150,60 @@ Example `mcp.json`
 }
 ```
 
-### Via a local proxy
+### Connecting Claude Desktop and Other STDIO-only Clients
 
-Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), for clients that only supports stdio servers then you can use a local proxy.
-Checkout https://www.npmjs.com/package/mcp-remote or https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532
+Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), clients that only support stdio servers (like Claude Desktop) need a local proxy to connect.
+
+**Note:** While `mcp-remote` is sometimes suggested for this purpose, it's designed for OAuth-based authentication and doesn't work with MetaMCP's API key authentication. Based on testing, `mcp-proxy` is the recommended solution.
+
+Here's a working configuration for Claude Desktop using `mcp-proxy`:
+
+```json
+{
+  "mcpServers": {
+    "your-endpoint-name": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/YOUR_ENDPOINT_NAME/mcp",
+        "--transport=streamablehttp",
+        "-H",
+        "Authorization",
+        "Bearer YOUR_API_KEY_HERE"
+      ]
+    }
+  }
+}
+```
+
+**Important notes:**
+- Replace `YOUR_ENDPOINT_NAME` with your actual endpoint name
+- Replace `YOUR_API_KEY_HERE` with your MetaMCP API key (format: `sk_mt_...`)
+- Use `uvx` if you have it installed, otherwise use `npx -y` instead
+- The endpoint path must be `/mcp` for streamable HTTP (not `/sse`)
+- Headers are passed as separate arguments: `-H` `HeaderName` `HeaderValue`
+
+If you don't have `uvx`, use this configuration:
+```json
+{
+  "mcpServers": {
+    "your-endpoint-name": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/YOUR_ENDPOINT_NAME/mcp",
+        "--transport=streamablehttp",
+        "-H",
+        "Authorization",
+        "Bearer YOUR_API_KEY_HERE"
+      ]
+    }
+  }
+}
+```
+
+For more details and alternative approaches, see [issue #76](https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532).
 
 ### API Key Auth Troubleshooting
 
