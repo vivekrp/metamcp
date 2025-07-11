@@ -158,7 +158,7 @@ Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), clients
 
 Here's a working configuration for Claude Desktop using `mcp-proxy`:
 
-Using Streamable HTTP:
+Using Streamable HTTP
 
 ```json
 {
