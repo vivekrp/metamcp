@@ -1,5 +1,6 @@
 import { betterFetch } from "@better-fetch/fetch";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "next-runtime-env";
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,7 +17,57 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip auth check for public routes
+  // Skip CORS check for the CORS error page itself to prevent infinite redirect
+  if (pathname === "/cors-error") {
+    return NextResponse.next();
+  }
+
+  // Check for CORS violations by comparing request origin with configured APP_URL
+  const configuredAppUrl = env("NEXT_PUBLIC_APP_URL");
+
+  // Get the original request URL considering nginx proxy headers
+  const originalHost =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const originalProto = request.headers.get("x-forwarded-proto") || "http";
+  const originalPort = request.headers.get("x-forwarded-port");
+
+  // Construct the original URL with proper port handling
+  let originalUrl;
+  if (originalHost) {
+    let hostWithPort = originalHost;
+    // If nginx forwarded the port separately and it's not already in the host, add it
+    if (originalPort && !originalHost.includes(":")) {
+      hostWithPort = `${originalHost}:${originalPort}`;
+    }
+    originalUrl = `${originalProto}://${hostWithPort}${request.nextUrl.pathname}${request.nextUrl.search}`;
+  } else {
+    originalUrl = request.url;
+  }
+
+  if (configuredAppUrl) {
+    try {
+      const configuredUrl = new URL(configuredAppUrl);
+      const requestUrl = new URL(originalUrl);
+
+      // Check if the request is coming from a different origin than configured
+      // This includes different protocol, hostname, or port
+      if (requestUrl.origin !== configuredUrl.origin) {
+        // Redirect to CORS error page with the attempted path
+        // Use the configured origin so the redirect goes to the authorized domain
+        const corsErrorUrl = new URL("/cors-error", configuredUrl.origin);
+        corsErrorUrl.searchParams.set("callbackUrl", pathname);
+        corsErrorUrl.searchParams.set("requestedOrigin", requestUrl.origin);
+        corsErrorUrl.searchParams.set("configuredOrigin", configuredUrl.origin);
+
+        return NextResponse.redirect(corsErrorUrl);
+      }
+    } catch (error) {
+      console.error("Error checking CORS policy:", error);
+      // If there's an error parsing URLs, log it but continue processing
+    }
+  }
+
+  // Skip auth check for public routes (but CORS check still applies above)
   const publicRoutes = ["/login", "/register", "/"];
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next();
