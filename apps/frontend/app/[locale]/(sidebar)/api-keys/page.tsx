@@ -52,7 +52,7 @@ export default function ApiKeysPage() {
     onSuccess: (data) => {
       setNewApiKey(data.key);
       refetch();
-      toast.success("API key created successfully");
+      toast.success(t("api-keys:apiKeyCreated"));
     },
     onError: (error) => {
       toast.error(error.message);
@@ -62,7 +62,7 @@ export default function ApiKeysPage() {
   const deleteMutation = trpc.apiKeys.delete.useMutation({
     onSuccess: () => {
       refetch();
-      toast.success("API key deleted successfully");
+      toast.success(t("api-keys:apiKeyDeleted"));
     },
     onError: (error) => {
       toast.error(error.message);
@@ -88,7 +88,7 @@ export default function ApiKeysPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success(t("api-keys:copyToClipboard"));
   };
 
   const toggleKeyVisibility = (uuid: string) => {
@@ -113,30 +113,32 @@ export default function ApiKeysPage() {
         <div className="flex items-center gap-3">
           <Key className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
-            <p className="text-muted-foreground">
-              Manage your API keys for programmatic access
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("api-keys:title")}
+            </h1>
+            <p className="text-muted-foreground">{t("api-keys:description")}</p>
           </div>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create API Key
+              {t("api-keys:createApiKey")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New API Key</DialogTitle>
+              <DialogTitle>{t("api-keys:createApiKey")}</DialogTitle>
               <DialogDescription>
-                Create a new API key to access the MetaMCP API programmatically.
+                {t("api-keys:createApiKeyDescription")}
               </DialogDescription>
             </DialogHeader>
             {newApiKey ? (
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-2">Your new API key:</p>
+                  <p className="text-sm font-medium mb-2">
+                    {t("api-keys:newApiKey")}
+                  </p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 p-2 bg-background rounded border text-sm font-mono break-all">
                       {newApiKey}
@@ -157,7 +159,7 @@ export default function ApiKeysPage() {
                   }}
                   className="w-full"
                 >
-                  Done
+                  {t("api-keys:done")}
                 </Button>
               </div>
             ) : (
@@ -166,10 +168,12 @@ export default function ApiKeysPage() {
                 className="space-y-4"
               >
                 <div>
-                  <label className="text-sm font-medium">Name</label>
+                  <label className="text-sm font-medium">
+                    {t("api-keys:name")}
+                  </label>
                   <Input
                     {...form.register("name")}
-                    placeholder="e.g., Production API Key"
+                    placeholder={t("api-keys:namePlaceholder")}
                   />
                   {form.formState.errors.name && (
                     <p className="text-sm text-destructive mt-1">
@@ -179,7 +183,7 @@ export default function ApiKeysPage() {
                 </div>
                 <div>
                   <Label htmlFor="ownership" className="text-sm font-medium">
-                    Ownership
+                    {t("api-keys:ownership")}
                   </Label>
                   <Select
                     value={
@@ -193,20 +197,19 @@ export default function ApiKeysPage() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select ownership" />
+                      <SelectValue placeholder={t("api-keys:ownership")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="private">
-                        For myself (Private)
+                        {t("api-keys:forMyself")}
                       </SelectItem>
                       <SelectItem value="public">
-                        For everyone (Public)
+                        {t("api-keys:everyone")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Private API keys are only visible to you. Public API keys
-                    can be used by anyone.
+                    {t("api-keys:ownershipDescription")}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -216,14 +219,16 @@ export default function ApiKeysPage() {
                     onClick={() => setCreateDialogOpen(false)}
                     className="flex-1"
                   >
-                    Cancel
+                    {t("api-keys:cancel")}
                   </Button>
                   <Button
                     type="submit"
                     disabled={createMutation.isPending}
                     className="flex-1"
                   >
-                    {createMutation.isPending ? "Creating..." : "Create"}
+                    {createMutation.isPending
+                      ? t("common:creating")
+                      : t("common:create")}
                   </Button>
                 </div>
               </form>
@@ -238,12 +243,12 @@ export default function ApiKeysPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>{t("common:name")}</TableHead>
               <TableHead>Key</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ownership</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead>{t("api-keys:created")}</TableHead>
+              <TableHead>{t("common:status")}</TableHead>
+              <TableHead>{t("api-keys:ownership")}</TableHead>
+              <TableHead className="w-[100px]">{t("common:actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,9 +257,11 @@ export default function ApiKeysPage() {
                 <TableCell colSpan={6} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Key className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-muted-foreground">No API keys found</p>
+                    <p className="text-muted-foreground">
+                      {t("api-keys:noApiKeys")}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      Create your first API key to get started
+                      {t("api-keys:createFirstApiKey")}
                     </p>
                   </div>
                 </TableCell>
@@ -276,8 +283,8 @@ export default function ApiKeysPage() {
                         onClick={() => toggleKeyVisibility(apiKey.uuid)}
                         title={
                           visibleKeys.has(apiKey.uuid)
-                            ? "Hide API key"
-                            : "Show API key"
+                            ? t("api-keys:hideApiKey")
+                            : t("api-keys:showApiKey")
                         }
                       >
                         {visibleKeys.has(apiKey.uuid) ? (
@@ -290,7 +297,7 @@ export default function ApiKeysPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => copyToClipboard(apiKey.key)}
-                        title="Copy full API key"
+                        title={t("api-keys:copyFullApiKey")}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -307,7 +314,9 @@ export default function ApiKeysPage() {
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {apiKey.is_active ? "Active" : "Inactive"}
+                      {apiKey.is_active
+                        ? t("common:active")
+                        : t("common:inactive")}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -318,7 +327,9 @@ export default function ApiKeysPage() {
                           : "bg-gray-50 text-gray-700 ring-gray-700/10"
                       }`}
                     >
-                      {apiKey.user_id === null ? "Public" : "Private"}
+                      {apiKey.user_id === null
+                        ? t("api-keys:public")
+                        : t("api-keys:private")}
                     </span>
                   </TableCell>
                   <TableCell>
