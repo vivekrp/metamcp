@@ -52,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 interface McpServersListProps {
@@ -59,6 +60,7 @@ interface McpServersListProps {
 }
 
 export function McpServersList({ onRefresh }: McpServersListProps) {
+  const { t } = useTranslations();
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -93,19 +95,19 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
         utils.frontend.mcpServers.list.invalidate();
         setDeleteDialogOpen(false);
         setServerToDelete(null);
-        toast.success("Server deleted successfully");
+        toast.success(t("mcp-servers:list.deleteServerSuccess"));
       } else {
         // Handle business logic failures
         console.error("Delete failed:", result.message);
-        toast.error("Failed to delete server", {
+        toast.error(t("mcp-servers:list.deleteServerError"), {
           description:
-            result.message || "An error occurred while deleting the server",
+            result.message || t("mcp-servers:list.deleteServerError"),
         });
       }
     },
     onError: (error) => {
       console.error("Error deleting server:", error);
-      toast.error("Failed to delete server", {
+      toast.error(t("mcp-servers:list.deleteServerError"), {
         description: error.message,
       });
     },
@@ -142,7 +144,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Name
+            {t("common:name")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -169,7 +171,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Type
+            {t("common:type")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -187,7 +189,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
     },
     {
       accessorKey: "user_id",
-      header: "Ownership",
+      header: t("mcp-servers:list.ownership"),
       cell: ({ row }) => {
         const server = row.original;
         const isPublic = server.user_id === null;
@@ -200,7 +202,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
                   : "bg-gray-50 text-gray-700 ring-gray-700/10"
               }`}
             >
-              {isPublic ? "Public" : "Private"}
+              {isPublic ? t("mcp-servers:public") : t("mcp-servers:private")}
             </span>
           </div>
         );
@@ -208,22 +210,30 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
     },
     {
       accessorKey: "details",
-      header: "Configuration",
+      header: t("mcp-servers:list.configuration"),
       cell: ({ row }) => {
         const server = row.original;
         const details = [];
 
         if (server.command) {
-          details.push(`Command: ${server.command}`);
+          details.push(
+            t("mcp-servers:list.command", { command: server.command }),
+          );
         }
         if (server.args.length > 0) {
-          details.push(`Args: ${server.args.join(" ")}`);
+          details.push(
+            t("mcp-servers:list.args", { args: server.args.join(" ") }),
+          );
         }
         if (server.url) {
-          details.push(`URL: ${server.url}`);
+          details.push(t("mcp-servers:list.url", { url: server.url }));
         }
         if (Object.keys(server.env).length > 0) {
-          details.push(`Env: ${Object.keys(server.env).length} vars`);
+          details.push(
+            t("mcp-servers:list.envVars", {
+              count: Object.keys(server.env).length,
+            }),
+          );
         }
 
         return (
@@ -245,7 +255,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created
+            {t("mcp-servers:list.created")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -261,7 +271,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("mcp-servers:list.actions"),
       cell: ({ row }) => {
         const server = row.original;
 
@@ -339,30 +349,30 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
                 onClick={() => navigator.clipboard.writeText(server.uuid)}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy server UUID
+                {t("mcp-servers:list.copyServerUuid")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyServerJson}>
                 <FileText className="mr-2 h-4 w-4" />
-                Copy server JSON
+                {t("mcp-servers:list.copyServerJson")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleInspect}>
                 <SearchCode className="mr-2 h-4 w-4" />
-                Inspect
+                {t("mcp-servers:list.inspect")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleViewDetails}>
                 <Eye className="mr-2 h-4 w-4" />
-                View details
+                {t("mcp-servers:list.viewDetails")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleEditClick}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit server
+                {t("mcp-servers:editServer")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-600"
                 onClick={handleDeleteClick}
               >
                 <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                Delete server
+                {t("mcp-servers:deleteServer")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -399,13 +409,13 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
         <div className="flex flex-col items-center justify-center mx-auto max-w-md">
           <Server className="size-12 text-red-400" />
           <h3 className="mt-4 text-lg font-semibold">
-            Error Loading MCP Servers
+            {t("mcp-servers:list.errorLoadingTitle")}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {error.message || "Failed to load MCP servers"}
+            {error.message || t("mcp-servers:list.errorLoadingDescription")}
           </p>
           <Button onClick={handleRefresh} className="mt-4" variant="outline">
-            Retry
+            {t("mcp-servers:list.retry")}
           </Button>
         </div>
       </div>
@@ -421,10 +431,11 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
       <div className="rounded-lg border border-dashed p-12 text-center">
         <div className="flex flex-col items-center justify-center mx-auto max-w-md">
           <Server className="size-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">No MCP Servers</h3>
+          <h3 className="mt-4 text-lg font-semibold">
+            {t("mcp-servers:list.noServersTitle")}
+          </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            You haven&apos;t configured any MCP servers yet. Click &quot;Create
-            MCP Server&quot; to get started.
+            {t("mcp-servers:list.noServersDescription")}
           </p>
         </div>
       </div>
@@ -448,10 +459,13 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete MCP Server</DialogTitle>
+            <DialogTitle>
+              {t("mcp-servers:list.deleteConfirmTitle")}
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{serverToDelete?.name}
-              &quot;? This action cannot be undone.
+              {t("mcp-servers:list.deleteConfirmDescription", {
+                name: serverToDelete?.name || "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -463,7 +477,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -472,7 +486,9 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
               }
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete Server"}
+              {isDeleting
+                ? t("mcp-servers:list.deleting")
+                : t("mcp-servers:deleteServer")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -483,7 +499,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search servers by name..."
+              placeholder={t("mcp-servers:list.searchPlaceholder")}
               value={globalFilter || ""}
               onChange={(event) => setGlobalFilter(event.target.value || "")}
               className="pl-8"
@@ -533,7 +549,7 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No results.
+                    {t("mcp-servers:list.noResults")}
                   </TableCell>
                 </TableRow>
               )}
@@ -542,7 +558,9 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
         </div>
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="text-sm text-muted-foreground">
-            {table.getFilteredRowModel().rows.length} server(s) total
+            {t("mcp-servers:list.totalServers", {
+              count: table.getFilteredRowModel().rows.length,
+            })}
           </div>
         </div>
       </div>
