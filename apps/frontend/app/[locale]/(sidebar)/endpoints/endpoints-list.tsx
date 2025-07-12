@@ -49,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { getAppUrl } from "@/lib/env";
 import { trpc } from "@/lib/trpc";
 
@@ -57,6 +58,7 @@ interface EndpointsListProps {
 }
 
 export function EndpointsList({ onRefresh }: EndpointsListProps) {
+  const { t } = useTranslations();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,14 +84,14 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
   // Delete mutation
   const deleteEndpointMutation = trpc.frontend.endpoints.delete.useMutation({
     onSuccess: () => {
-      toast.success("Endpoint deleted successfully");
+      toast.success(t("endpoints:list.deleteSuccess"));
       utils.frontend.endpoints.list.invalidate();
       setDeleteDialogOpen(false);
       setEndpointToDelete(null);
       onRefresh?.();
     },
     onError: (error) => {
-      toast.error("Failed to delete endpoint", {
+      toast.error(t("endpoints:list.deleteError"), {
         description: error.message,
       });
     },
@@ -132,7 +134,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Name
+            {t("common:name")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -159,7 +161,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("common:description"),
       cell: ({ row }) => {
         const description = row.getValue("description") as string | null;
         return (
@@ -168,7 +170,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
               <p className="text-sm">{description}</p>
             ) : (
               <span className="text-sm text-muted-foreground italic">
-                No description
+                {t("endpoints:list.noDescription")}
               </span>
             )}
           </div>
@@ -177,7 +179,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
     },
     {
       accessorKey: "namespace",
-      header: "Namespace",
+      header: t("endpoints:namespace"),
       cell: ({ row }) => {
         const endpoint = row.original;
         return (
@@ -197,7 +199,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
     },
     {
       accessorKey: "user_id",
-      header: "Ownership",
+      header: t("endpoints:ownership"),
       cell: ({ row }) => {
         const endpoint = row.original;
         const isPublic = endpoint.user_id === null;
@@ -210,7 +212,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
                   : "bg-gray-50 text-gray-700 ring-gray-700/10"
               }`}
             >
-              {isPublic ? "Public" : "Private"}
+              {isPublic ? t("endpoints:public") : t("endpoints:private")}
             </span>
           </div>
         );
@@ -224,7 +226,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created
+            {t("common:created")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -238,32 +240,32 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("common:actions"),
       cell: ({ row }) => {
         const endpoint = row.original;
 
         const copyFullSseUrl = () => {
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/sse`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("SSE URL copied to clipboard");
+          toast.success(t("endpoints:list.sseUrlCopied"));
         };
 
         const copyFullShttpUrl = () => {
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/mcp`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("SHTTP URL copied to clipboard");
+          toast.success(t("endpoints:list.shttpUrlCopied"));
         };
 
         const copyFullApiUrl = () => {
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("OpenAPI URL copied to clipboard");
+          toast.success(t("endpoints:list.openApiUrlCopied"));
         };
 
         const copyFullOpenApiSchemaUrl = () => {
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("OpenAPI Schema URL copied to clipboard");
+          toast.success(t("endpoints:list.openApiSchemaUrlCopied"));
         };
 
         const getApiKey = () => {
@@ -276,32 +278,28 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
           const apiKey = getApiKey();
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/sse?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("SSE URL with API key parameter copied to clipboard");
+          toast.success(t("endpoints:list.sseUrlWithApiKeyCopied"));
         };
 
         const copyFullShttpUrlWithApiKey = () => {
           const apiKey = getApiKey();
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/mcp?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success("SHTTP URL with API key parameter copied to clipboard");
+          toast.success(t("endpoints:list.shttpUrlWithApiKeyCopied"));
         };
 
         const copyFullApiUrlWithApiKey = () => {
           const apiKey = getApiKey();
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success(
-            "OpenAPI URL with API key parameter copied to clipboard",
-          );
+          toast.success(t("endpoints:list.openApiUrlWithApiKeyCopied"));
         };
 
         const copyFullOpenApiSchemaUrlWithApiKey = () => {
           const apiKey = getApiKey();
           const baseUrl = `${getAppUrl()}/metamcp/${endpoint.name}/api/openapi.json?api_key=${apiKey}`;
           navigator.clipboard.writeText(baseUrl);
-          toast.success(
-            "OpenAPI Schema URL with API key parameter copied to clipboard",
-          );
+          toast.success(t("endpoints:list.openApiSchemaUrlWithApiKeyCopied"));
         };
 
         return (
@@ -315,49 +313,49 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEditEndpoint(endpoint)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit endpoint
+                {t("endpoints:list.editEndpoint")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(endpoint.uuid)}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy endpoint UUID
+                {t("endpoints:list.copyEndpointUuid")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyFullSseUrl}>
                 <Link className="mr-2 h-4 w-4" />
-                Copy full SSE URL
+                {t("endpoints:list.copyFullSseUrl")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyFullShttpUrl}>
                 <Link className="mr-2 h-4 w-4" />
-                Copy full SHTTP URL
+                {t("endpoints:list.copyFullShttpUrl")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyFullApiUrl}>
                 <Link className="mr-2 h-4 w-4" />
-                Copy full OpenAPI URL
+                {t("endpoints:list.copyFullOpenApiUrl")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyFullOpenApiSchemaUrl}>
                 <Link className="mr-2 h-4 w-4" />
-                Copy OpenAPI Schema URL
+                {t("endpoints:list.copyOpenApiSchemaUrl")}
               </DropdownMenuItem>
               {endpoint.use_query_param_auth && (
                 <>
                   <DropdownMenuItem onClick={copyFullSseUrlWithApiKey}>
                     <Link className="mr-2 h-4 w-4" />
-                    Copy SSE URL with API key
+                    {t("endpoints:list.copySseUrlWithApiKey")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={copyFullShttpUrlWithApiKey}>
                     <Link className="mr-2 h-4 w-4" />
-                    Copy SHTTP URL with API key
+                    {t("endpoints:list.copyShttpUrlWithApiKey")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={copyFullApiUrlWithApiKey}>
                     <Link className="mr-2 h-4 w-4" />
-                    Copy OpenAPI URL with API key
+                    {t("endpoints:list.copyOpenApiUrlWithApiKey")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={copyFullOpenApiSchemaUrlWithApiKey}
                   >
                     <Link className="mr-2 h-4 w-4" />
-                    Copy OpenAPI Schema URL with API key
+                    {t("endpoints:list.copyOpenApiSchemaUrlWithApiKey")}
                   </DropdownMenuItem>
                 </>
               )}
@@ -367,14 +365,14 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
                 }
               >
                 <Package className="mr-2 h-4 w-4" />
-                View namespace
+                {t("endpoints:list.viewNamespace")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleDeleteEndpoint(endpoint)}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                Delete endpoint
+                {t("endpoints:list.deleteEndpoint")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -408,7 +406,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
         <div className="flex items-center justify-center">
           <div className="text-center">
             <div className="text-sm text-muted-foreground">
-              Loading endpoints...
+              {t("endpoints:list.loadingEndpoints")}
             </div>
           </div>
         </div>
@@ -420,7 +418,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
     return (
       <div className="rounded-lg border border-destructive/20 p-8">
         <div className="text-center text-destructive">
-          <p className="font-medium">Failed to load endpoints</p>
+          <p className="font-medium">{t("endpoints:list.failedToLoad")}</p>
           <p className="text-sm">{error.message}</p>
         </div>
       </div>
@@ -432,10 +430,11 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
       <div className="rounded-lg border border-dashed p-12 text-center">
         <div className="flex flex-col items-center justify-center mx-auto max-w-md">
           <Link className="size-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">No Endpoints</h3>
+          <h3 className="mt-4 text-lg font-semibold">
+            {t("endpoints:list.noEndpoints")}
+          </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            You haven&apos;t created any endpoints yet. Get started by creating
-            your first endpoint to make your namespaces publicly accessible.
+            {t("endpoints:list.noEndpointsDescription")}
           </p>
         </div>
       </div>
@@ -448,7 +447,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search endpoints..."
+            placeholder={t("endpoints:list.searchPlaceholder")}
             value={globalFilter || ""}
             onChange={(event) => setGlobalFilter(event.target.value || "")}
             className="pl-8"
@@ -499,7 +498,7 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {t("endpoints:list.noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -524,12 +523,12 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete Endpoint
+              {t("endpoints:list.deleteConfirmTitle")}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the endpoint &quot;
-              {endpointToDelete?.name}&quot;? This action cannot be undone and
-              will make the endpoint inaccessible.
+              {t("endpoints:list.deleteConfirmDescription", {
+                name: endpointToDelete?.name || "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -538,14 +537,16 @@ export function EndpointsList({ onRefresh }: EndpointsListProps) {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleteEndpointMutation.isPending}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDelete}
               disabled={deleteEndpointMutation.isPending}
             >
-              {deleteEndpointMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteEndpointMutation.isPending
+                ? t("endpoints:list.deleting")
+                : t("common:delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
