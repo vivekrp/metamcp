@@ -350,29 +350,45 @@ export default function McpServerDetailPage({
 
       {/* Server Info */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{server.name}</h1>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight truncate">
+              {server.name}
+            </h1>
             {server.description && (
-              <p className="text-muted-foreground mt-1">{server.description}</p>
+              <p
+                className="text-muted-foreground mt-1 text-sm lg:text-base overflow-hidden"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                }}
+              >
+                {server.description}
+              </p>
             )}
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex-shrink-0">
             {/* MCP Connection Status - only show if server exists */}
             {server && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">
-                  {t("mcp-servers:detail.mcpConnection")}:
-                </span>
-                <ConnectionIcon className="h-4 w-4" />
-                <span className={`text-sm font-medium ${connectionInfo.color}`}>
-                  {connectionInfo.text}
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    {t("mcp-servers:detail.mcpConnection")}:
+                  </span>
+                  <ConnectionIcon className="h-4 w-4 flex-shrink-0" />
+                  <span
+                    className={`text-sm font-medium whitespace-nowrap ${connectionInfo.color}`}
+                  >
+                    {connectionInfo.text}
+                  </span>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleConnectionToggle}
                   disabled={connection.connectionStatus === "connecting"}
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   {connection.connectionStatus === "connected"
                     ? t("mcp-servers:detail.reconnect")
