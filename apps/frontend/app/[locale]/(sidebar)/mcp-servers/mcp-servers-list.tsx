@@ -189,12 +189,22 @@ export function McpServersList({ onRefresh }: McpServersListProps) {
     },
     {
       accessorKey: "user_id",
-      header: t("mcp-servers:list.ownership"),
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("mcp-servers:list.ownership")}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
         const server = row.original;
         const isPublic = server.user_id === null;
         return (
-          <div className="py-2">
+          <div className="px-3 py-2">
             <span
               className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                 isPublic
