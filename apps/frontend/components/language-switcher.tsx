@@ -48,12 +48,12 @@ export function LanguageSwitcher() {
           <span className="sr-only">{t("common:switchLanguage")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="space-y-1">
         {SUPPORTED_LOCALES.map((locale) => (
           <DropdownMenuItem
             key={locale}
             onClick={() => handleLanguageChange(locale)}
-            className={currentLocale === locale ? "bg-accent" : ""}
+            className={`mb-1 ${currentLocale === locale ? "bg-accent" : ""}`}
           >
             {LOCALE_NAMES[locale]}
           </DropdownMenuItem>
