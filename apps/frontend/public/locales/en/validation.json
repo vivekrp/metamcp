@@ -4,7 +4,7 @@
   "minLength": "Must be at least {{min}} characters",
   "maxLength": "Must be at most {{max}} characters",
   "email": "Please enter a valid email address",
-  "url": "Please enter a valid URL",
+  "urlFormat": "Please enter a valid URL",
   "invalidFormat": "Invalid format",
   "serverName": {
     "required": "Server name is required",

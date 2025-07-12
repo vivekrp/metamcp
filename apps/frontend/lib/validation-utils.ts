@@ -13,7 +13,7 @@ const issueCodeToTranslationKey: Record<string, string> = {
   invalid_string: "validation:invalidFormat",
   too_small: "validation:minLength",
   too_big: "validation:maxLength",
-  invalid_url: "validation:url",
+  invalid_url: "validation:urlFormat",
   invalid_email: "validation:email",
   custom: "validation:generic.invalid",
 };
@@ -73,7 +73,7 @@ export function translateZodIssue(
         return t("validation:email");
       }
       if (issue.validation === "url") {
-        return t("validation:url");
+        return t("validation:urlFormat");
       }
       break;
     case "custom":

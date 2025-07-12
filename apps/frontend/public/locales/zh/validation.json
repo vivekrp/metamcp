@@ -4,7 +4,7 @@
   "minLength": "至少需要 {{min}} 个字符",
   "maxLength": "最多只能有 {{max}} 个字符",
   "email": "请输入有效的邮箱地址",
-  "url": "请输入有效的 URL",
+  "urlFormat": "请输入有效的 URL",
   "invalidFormat": "格式无效",
   "serverName": {
     "required": "服务器名称为必填项",
