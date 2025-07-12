@@ -46,5 +46,23 @@
   "english": "English",
   "chinese": "中文",
   "current": "当前",
-  "creating": "创建中..."
+  "creating": "创建中...",
+  "corsError": {
+    "title": "CORS 策略违规",
+    "description": "您正在从未授权的域访问 MetaMCP。出于安全考虑，此应用程序实施严格的 CORS（跨域资源共享）策略。",
+    "currentDomain": "当前域：",
+    "authorizedDomain": "授权域：",
+    "resolveTitle": "解决此问题：",
+    "step1": "从上方显示的授权域访问应用程序",
+    "step2": "如果您是管理员，请更新 APP_URL 环境变量以匹配您所需的域",
+    "step3": "确保所有请求（包括 API 调用）都来自同一个授权域",
+    "goToAuthorizedDomain": "前往授权域",
+    "refreshPage": "刷新页面",
+    "securityNote": "此安全措施可防止未经授权的跨域请求，并保护您的 MetaMCP 实例免受潜在的安全威胁。"
+  },
+  "oauth": {
+    "processingCallback": "正在处理 OAuth 回调...",
+    "authorizationInProgress": "授权进行中...",
+    "redirecting": "重定向中..."
+  }
 } 

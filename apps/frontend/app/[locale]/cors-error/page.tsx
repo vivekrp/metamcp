@@ -6,9 +6,11 @@ import { Suspense, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "@/hooks/useTranslations";
 import { getAppUrl } from "@/lib/env";
 
 function CorsErrorContent() {
+  const { t } = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentDomain, setCurrentDomain] = useState<string>("");
@@ -49,15 +51,13 @@ function CorsErrorContent() {
             <AlertTriangle className="w-8 h-8 text-destructive" />
           </div>
           <CardTitle className="text-2xl font-bold text-destructive">
-            CORS Policy Violation
+            {t("common:corsError.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="text-center space-y-2">
             <p className="text-muted-foreground">
-              You&apos;re accessing MetaMCP from an unauthorized domain. For
-              security reasons, this application enforces a strict CORS (Cross-
-              Origin Resource Sharing) policy.
+              {t("common:corsError.description")}
             </p>
           </div>
 
@@ -65,52 +65,45 @@ function CorsErrorContent() {
             <div className="space-y-2">
               <div className="text-sm">
                 <span className="font-medium text-destructive">
-                  Current domain:
+                  {t("common:corsError.currentDomain")}
                 </span>
                 <div className="font-mono text-sm bg-background px-2 py-1 rounded mt-1 border">
-                  {currentDomain || "Loading..."}
+                  {currentDomain || t("common:loading")}
                 </div>
               </div>
               <div className="text-sm">
                 <span className="font-medium text-green-600">
-                  Authorized domain:
+                  {t("common:corsError.authorizedDomain")}
                 </span>
                 <div className="font-mono text-sm bg-background px-2 py-1 rounded mt-1 border">
-                  {correctDomain || "Loading..."}
+                  {correctDomain || t("common:loading")}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold">To resolve this issue:</h3>
+            <h3 className="font-semibold">
+              {t("common:corsError.resolveTitle")}
+            </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start space-x-2">
                 <span className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary mt-0.5">
                   1
                 </span>
-                <span>
-                  Access the application from the authorized domain shown above
-                </span>
+                <span>{t("common:corsError.step1")}</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary mt-0.5">
                   2
                 </span>
-                <span>
-                  If you&apos;re an administrator, update the{" "}
-                  <code className="bg-muted px-1 rounded">APP_URL</code>{" "}
-                  environment variable to match your desired domain
-                </span>
+                <span>{t("common:corsError.step2")}</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary mt-0.5">
                   3
                 </span>
-                <span>
-                  Ensure all requests (including API calls) are made from the
-                  same authorized domain
-                </span>
+                <span>{t("common:corsError.step3")}</span>
               </li>
             </ul>
           </div>
@@ -122,7 +115,7 @@ function CorsErrorContent() {
               className="flex-1"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Go to Authorized Domain
+              {t("common:corsError.goToAuthorizedDomain")}
             </Button>
             <Button
               onClick={handleRefresh}
@@ -130,16 +123,12 @@ function CorsErrorContent() {
               className="flex-1"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Page
+              {t("common:corsError.refreshPage")}
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground text-center pt-4 border-t">
-            <p>
-              This security measure prevents unauthorized cross-origin requests
-              and protects your MetaMCP instance from potential security
-              threats.
-            </p>
+            <p>{t("common:corsError.securityNote")}</p>
           </div>
         </CardContent>
       </Card>
@@ -147,18 +136,21 @@ function CorsErrorContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useTranslations();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-2 text-muted-foreground">{t("common:loading")}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function CorsErrorPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Loading...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingFallback />}>
       <CorsErrorContent />
     </Suspense>
   );

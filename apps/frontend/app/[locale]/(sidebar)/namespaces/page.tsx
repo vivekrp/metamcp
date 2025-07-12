@@ -28,11 +28,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { NamespacesList } from "./namespaces-list";
 
 export default function NamespacesPage() {
+  const { t } = useTranslations();
   const [createOpen, setCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedServerUuids, setSelectedServerUuids] = useState<string[]>([]);
@@ -50,8 +52,8 @@ export default function NamespacesPage() {
   const createNamespaceMutation = trpc.frontend.namespaces.create.useMutation({
     onSuccess: (data) => {
       console.log("Namespace created successfully:", data);
-      toast.success("Namespace Created", {
-        description: `Successfully created "${form.getValues().name}" namespace`,
+      toast.success(t("namespaces:namespaceCreated"), {
+        description: t("namespaces:namespaceCreatedDescription", { name: form.getValues().name }),
       });
       setCreateOpen(false);
       form.reset({
@@ -65,7 +67,7 @@ export default function NamespacesPage() {
     },
     onError: (error) => {
       console.error("Error creating namespace:", error);
-      toast.error("Failed to Create Namespace", {
+      toast.error(t("namespaces:createNamespaceError"), {
         description: error.message || "An unexpected error occurred",
       });
     },
@@ -100,7 +102,7 @@ export default function NamespacesPage() {
     } catch (error) {
       setIsSubmitting(false);
       console.error("Error preparing namespace data:", error);
-      toast.error("Failed to Create Namespace", {
+      toast.error(t("namespaces:createNamespaceError"), {
         description:
           error instanceof Error
             ? error.message
@@ -124,11 +126,10 @@ export default function NamespacesPage() {
           <Package className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              MetaMCP Namespaces
+              {t("namespaces:title")}
             </h1>
             <p className="text-muted-foreground">
-              Group your MCP servers into namespaces and get ready to host with
-              a single unified MCP Server endpoint for the namespace
+              {t("namespaces:description")}
             </p>
           </div>
         </div>
@@ -137,14 +138,14 @@ export default function NamespacesPage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Namespace
+                {t("namespaces:createNamespace")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Create Namespace</DialogTitle>
+                <DialogTitle>{t("namespaces:createNamespace")}</DialogTitle>
                 <DialogDescription>
-                  Create a new namespace and select MCP servers to include.
+                  {t("namespaces:createNamespaceDescription")}
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -153,12 +154,12 @@ export default function NamespacesPage() {
               >
                 <div className="flex flex-col gap-2">
                   <label htmlFor="name" className="text-sm font-medium">
-                    Name
+                    {t("namespaces:name")}
                   </label>
                   <Input
                     id="name"
                     {...form.register("name")}
-                    placeholder="My Namespace"
+                    placeholder={t("namespaces:namePlaceholder")}
                   />
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500">
@@ -169,18 +170,18 @@ export default function NamespacesPage() {
 
                 <div className="flex flex-col gap-2">
                   <label htmlFor="description" className="text-sm font-medium">
-                    Description (Optional)
+                    {t("namespaces:description")}
                   </label>
                   <Textarea
                     id="description"
                     {...form.register("description")}
-                    placeholder="Namespace description"
+                    placeholder={t("namespaces:descriptionPlaceholder")}
                     className="h-20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Ownership</label>
+                  <label className="text-sm font-medium">{t("namespaces:ownership")}</label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -189,8 +190,8 @@ export default function NamespacesPage() {
                         type="button"
                       >
                         {form.watch("user_id") === null
-                          ? "Everyone (Public)"
-                          : "For myself (Private)"}
+                          ? t("namespaces:everyone")
+                          : t("namespaces:forMyself")}
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -198,33 +199,29 @@ export default function NamespacesPage() {
                       <DropdownMenuItem
                         onClick={() => form.setValue("user_id", undefined)}
                       >
-                        For myself (Private)
+                        {t("namespaces:forMyself")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => form.setValue("user_id", null)}
                       >
-                        Everyone (Public)
+                        {t("namespaces:everyone")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <p className="text-xs text-muted-foreground">
-                    Private namespaces are only accessible to you. Public
-                    namespaces are accessible to all users.
-                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium">
-                    MCP Servers (Optional)
+                    {t("namespaces:mcpServers")}
                   </label>
                   <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
                     {serversLoading ? (
                       <div className="text-sm text-muted-foreground">
-                        Loading servers...
+                        {t("namespaces:loadingServers")}
                       </div>
                     ) : availableServers.length === 0 ? (
                       <div className="text-sm text-muted-foreground">
-                        No MCP servers available. Create some servers first.
+                        {t("namespaces:noMcpServersAvailable")}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -258,8 +255,7 @@ export default function NamespacesPage() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Select MCP servers to include in this namespace. You can
-                    modify this later.
+                    {t("namespaces:selectMcpServersDescription")}
                   </p>
                 </div>
 
@@ -278,10 +274,10 @@ export default function NamespacesPage() {
                     }}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    {t("namespaces:cancel")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Namespace"}
+                    {isSubmitting ? t("namespaces:creating") : t("namespaces:createNamespace")}
                   </Button>
                 </div>
               </form>

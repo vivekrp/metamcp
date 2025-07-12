@@ -30,11 +30,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { EndpointsList } from "./endpoints-list";
 
 export default function EndpointsPage() {
+  const { t } = useTranslations();
   const [createOpen, setCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedNamespaceUuid, setSelectedNamespaceUuid] =
@@ -57,8 +59,10 @@ export default function EndpointsPage() {
   const createEndpointMutation = trpc.frontend.endpoints.create.useMutation({
     onSuccess: (data) => {
       console.log("Endpoint created successfully:", data);
-      toast.success("Endpoint Created", {
-        description: `Successfully created "${form.getValues().name}" endpoint`,
+      toast.success(t("endpoints:endpointCreated"), {
+        description: t("endpoints:endpointCreatedDescription", {
+          name: form.getValues().name,
+        }),
       });
       setCreateOpen(false);
       form.reset({
@@ -74,7 +78,7 @@ export default function EndpointsPage() {
     },
     onError: (error) => {
       console.error("Error creating endpoint:", error);
-      toast.error("Failed to Create Endpoint", {
+      toast.error(t("endpoints:createEndpointError"), {
         description: error.message || "An unexpected error occurred",
       });
     },
@@ -115,7 +119,7 @@ export default function EndpointsPage() {
     } catch (error) {
       setIsSubmitting(false);
       console.error("Error preparing endpoint data:", error);
-      toast.error("Failed to Create Endpoint", {
+      toast.error(t("endpoints:createEndpointError"), {
         description:
           error instanceof Error
             ? error.message
@@ -156,11 +160,10 @@ export default function EndpointsPage() {
           <Link className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              MetaMCP Endpoints
+              {t("endpoints:title")}
             </h1>
             <p className="text-muted-foreground">
-              Create public unified MCP server endpoints that map to namespaces
-              for external access
+              {t("endpoints:description")}
             </p>
           </div>
         </div>
@@ -169,15 +172,14 @@ export default function EndpointsPage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Endpoint
+                {t("endpoints:createEndpoint")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Create Endpoint</DialogTitle>
+                <DialogTitle>{t("endpoints:createEndpoint")}</DialogTitle>
                 <DialogDescription>
-                  Create a new public endpoint and select a namespace to map it
-                  to.
+                  {t("endpoints:createEndpointDescription")}
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -186,12 +188,12 @@ export default function EndpointsPage() {
               >
                 <div className="flex flex-col gap-2">
                   <label htmlFor="name" className="text-sm font-medium">
-                    Name
+                    {t("endpoints:name")}
                   </label>
                   <Input
                     id="name"
                     {...form.register("name")}
-                    placeholder="hacker-news"
+                    placeholder={t("endpoints:namePlaceholder")}
                   />
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500">
@@ -206,18 +208,20 @@ export default function EndpointsPage() {
 
                 <div className="flex flex-col gap-2">
                   <label htmlFor="description" className="text-sm font-medium">
-                    Description (Optional)
+                    {t("endpoints:descriptionOptional")}
                   </label>
                   <Textarea
                     id="description"
                     {...form.register("description")}
-                    placeholder="Endpoint description"
+                    placeholder={t("endpoints:descriptionPlaceholder")}
                     className="h-20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Ownership</label>
+                  <label className="text-sm font-medium">
+                    {t("endpoints:ownership")}
+                  </label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -226,8 +230,8 @@ export default function EndpointsPage() {
                         type="button"
                       >
                         {form.watch("user_id") === null
-                          ? "Everyone (Public)"
-                          : "For myself (Private)"}
+                          ? t("endpoints:everyone")
+                          : t("endpoints:forMyself")}
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -235,23 +239,24 @@ export default function EndpointsPage() {
                       <DropdownMenuItem
                         onClick={() => form.setValue("user_id", undefined)}
                       >
-                        For myself (Private)
+                        {t("endpoints:forMyself")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => form.setValue("user_id", null)}
                       >
-                        Everyone (Public)
+                        {t("endpoints:everyone")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <p className="text-xs text-muted-foreground">
-                    Private endpoints are only accessible to you. Public
-                    endpoints are accessible to all users.
+                    {t("endpoints:ownershipDescription")}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Namespace</label>
+                  <label className="text-sm font-medium">
+                    {t("endpoints:namespace")}
+                  </label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -260,7 +265,8 @@ export default function EndpointsPage() {
                         type="button"
                       >
                         <span>
-                          {selectedNamespaceName || "Select a namespace..."}
+                          {selectedNamespaceName ||
+                            t("endpoints:selectNamespace")}
                         </span>
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
@@ -268,11 +274,11 @@ export default function EndpointsPage() {
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
                       {namespacesLoading ? (
                         <DropdownMenuItem disabled>
-                          Loading namespaces...
+                          {t("endpoints:loadingNamespaces")}
                         </DropdownMenuItem>
                       ) : availableNamespaces.length === 0 ? (
                         <DropdownMenuItem disabled>
-                          No namespaces available. Create a namespace first.
+                          {t("endpoints:noNamespacesAvailable")}
                         </DropdownMenuItem>
                       ) : (
                         availableNamespaces.map((namespace) => (
@@ -310,24 +316,24 @@ export default function EndpointsPage() {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Select the namespace this endpoint should map to.
+                    {t("endpoints:namespaceDescription")}
                   </p>
                 </div>
 
                 {/* API Key Authentication Settings */}
                 <div className="space-y-4 border-t pt-4">
                   <h4 className="text-sm font-medium">
-                    API Key Authentication
+                    {t("endpoints:apiKeyAuth")}
                   </h4>
 
                   {/* Enable API Key Auth */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <label className="text-sm font-medium">
-                        Enable API Key Authentication
+                        {t("endpoints:enableApiKeyAuth")}
                       </label>
                       <p className="text-xs text-muted-foreground">
-                        Require API key for endpoint access
+                        {t("endpoints:apiKeyAuthDescription")}
                       </p>
                     </div>
                     <Switch
@@ -344,11 +350,10 @@ export default function EndpointsPage() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label className="text-sm font-medium">
-                          Use Query Parameter Authentication
+                          {t("endpoints:useQueryParamAuth")}
                         </label>
                         <p className="text-xs text-muted-foreground">
-                          Accept API key via ?api_key= in addition to
-                          Authorization header
+                          {t("endpoints:queryParamAuthDescription")}
                         </p>
                       </div>
                       <Switch
@@ -374,12 +379,11 @@ export default function EndpointsPage() {
                     htmlFor="createMcpServer"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Automatically create MCP server config for future inspection
+                    {t("endpoints:createMcpServerDescription")}
                   </label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  This will create a Streamable HTTP MCP server configuration
-                  that you can use to inspect this endpoint.
+                  {t("endpoints:createMcpServerExplanation")}
                 </p>
 
                 <div className="flex justify-end space-x-2">
@@ -389,13 +393,15 @@ export default function EndpointsPage() {
                     onClick={resetForm}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    {t("endpoints:cancel")}
                   </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting || !selectedNamespaceUuid}
                   >
-                    {isSubmitting ? "Creating..." : "Create Endpoint"}
+                    {isSubmitting
+                      ? t("endpoints:creating")
+                      : t("endpoints:createEndpoint")}
                   </Button>
                 </div>
               </form>

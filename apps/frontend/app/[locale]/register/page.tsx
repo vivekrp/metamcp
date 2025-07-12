@@ -12,6 +12,19 @@ import { useTranslations } from "@/hooks/useTranslations";
 import { authClient } from "@/lib/auth-client";
 import { vanillaTrpcClient } from "@/lib/trpc";
 
+function LoadingFallback() {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("common:loading")}
+        </h1>
+      </div>
+    </div>
+  );
+}
+
 function RegisterForm() {
   const { t } = useTranslations();
   const [name, setName] = useState("");
@@ -126,7 +139,9 @@ function RegisterForm() {
     return (
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Loading...</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("common:loading")}
+          </h1>
         </div>
       </div>
     );
@@ -268,7 +283,7 @@ export default function RegisterPage() {
       </div>
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <DomainWarningBanner />
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<LoadingFallback />}>
           <RegisterForm />
         </Suspense>
       </div>

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { SearchSkeleton } from "@/components/skeletons/search-skeleton";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/hooks/useTranslations";
 import type { PaginatedSearchResult } from "@/types/search";
 
 import CardGrid from "./components/CardGrid";
@@ -15,6 +16,7 @@ import { PaginationUi } from "./components/PaginationUi";
 const PAGE_SIZE = 6;
 
 function SearchContent() {
+  const { t } = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("query") || "";
@@ -64,18 +66,20 @@ function SearchContent() {
 
   return (
     <div className="container mx-auto py-8 space-y-6 flex flex-col items-center">
-      <h1 className="text-2xl font-bold">
-        Explore & Search MCP Servers (Beta)
-      </h1>
+      <h1 className="text-2xl font-bold">{t("search:title")}</h1>
       <Input
         type="search"
-        placeholder="Search..."
+        placeholder={t("search:searchPlaceholder")}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="max-w-xl mx-auto"
       />
 
-      {error && <div>Error: {error.message}</div>}
+      {error && (
+        <div>
+          {t("search:error")}: {error.message}
+        </div>
+      )}
       {data?.results && <CardGrid items={data.results} />}
 
       {data && (

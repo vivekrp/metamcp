@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 export default function SettingsPage() {
+  const { t } = useTranslations();
   const [isSignupDisabled, setIsSignupDisabled] = useState(false);
 
   // Get current signup disabled status
@@ -54,12 +56,12 @@ export default function SettingsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage application settings and preferences.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("settings:title")}
+          </h1>
+          <p className="text-muted-foreground">{t("settings:description")}</p>
         </div>
-        <div>Loading...</div>
+        <div>{t("settings:loading")}</div>
       </div>
     );
   }
@@ -67,29 +69,28 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage application settings and preferences.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t("settings:title")}
+        </h1>
+        <p className="text-muted-foreground">{t("settings:description")}</p>
       </div>
 
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Authentication Settings</CardTitle>
+            <CardTitle>{t("settings:authSettings")}</CardTitle>
             <CardDescription>
-              Configure authentication and user registration settings.
+              {t("settings:authSettingsDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="disable-signup" className="text-base">
-                  Disable New User Registration
+                  {t("settings:disableSignup")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  When enabled, new users will not be able to create accounts.
-                  Existing users can still log in.
+                  {t("settings:disableSignupDescription")}
                 </p>
               </div>
               <Switch
