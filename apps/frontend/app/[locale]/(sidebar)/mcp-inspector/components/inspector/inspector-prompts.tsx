@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface Prompt {
   name: string;
@@ -66,6 +67,7 @@ export function InspectorPrompts({
   makeRequest,
   enabled = true,
 }: InspectorPromptsProps) {
+  const { t } = useTranslations();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
@@ -103,7 +105,7 @@ export function InspectorPrompts({
         setNextCursor(response.nextCursor);
 
         if (response.prompts && response.prompts.length === 0 && !cursor) {
-          toast.info("No prompts found on MCP server");
+          toast.info(t("inspector:promptsComponent.noPromptsFound"));
         }
       } catch (error) {
         console.error("Error fetching prompts:", error);
@@ -117,7 +119,7 @@ export function InspectorPrompts({
         setLoading(false);
       }
     },
-    [makeRequest, enabled],
+    [makeRequest, enabled, t],
   );
 
   const clearPrompts = () => {
@@ -147,10 +149,10 @@ export function InspectorPrompts({
       );
 
       setPromptResult(response);
-      toast.success(`Prompt "${selectedPrompt.name}" retrieved successfully`);
+      toast.success(t("inspector:promptsComponent.promptRetrievedSuccess", { promptName: selectedPrompt.name }));
     } catch (error) {
       console.error("Error getting prompt:", error);
-      toast.error(`Failed to get prompt "${selectedPrompt.name}"`, {
+      toast.error(t("inspector:promptsComponent.promptRetrievalError", { promptName: selectedPrompt.name }), {
         description: error instanceof Error ? error.message : String(error),
       });
     } finally {
@@ -195,7 +197,7 @@ export function InspectorPrompts({
         )}
         {message.content.type === "image" && (
           <div className="text-xs text-muted-foreground">
-            [Image data - {message.content.mimeType || "unknown format"}]
+            [{t("inspector:promptsComponent.imageData")} - {message.content.mimeType || t("inspector:promptsComponent.unknownFormat")}]
             {message.content.data && (
               <img
                 src={`data:${message.content.mimeType};base64,${message.content.data}`}
@@ -207,21 +209,21 @@ export function InspectorPrompts({
         )}
         {message.content.type === "audio" && (
           <div className="text-xs text-muted-foreground">
-            [Audio data - {message.content.mimeType || "unknown format"}]
+            [{t("inspector:promptsComponent.audioData")} - {message.content.mimeType || t("inspector:promptsComponent.unknownFormat")}]
             {message.content.data && (
               <audio
                 controls
                 className="mt-2 w-full"
                 src={`data:${message.content.mimeType};base64,${message.content.data}`}
               >
-                Your browser does not support the audio element.
+                {t("inspector:promptsComponent.audioNotSupported")}
               </audio>
             )}
           </div>
         )}
         {message.content.type === "resource" && (
           <div className="text-xs text-muted-foreground">
-            [Resource - {message.content.resource?.mimeType || "unknown format"}
+            [{t("inspector:promptsComponent.resource")} - {message.content.resource?.mimeType || t("inspector:promptsComponent.unknownFormat")}
             ]
             <div className="mt-2 p-2 bg-gray-100 rounded border">
               <div className="font-mono text-xs break-all">
@@ -234,7 +236,7 @@ export function InspectorPrompts({
               )}
               {message.content.resource?.blob && (
                 <div className="mt-1 text-xs">
-                  [Binary data: {message.content.resource.blob.length} chars]
+                  [{t("inspector:promptsComponent.binaryData", { length: message.content.resource.blob.length })}]
                 </div>
               )}
             </div>
@@ -248,9 +250,9 @@ export function InspectorPrompts({
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-        <h4 className="text-sm font-medium">Prompts Not Supported</h4>
+        <h4 className="text-sm font-medium">{t("inspector:promptsComponent.promptsNotSupported")}</h4>
         <p className="text-xs text-muted-foreground mt-1">
-          This MCP server doesn&apos;t support prompts.
+          {t("inspector:promptsComponent.promptsNotSupportedDesc")}
         </p>
       </div>
     );
@@ -263,7 +265,7 @@ export function InspectorPrompts({
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-purple-500" />
           <span className="text-sm font-medium">
-            Prompts ({prompts.length})
+            {t("inspector:promptsComponent.title")} ({prompts.length})
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -273,7 +275,7 @@ export function InspectorPrompts({
             onClick={clearPrompts}
             disabled={loading || prompts.length === 0}
           >
-            Clear
+            {t("common:clear")}
           </Button>
           <Button
             variant="outline"
@@ -284,7 +286,7 @@ export function InspectorPrompts({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            {loading ? "Loading..." : "Load Prompts"}
+            {loading ? t("inspector:promptsComponent.loadingPrompts") : t("inspector:promptsComponent.loadPrompts")}
           </Button>
           {nextCursor && (
             <Button
@@ -293,7 +295,7 @@ export function InspectorPrompts({
               onClick={() => fetchPrompts(nextCursor)}
               disabled={loading}
             >
-              Load More
+              {t("inspector:promptsComponent.loadMore")}
             </Button>
           )}
         </div>
@@ -304,15 +306,14 @@ export function InspectorPrompts({
         {/* Left: Prompt Selection and Arguments */}
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-semibold mb-2">Available Prompts</h4>
+            <h4 className="text-sm font-semibold mb-2">{t("inspector:promptsComponent.availablePrompts")}</h4>
             {loading && prompts.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                Loading prompts...
+                {t("inspector:promptsComponent.loadingPrompts")}
               </div>
             ) : prompts.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                Click &quot;Load Prompts&quot; to fetch available prompts from
-                the MCP server.
+                {t("inspector:promptsComponent.clickLoadPrompts")}
               </div>
             ) : (
               <div className="space-y-2">
@@ -354,8 +355,7 @@ export function InspectorPrompts({
                       <div className="flex items-center gap-1">
                         {prompt.arguments && prompt.arguments.length > 0 && (
                           <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                            {prompt.arguments.length} arg
-                            {prompt.arguments.length > 1 ? "s" : ""}
+                            {prompt.arguments.length} {prompt.arguments.length > 1 ? t("inspector:promptsComponent.args") : t("inspector:promptsComponent.arg")}
                           </span>
                         )}
                         <button
@@ -380,15 +380,15 @@ export function InspectorPrompts({
                     {expandedPrompt === prompt.name && (
                       <div className="mt-2 pt-2 border-t space-y-2">
                         <div className="text-xs text-muted-foreground">
-                          <div>Name: {prompt.name}</div>
+                          <div>{t("common:name")}: {prompt.name}</div>
                           {prompt.description && (
-                            <div>Description: {prompt.description}</div>
+                            <div>{t("inspector:promptsComponent.description")}: {prompt.description}</div>
                           )}
                         </div>
                         {prompt.arguments && prompt.arguments.length > 0 && (
                           <div>
                             <div className="text-xs font-medium mb-1">
-                              Arguments:
+                              {t("inspector:promptsComponent.arguments")}:
                             </div>
                             <div className="space-y-1">
                               {prompt.arguments.map((arg) => (
@@ -402,7 +402,7 @@ export function InspectorPrompts({
                                     </span>
                                     {arg.required && (
                                       <span className="text-red-500 text-xs">
-                                        required
+                                        {t("inspector:promptsComponent.required")}
                                       </span>
                                     )}
                                   </div>
@@ -429,7 +429,7 @@ export function InspectorPrompts({
             selectedPrompt.arguments &&
             selectedPrompt.arguments.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold mb-2">Arguments</h4>
+                <h4 className="text-sm font-semibold mb-2">{t("inspector:promptsComponent.arguments")}</h4>
                 <div className="space-y-3">
                   {selectedPrompt.arguments.map((arg) => (
                     <div key={arg.name}>
@@ -449,7 +449,7 @@ export function InspectorPrompts({
                         onChange={(e) =>
                           handleArgChange(arg.name, e.target.value)
                         }
-                        placeholder={`Enter ${arg.name} value`}
+                        placeholder={t("inspector:promptsComponent.enterValue", { argName: arg.name })}
                         className="text-xs"
                       />
                     </div>
@@ -466,33 +466,32 @@ export function InspectorPrompts({
               className="w-full"
             >
               <Play className="h-4 w-4 mr-2" />
-              {getting ? "Getting..." : "Get Prompt"}
+              {getting ? t("inspector:promptsComponent.getting") : t("inspector:promptsComponent.getPrompt")}
             </Button>
           )}
         </div>
 
         {/* Right: Prompt Result */}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Prompt Result</h4>
+          <h4 className="text-sm font-semibold">{t("inspector:promptsComponent.promptResult")}</h4>
           {!selectedPrompt ? (
             <div className="text-sm text-muted-foreground">
-              Select a prompt to view its result
+              {t("inspector:promptsComponent.selectPrompt")}
             </div>
           ) : getting ? (
             <div className="text-sm text-muted-foreground">
-              Getting prompt result...
+              {t("inspector:promptsComponent.gettingPromptResult")}
             </div>
           ) : !promptResult ? (
             <div className="text-sm text-muted-foreground">
-              Click &quot;Get Prompt&quot; to retrieve the result for &quot;
-              {selectedPrompt.name}&quot;
+              {t("inspector:promptsComponent.clickGetPrompt", { promptName: selectedPrompt.name })}
             </div>
           ) : (
             <div className="space-y-4">
               {promptResult.description && (
                 <div className="border rounded-lg p-3 bg-gray-50">
                   <div className="text-xs font-medium text-muted-foreground mb-1">
-                    Description
+                    {t("inspector:promptsComponent.description")}
                   </div>
                   <div className="text-sm">{promptResult.description}</div>
                 </div>
@@ -500,7 +499,7 @@ export function InspectorPrompts({
 
               <div>
                 <div className="text-xs font-medium text-muted-foreground mb-2">
-                  Messages ({promptResult.messages.length})
+                  {t("inspector:promptsComponent.messages")} ({promptResult.messages.length})
                 </div>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {promptResult.messages.map((message, index) =>
@@ -519,13 +518,10 @@ export function InspectorPrompts({
           <MessageSquare className="h-5 w-5 text-purple-500 mt-0.5" />
           <div>
             <h4 className="text-sm font-medium text-purple-900 mb-1">
-              About Prompts
+              {t("inspector:promptsComponent.aboutPrompts")}
             </h4>
             <p className="text-xs text-purple-700">
-              Prompts are reusable templates that can generate messages for AI
-              conversations. They can accept arguments to customize the
-              generated content and help maintain consistent interactions across
-              different contexts.
+              {t("inspector:promptsComponent.aboutPromptsDesc")}
             </p>
           </div>
         </div>
