@@ -44,5 +44,16 @@
   "loadingServers": "正在加载服务器...",
   "noMcpServersAvailable": "没有可用的 MCP 服务器。请先创建一些服务器。",
   "selectMcpServersDescription": "选择要包含在此命名空间中的 MCP 服务器。您可以稍后修改。",
-  "creating": "创建中..."
+  "creating": "创建中...",
+  "searchPlaceholder": "搜索命名空间...",
+  "viewDetails": "查看详情",
+  "noDescription": "无描述",
+  "loadingNamespaces": "正在加载命名空间...",
+  "errorLoadingNamespaces": "加载命名空间时出错：",
+  "namespacesTotal": "共 {{count}} 个命名空间",
+  "deleteNamespaceTitle": "删除命名空间",
+  "deleteNamespaceDescription": "您确定要删除 \"{{name}}\" 吗？这将移除命名空间及其所有 MCP 服务器关联。此操作无法撤消。",
+  "deleting": "删除中...",
+  "namespaceDeletedSuccess": "命名空间删除成功",
+  "failedToDeleteNamespace": "删除命名空间失败"
 } 

@@ -44,5 +44,16 @@
   "loadingServers": "Loading servers...",
   "noMcpServersAvailable": "No MCP servers available. Create some servers first.",
   "selectMcpServersDescription": "Select MCP servers to include in this namespace. You can modify this later.",
-  "creating": "Creating..."
+  "creating": "Creating...",
+  "searchPlaceholder": "Search namespaces...",
+  "viewDetails": "View details",
+  "noDescription": "No description",
+  "loadingNamespaces": "Loading namespaces...",
+  "errorLoadingNamespaces": "Error loading namespaces:",
+  "namespacesTotal": "{{count}} namespace(s) total",
+  "deleteNamespaceTitle": "Delete Namespace",
+  "deleteNamespaceDescription": "Are you sure you want to delete \"{{name}}\"? This will remove the namespace and all its MCP server associations. This action cannot be undone.",
+  "deleting": "Deleting...",
+  "namespaceDeletedSuccess": "Namespace deleted successfully",
+  "failedToDeleteNamespace": "Failed to delete namespace"
 } 

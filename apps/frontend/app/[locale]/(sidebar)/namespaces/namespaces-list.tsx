@@ -46,9 +46,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 export function NamespacesList() {
+  const { t } = useTranslations();
   const [sorting, setSorting] = useState<SortingState>([
     {
       id: "created_at",
@@ -81,19 +83,18 @@ export function NamespacesList() {
         utils.frontend.namespaces.list.invalidate();
         setDeleteDialogOpen(false);
         setNamespaceToDelete(null);
-        toast.success("Namespace deleted successfully");
+        toast.success(t("namespaces.namespaceDeletedSuccess"));
       } else {
         // Handle business logic failures
         console.error("Delete failed:", result.message);
-        toast.error("Failed to delete namespace", {
-          description:
-            result.message || "An error occurred while deleting the namespace",
+        toast.error(t("namespaces.failedToDeleteNamespace"), {
+          description: result.message || t("common.unexpectedError"),
         });
       }
     },
     onError: (error) => {
       console.error("Error deleting namespace:", error);
-      toast.error("Failed to delete namespace", {
+      toast.error(t("namespaces.failedToDeleteNamespace"), {
         description: error.message,
       });
     },
@@ -122,7 +123,7 @@ export function NamespacesList() {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Name
+            {t("namespaces.name")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -149,7 +150,7 @@ export function NamespacesList() {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Description
+            {t("common.description")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -164,7 +165,7 @@ export function NamespacesList() {
               </div>
             ) : (
               <div className="text-sm text-muted-foreground italic">
-                No description
+                {t("namespaces.noDescription")}
               </div>
             )}
           </div>
@@ -173,7 +174,7 @@ export function NamespacesList() {
     },
     {
       accessorKey: "user_id",
-      header: "Ownership",
+      header: t("namespaces.ownership"),
       cell: ({ row }) => {
         const namespace = row.original;
         const isPublic = namespace.user_id === null;
@@ -186,7 +187,7 @@ export function NamespacesList() {
                   : "bg-gray-50 text-gray-700 ring-gray-700/10"
               }`}
             >
-              {isPublic ? "Public" : "Private"}
+              {isPublic ? t("namespaces.public") : t("namespaces.private")}
             </span>
           </div>
         );
@@ -200,7 +201,7 @@ export function NamespacesList() {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created
+            {t("namespaces.created")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -244,7 +245,7 @@ export function NamespacesList() {
                     className="flex items-center cursor-pointer"
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View details
+                    {t("namespaces.viewDetails")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -252,7 +253,7 @@ export function NamespacesList() {
                   onClick={handleDeleteClick}
                 >
                   <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                  Delete namespace
+                  {t("namespaces.deleteNamespace")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -284,7 +285,7 @@ export function NamespacesList() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search namespaces..."
+              placeholder={t("namespaces.searchPlaceholder")}
               className="pl-8"
               disabled
             />
@@ -293,7 +294,7 @@ export function NamespacesList() {
 
         <div className="rounded-md border">
           <div className="p-4 text-center text-muted-foreground">
-            Loading namespaces...
+            {t("namespaces.loadingNamespaces")}
           </div>
         </div>
       </div>
@@ -307,7 +308,7 @@ export function NamespacesList() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search namespaces..."
+              placeholder={t("namespaces.searchPlaceholder")}
               className="pl-8"
               disabled
             />
@@ -316,7 +317,7 @@ export function NamespacesList() {
 
         <div className="rounded-md border">
           <div className="p-4 text-center text-red-500">
-            Error loading namespaces: {error.message}
+            {t("namespaces.errorLoadingNamespaces")} {error.message}
           </div>
         </div>
       </div>
@@ -329,7 +330,7 @@ export function NamespacesList() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search namespaces..."
+            placeholder={t("namespaces.searchPlaceholder")}
             value={globalFilter || ""}
             onChange={(event) => setGlobalFilter(event.target.value || "")}
             className="pl-8"
@@ -383,10 +384,10 @@ export function NamespacesList() {
                   <div className="flex flex-col items-center justify-center">
                     <Package className="h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">
-                      No namespaces found.
+                      {t("namespaces.noNamespaces")}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Create your first namespace to get started.
+                      {t("namespaces.createFirstNamespace")}
                     </p>
                   </div>
                 </TableCell>
@@ -397,7 +398,9 @@ export function NamespacesList() {
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} namespace(s) total
+          {t("namespaces.namespacesTotal", {
+            count: table.getFilteredRowModel().rows.length,
+          })}
         </div>
       </div>
 
@@ -405,11 +408,11 @@ export function NamespacesList() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Namespace</DialogTitle>
+            <DialogTitle>{t("namespaces.deleteNamespaceTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;
-              {namespaceToDelete?.name}&quot;? This will remove the namespace
-              and all its MCP server associations. This action cannot be undone.
+              {t("namespaces.deleteNamespaceDescription", {
+                name: namespaceToDelete?.name || "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -421,7 +424,7 @@ export function NamespacesList() {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t("namespaces.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -432,7 +435,7 @@ export function NamespacesList() {
               }}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? t("namespaces.deleting") : t("namespaces.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
