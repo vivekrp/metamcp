@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   EditServerFormData,
   EditServerFormSchema,
@@ -29,7 +28,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 interface EditMcpServerProps {
   server: McpServer | null;
@@ -45,6 +46,7 @@ export function EditMcpServer({
   onSuccess,
 }: EditMcpServerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -145,7 +147,7 @@ export function EditMcpServer({
   });
 
   const editForm = useForm<EditServerFormData>({
-    resolver: zodResolver(EditServerFormSchema),
+    resolver: createTranslatedZodResolver(EditServerFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CreateNamespaceFormData,
   createNamespaceFormSchema,
@@ -30,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 import { NamespacesList } from "./namespaces-list";
 
@@ -77,7 +77,7 @@ export default function NamespacesPage() {
   });
 
   const form = useForm<CreateNamespaceFormData>({
-    resolver: zodResolver(createNamespaceFormSchema),
+    resolver: createTranslatedZodResolver(createNamespaceFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

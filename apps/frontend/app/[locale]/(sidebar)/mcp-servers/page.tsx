@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CreateMcpServerRequest,
   CreateServerFormData,
@@ -39,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 import { ExportImportButtons } from "./export-import-buttons";
 import { McpServersList } from "./mcp-servers-list";
@@ -48,7 +48,7 @@ export default function McpServersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const form = useForm<CreateServerFormData>({
-    resolver: zodResolver(createServerFormSchema),
+    resolver: createTranslatedZodResolver(createServerFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

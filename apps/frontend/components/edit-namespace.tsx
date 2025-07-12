@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   EditNamespaceFormData,
   editNamespaceFormSchema,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 interface EditNamespaceProps {
@@ -41,6 +42,7 @@ export function EditNamespace({
 }: EditNamespaceProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedServerUuids, setSelectedServerUuids] = useState<string[]>([]);
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -84,7 +86,7 @@ export function EditNamespace({
   });
 
   const editForm = useForm<EditNamespaceFormData>({
-    resolver: zodResolver(editNamespaceFormSchema),
+    resolver: createTranslatedZodResolver(editNamespaceFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

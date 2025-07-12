@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   CreateMcpServerRequest,
   CreateServerFormData,
@@ -160,7 +160,7 @@ function CreateServerDialog({
   });
 
   const form = useForm<CreateServerFormData>({
-    resolver: zodResolver(createServerFormSchema),
+    resolver: createTranslatedZodResolver(createServerFormSchema, t),
     defaultValues,
   });
 

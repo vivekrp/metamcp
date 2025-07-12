@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { CreateApiKeyFormSchema } from "@repo/zod-types";
 import { format } from "date-fns";
 import { Copy, Eye, EyeOff, Key, Plus, Trash2 } from "lucide-react";
@@ -36,7 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 type CreateApiKeyFormData = z.infer<typeof CreateApiKeyFormSchema>;
 
@@ -44,6 +45,7 @@ export default function ApiKeysPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+  const { t } = useTranslations();
 
   const { data: apiKeys, refetch } = trpc.apiKeys.list.useQuery();
   const createMutation = trpc.apiKeys.create.useMutation({
@@ -68,7 +70,7 @@ export default function ApiKeysPage() {
   });
 
   const form = useForm<CreateApiKeyFormData>({
-    resolver: zodResolver(CreateApiKeyFormSchema),
+    resolver: createTranslatedZodResolver(CreateApiKeyFormSchema, t),
     defaultValues: {
       name: "",
       user_id: undefined, // Will be set based on ownership selection

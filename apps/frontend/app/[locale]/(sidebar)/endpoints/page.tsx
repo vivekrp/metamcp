@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   CreateEndpointFormData,
   createEndpointFormSchema,
@@ -88,7 +88,7 @@ export default function EndpointsPage() {
   });
 
   const form = useForm<CreateEndpointFormData>({
-    resolver: zodResolver(createEndpointFormSchema),
+    resolver: createTranslatedZodResolver(createEndpointFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

@@ -8,14 +8,14 @@ export const createServerFormSchema = z
   .object({
     name: z
       .string()
-      .min(1, "Name is required")
+      .min(1, "validation:serverName.required")
       .regex(
         /^[a-zA-Z0-9_-]+$/,
-        "Server name must only contain letters, numbers, underscores, and hyphens",
+        "validation:serverName.invalidCharacters",
       )
       .refine(
         (value) => !/_{2,}/.test(value),
-        "Server name cannot contain consecutive underscores",
+        "validation:serverName.consecutiveUnderscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -35,7 +35,7 @@ export const createServerFormSchema = z
       return true;
     },
     {
-      message: "Command is required for stdio servers",
+      message: "validation:command.required",
       path: ["command"],
     },
   )
@@ -60,8 +60,7 @@ export const createServerFormSchema = z
       return true;
     },
     {
-      message:
-        "URL is required and must be valid for SSE and Streamable HTTP types",
+      message: "validation:url.required",
       path: ["url"],
     },
   );
@@ -73,14 +72,14 @@ export const EditServerFormSchema = z
   .object({
     name: z
       .string()
-      .min(1, "Name is required")
+      .min(1, "validation:serverName.required")
       .regex(
         /^[a-zA-Z0-9_-]+$/,
-        "Server name must only contain letters, numbers, underscores, and hyphens",
+        "validation:serverName.invalidCharacters",
       )
       .refine(
         (value) => !/_{2,}/.test(value),
-        "Server name cannot contain consecutive underscores",
+        "validation:serverName.consecutiveUnderscores",
       ),
     description: z.string().optional(),
     type: McpServerTypeEnum,
@@ -100,7 +99,7 @@ export const EditServerFormSchema = z
       return true;
     },
     {
-      message: "Command is required for stdio servers",
+      message: "validation:command.required",
       path: ["command"],
     },
   )
@@ -125,8 +124,7 @@ export const EditServerFormSchema = z
       return true;
     },
     {
-      message:
-        "URL is required and must be valid for SSE and Streamable HTTP types",
+      message: "validation:url.required",
       path: ["url"],
     },
   );

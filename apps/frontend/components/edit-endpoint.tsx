@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   EditEndpointFormData,
   editEndpointFormSchema,
@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 interface EditEndpointProps {
@@ -50,6 +51,7 @@ export function EditEndpoint({
     useState<string>("");
   const [selectedNamespaceName, setSelectedNamespaceName] =
     useState<string>("");
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -105,7 +107,7 @@ export function EditEndpoint({
   });
 
   const editForm = useForm<EditEndpointFormData>({
-    resolver: zodResolver(editEndpointFormSchema),
+    resolver: createTranslatedZodResolver(editEndpointFormSchema, t),
     defaultValues: {
       name: "",
       description: "",

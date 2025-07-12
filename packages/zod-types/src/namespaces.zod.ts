@@ -5,7 +5,7 @@ import { ToolSchema, ToolStatusEnum } from "./tools.zod";
 
 // Namespace schema definitions
 export const createNamespaceFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "validation:namespaceName.required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
   user_id: z.string().nullable().optional(),
@@ -14,7 +14,7 @@ export const createNamespaceFormSchema = z.object({
 export type CreateNamespaceFormData = z.infer<typeof createNamespaceFormSchema>;
 
 export const editNamespaceFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "validation:namespaceName.required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
   user_id: z.string().nullable().optional(),
@@ -23,7 +23,7 @@ export const editNamespaceFormSchema = z.object({
 export type EditNamespaceFormData = z.infer<typeof editNamespaceFormSchema>;
 
 export const CreateNamespaceRequestSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "validation:namespaceName.required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
   user_id: z.string().nullable().optional(),
@@ -85,7 +85,7 @@ export const GetNamespaceToolsResponseSchema = z.object({
 
 export const UpdateNamespaceRequestSchema = z.object({
   uuid: z.string(),
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "validation:namespaceName.required"),
   description: z.string().optional(),
   mcpServerUuids: z.array(z.string()).optional(),
   user_id: z.string().nullable().optional(),

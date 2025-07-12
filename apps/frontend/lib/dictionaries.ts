@@ -13,6 +13,7 @@ export type Dictionary = {
   search: typeof import("../public/locales/en/search.json");
   inspector: typeof import("../public/locales/en/inspector.json");
   logs: typeof import("../public/locales/en/logs.json");
+  validation: typeof import("../public/locales/en/validation.json");
 };
 
 // Supported locales
@@ -55,6 +56,7 @@ export const getDictionary = async (
       search: (await import("../public/locales/en/search.json")).default,
       inspector: (await import("../public/locales/en/inspector.json")).default,
       logs: (await import("../public/locales/en/logs.json")).default,
+      validation: (await import("../public/locales/en/validation.json")).default,
     };
   } else if (locale === "zh") {
     // Load Chinese dictionaries with fallback to English
@@ -70,6 +72,7 @@ export const getDictionary = async (
       searchZh,
       inspectorZh,
       logsZh,
+      validationZh,
     ] = await Promise.all([
       import("../public/locales/zh/common.json").catch(() => ({ default: {} })),
       import("../public/locales/zh/auth.json").catch(() => ({ default: {} })),
@@ -96,6 +99,7 @@ export const getDictionary = async (
         default: {},
       })),
       import("../public/locales/zh/logs.json").catch(() => ({ default: {} })),
+      import("../public/locales/zh/validation.json").catch(() => ({ default: {} })),
     ]);
 
     // Get English fallback
@@ -113,6 +117,7 @@ export const getDictionary = async (
       search: { ...englishDict.search, ...searchZh.default },
       inspector: { ...englishDict.inspector, ...inspectorZh.default },
       logs: { ...englishDict.logs, ...logsZh.default },
+      validation: { ...englishDict.validation, ...validationZh.default },
     };
   } else {
     // Fallback to English for unsupported locales
