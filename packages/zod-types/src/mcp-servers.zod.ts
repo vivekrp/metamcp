@@ -9,10 +9,7 @@ export const createServerFormSchema = z
     name: z
       .string()
       .min(1, "validation:serverName.required")
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "validation:serverName.invalidCharacters",
-      )
+      .regex(/^[a-zA-Z0-9_-]+$/, "validation:serverName.invalidCharacters")
       .refine(
         (value) => !/_{2,}/.test(value),
         "validation:serverName.consecutiveUnderscores",
@@ -73,10 +70,7 @@ export const EditServerFormSchema = z
     name: z
       .string()
       .min(1, "validation:serverName.required")
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "validation:serverName.invalidCharacters",
-      )
+      .regex(/^[a-zA-Z0-9_-]+$/, "validation:serverName.invalidCharacters")
       .refine(
         (value) => !/_{2,}/.test(value),
         "validation:serverName.consecutiveUnderscores",

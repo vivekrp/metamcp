@@ -1,6 +1,5 @@
 "use client";
 
-import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   CreateEndpointFormData,
   createEndpointFormSchema,
@@ -32,6 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 import { EndpointsList } from "./endpoints-list";
 

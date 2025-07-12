@@ -68,7 +68,8 @@ export async function loadTranslations(
       search: (await import("../public/locales/en/search.json")).default,
       inspector: (await import("../public/locales/en/inspector.json")).default,
       logs: (await import("../public/locales/en/logs.json")).default,
-      validation: (await import("../public/locales/en/validation.json")).default,
+      validation: (await import("../public/locales/en/validation.json"))
+        .default,
     };
   } else if (locale === "zh") {
     // Load Chinese translations with fallback to English
@@ -111,7 +112,9 @@ export async function loadTranslations(
         default: {},
       })),
       import("../public/locales/zh/logs.json").catch(() => ({ default: {} })),
-      import("../public/locales/zh/validation.json").catch(() => ({ default: {} })),
+      import("../public/locales/zh/validation.json").catch(() => ({
+        default: {},
+      })),
     ]);
 
     // Get English fallback

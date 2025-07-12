@@ -1,6 +1,5 @@
 "use client";
 
-import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   EditNamespaceFormData,
   editNamespaceFormSchema,
@@ -26,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 interface EditNamespaceProps {
   namespace: NamespaceWithServers | null;

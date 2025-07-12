@@ -1,4 +1,3 @@
-import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import {
   CreateMcpServerRequest,
   CreateServerFormData,
@@ -47,6 +46,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 import type { SearchIndex } from "@/types/search";
 
 interface CreateServerDialogProps {
@@ -291,10 +291,11 @@ function CreateServerDialog({
                         {field.value === McpServerTypeEnum.Enum.STDIO
                           ? "STDIO"
                           : field.value === McpServerTypeEnum.Enum.SSE
-                          ? "SSE"
-                          : field.value === McpServerTypeEnum.Enum.STREAMABLE_HTTP
-                          ? "Streamable HTTP"
-                          : t("search:dialog.form.placeholders.selectType")}
+                            ? "SSE"
+                            : field.value ===
+                                McpServerTypeEnum.Enum.STREAMABLE_HTTP
+                              ? "Streamable HTTP"
+                              : t("search:dialog.form.placeholders.selectType")}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -303,17 +304,23 @@ function CreateServerDialog({
                       align="start"
                     >
                       <DropdownMenuItem
-                        onClick={() => field.onChange(McpServerTypeEnum.Enum.STDIO)}
+                        onClick={() =>
+                          field.onChange(McpServerTypeEnum.Enum.STDIO)
+                        }
                       >
                         STDIO
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => field.onChange(McpServerTypeEnum.Enum.SSE)}
+                        onClick={() =>
+                          field.onChange(McpServerTypeEnum.Enum.SSE)
+                        }
                       >
                         SSE
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => field.onChange(McpServerTypeEnum.Enum.STREAMABLE_HTTP)}
+                        onClick={() =>
+                          field.onChange(McpServerTypeEnum.Enum.STREAMABLE_HTTP)
+                        }
                       >
                         Streamable HTTP
                       </DropdownMenuItem>

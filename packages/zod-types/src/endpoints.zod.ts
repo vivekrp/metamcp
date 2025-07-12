@@ -5,10 +5,7 @@ export const createEndpointFormSchema = z.object({
   name: z
     .string()
     .min(1, "validation:endpointName.required")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      "validation:endpointName.urlCompatible",
-    ),
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid("Please select a valid namespace"),
   enableApiKeyAuth: z.boolean(),
@@ -21,10 +18,7 @@ export const editEndpointFormSchema = z.object({
   name: z
     .string()
     .min(1, "validation:endpointName.required")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      "validation:endpointName.urlCompatible",
-    ),
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid("Please select a valid namespace"),
   enableApiKeyAuth: z.boolean().optional(),

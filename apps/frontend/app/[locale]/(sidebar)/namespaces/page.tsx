@@ -53,7 +53,9 @@ export default function NamespacesPage() {
     onSuccess: (data) => {
       console.log("Namespace created successfully:", data);
       toast.success(t("namespaces:namespaceCreated"), {
-        description: t("namespaces:namespaceCreatedDescription", { name: form.getValues().name }),
+        description: t("namespaces:namespaceCreatedDescription", {
+          name: form.getValues().name,
+        }),
       });
       setCreateOpen(false);
       form.reset({
@@ -181,7 +183,9 @@ export default function NamespacesPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">{t("namespaces:ownership")}</label>
+                  <label className="text-sm font-medium">
+                    {t("namespaces:ownership")}
+                  </label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -277,7 +281,9 @@ export default function NamespacesPage() {
                     {t("namespaces:cancel")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? t("namespaces:creating") : t("namespaces:createNamespace")}
+                    {isSubmitting
+                      ? t("namespaces:creating")
+                      : t("namespaces:createNamespace")}
                   </Button>
                 </div>
               </form>
