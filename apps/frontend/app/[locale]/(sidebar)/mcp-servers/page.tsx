@@ -6,7 +6,7 @@ import {
   createServerFormSchema,
   McpServerTypeEnum,
 } from "@repo/zod-types";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, Server } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -121,13 +121,16 @@ export default function McpServersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("mcp-servers:title")}
-          </h1>
-          <p className="text-muted-foreground">
-            {t("mcp-servers:description")}
-          </p>
+        <div className="flex items-center gap-3">
+          <Server className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("mcp-servers:title")}
+            </h1>
+            <p className="text-muted-foreground">
+              {t("mcp-servers:description")}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <ExportImportButtons />
