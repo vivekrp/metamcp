@@ -313,7 +313,9 @@ function CreateServerDialog({
               name="user_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("search:dialog.form.ownership")}</FormLabel>
+                  <FormLabel>
+                    {t("search:dialog.form.ownershipLabel")}
+                  </FormLabel>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

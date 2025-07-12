@@ -138,15 +138,36 @@ export function getTranslation(
   key: string,
   params?: Record<string, string | number>,
 ): string {
-  const keys = key.split(":");
+  const parts = key.split(":");
   let value: any = dictionary;
 
-  // Navigate through the nested structure
-  for (const k of keys) {
-    if (value && typeof value === "object" && k in value) {
-      value = value[k];
+  // First, navigate to the correct namespace (before the colon)
+  if (parts.length > 1) {
+    const namespace = parts[0]!;
+    if (value && typeof value === "object" && namespace in value) {
+      value = value[namespace];
     } else {
-      return key; // Return the key if translation not found
+      return key; // Return the key if namespace not found
+    }
+
+    // Then navigate through the nested structure using dots
+    const nestedKeys = parts[1]!.split(".");
+    for (const k of nestedKeys) {
+      if (value && typeof value === "object" && k in value) {
+        value = value[k];
+      } else {
+        return key; // Return the key if translation not found
+      }
+    }
+  } else {
+    // Handle keys without namespace (legacy support)
+    const keys = key.split(".");
+    for (const k of keys) {
+      if (value && typeof value === "object" && k in value) {
+        value = value[k];
+      } else {
+        return key; // Return the key if translation not found
+      }
     }
   }
 
@@ -163,3 +184,10 @@ export function getTranslation(
 
   return value;
 }
+
+// Supported key formats:
+// - "namespace:key" - simple namespace with key
+// - "namespace:nested.key" - namespace with nested key using dots
+// - "namespace:deeply.nested.key.path" - namespace with deeply nested key path
+// - "key" - legacy format without namespace (uses dots for nesting)
+// Example: "search:dialog.form.ownership.private" will access dictionary.search.dialog.form.ownership.private

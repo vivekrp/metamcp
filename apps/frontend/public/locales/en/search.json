@@ -43,6 +43,7 @@
       "envVars": "Environment Variables",
       "url": "URL",
       "bearerToken": "Bearer Token (Optional)",
+      "ownershipLabel": "Ownership",
       "placeholders": {
         "name": "Enter server name",
         "description": "Enter server description",
