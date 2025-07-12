@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface InspectorToolsProps {
   makeRequest: <T extends z.ZodType>(
@@ -59,6 +60,7 @@ export function InspectorTools({
   makeRequest,
   enabled = true,
 }: InspectorToolsProps) {
+  const { t } = useTranslations();
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -70,7 +72,7 @@ export function InspectorTools({
   // Fetch available tools with proper error handling pattern from official inspector
   const fetchTools = async (cursor?: string) => {
     if (!enabled) {
-      toast.warning("Tools capability not available on this server");
+      toast.warning(t("inspector:toolsComponent.toolsNotSupportedWarning"));
       return;
     }
 
@@ -96,18 +98,18 @@ export function InspectorTools({
       setNextCursor(response.nextCursor);
 
       if (response.tools && response.tools.length > 0) {
-        toast.success(`Found ${response.tools.length} tools`);
+        toast.success(t("inspector:toolsComponent.foundTools", { count: response.tools.length }));
         // Auto-select first tool if none selected
         if (!selectedTool && response.tools.length > 0) {
           // @ts-expect-error TODO resolve MCP SDK Tool schema mismatch
           setSelectedTool(response.tools[0]);
         }
       } else {
-        toast.info("No tools found");
+        toast.info(t("inspector:toolsComponent.noToolsFound"));
       }
     } catch (error) {
       console.error("Error listing tools:", error);
-      toast.error("Failed to list tools", {
+      toast.error(t("inspector:toolsComponent.listTools"), {
         description: error instanceof Error ? error.message : String(error),
       });
       setTools([]);
@@ -203,8 +205,8 @@ export function InspectorTools({
           arguments_obj[input.key] = input.value;
         }
       } catch (_error) {
-        toast.error(`Invalid JSON in parameter "${input.key}"`, {
-          description: "Please check your JSON syntax and try again.",
+        toast.error(t("inspector:toolsComponent.invalidJson", { paramName: input.key }), {
+          description: t("inspector:toolsComponent.invalidJsonDescription"),
         });
         return;
       }
@@ -250,8 +252,8 @@ export function InspectorTools({
         prev.map((exec) => (exec.id === executionId ? successExecution : exec)),
       );
 
-      toast.success(`Tool "${selectedTool.name}" executed successfully`, {
-        description: `Completed in ${duration}ms`,
+      toast.success(t("inspector:toolsComponent.toolExecutedSuccess", { toolName: selectedTool.name }), {
+        description: t("inspector:toolsComponent.toolExecutedSuccessDescription", { duration }),
       });
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -269,7 +271,7 @@ export function InspectorTools({
         prev.map((exec) => (exec.id === executionId ? failedExecution : exec)),
       );
 
-      toast.error(`Tool "${selectedTool.name}" execution failed`, {
+      toast.error(t("inspector:toolsComponent.toolExecutionFailed", { toolName: selectedTool.name }), {
         description: errorString,
       });
     } finally {
@@ -285,9 +287,9 @@ export function InspectorTools({
 
   const formatDuration = (duration: number) => {
     if (duration < 1000) {
-      return `${duration}ms`;
+      return t("inspector:toolsComponent.formatDuration.milliseconds", { duration });
     }
-    return `${(duration / 1000).toFixed(2)}s`;
+    return t("inspector:toolsComponent.formatDuration.seconds", { duration: (duration / 1000).toFixed(2) });
   };
 
   const getStatusIcon = (status: string) => {
@@ -308,9 +310,9 @@ export function InspectorTools({
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-        <h4 className="text-sm font-medium">Tools Not Available</h4>
+        <h4 className="text-sm font-medium">{t("inspector:toolsComponent.toolsNotSupported")}</h4>
         <p className="text-sm text-muted-foreground mt-1">
-          This MCP server does not support the tools capability.
+          {t("inspector:toolsComponent.toolsNotSupportedDesc")}
         </p>
       </div>
     );
@@ -322,9 +324,9 @@ export function InspectorTools({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wrench className="h-5 w-5 text-blue-500" />
-          <span className="text-sm font-medium">Tools Testing</span>
+          <span className="text-sm font-medium">{t("inspector:toolsComponent.title")}</span>
           <span className="text-xs text-muted-foreground">
-            Test and debug available tools
+            {t("inspector:toolsComponent.subtitle")}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -334,10 +336,10 @@ export function InspectorTools({
             onClick={clearTools}
             disabled={loading || tools.length === 0}
           >
-            Clear
+            {t("inspector:toolsComponent.clear")}
           </Button>
           <Button onClick={() => fetchTools()} disabled={loading} size="sm">
-            {loading ? "Loading..." : "List Tools"}
+            {loading ? t("inspector:toolsComponent.loading") : t("inspector:toolsComponent.listTools")}
           </Button>
           {nextCursor && (
             <Button
@@ -346,7 +348,7 @@ export function InspectorTools({
               onClick={() => fetchTools(nextCursor)}
               disabled={loading}
             >
-              Load More
+              {t("inspector:toolsComponent.loadMore")}
             </Button>
           )}
         </div>
@@ -357,7 +359,7 @@ export function InspectorTools({
         {/* Left Column - Tools List */}
         <div className="space-y-4">
           <h5 className="text-sm font-medium">
-            Available Tools ({tools.length})
+            {t("inspector:toolsComponent.toolsCount", { count: tools.length })}
           </h5>
 
           {tools.length > 0 ? (
@@ -384,7 +386,7 @@ export function InspectorTools({
               <div className="rounded-lg border border-dashed p-6 text-center">
                 <Wrench className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Click &quot;List Tools&quot; to load available tools
+                  {t("inspector:toolsComponent.clickListTools")}
                 </p>
               </div>
             )
@@ -394,7 +396,7 @@ export function InspectorTools({
           {selectedTool && (
             <div className="space-y-4">
               <div>
-                <h6 className="text-sm font-medium mb-2">Tool Details</h6>
+                <h6 className="text-sm font-medium mb-2">{t("inspector:toolsComponent.toolDetails")}</h6>
                 <div className="rounded-lg border p-3">
                   <div className="font-mono text-sm mb-1">
                     {selectedTool.name}
@@ -410,7 +412,7 @@ export function InspectorTools({
               {/* Arguments Form */}
               {argumentInputs.length > 0 && (
                 <div>
-                  <h6 className="text-sm font-medium mb-2">Arguments</h6>
+                  <h6 className="text-sm font-medium mb-2">{t("inspector:toolsComponent.arguments")}</h6>
                   <div className="space-y-3">
                     {argumentInputs.map((input) => (
                       <div key={input.key}>
@@ -431,7 +433,7 @@ export function InspectorTools({
                             onChange={(e) =>
                               updateArgumentValue(input.key, e.target.value)
                             }
-                            placeholder={`Enter ${input.type} value...`}
+                            placeholder={t("inspector:toolsComponent.enterValue", { type: input.type })}
                             className="font-mono text-xs"
                             rows={3}
                           />
@@ -442,7 +444,7 @@ export function InspectorTools({
                             onChange={(e) =>
                               updateArgumentValue(input.key, e.target.value)
                             }
-                            placeholder={`Enter ${input.type} value...`}
+                            placeholder={t("inspector:toolsComponent.enterValue", { type: input.type })}
                             className={
                               input.type === "number" ? "" : "font-mono"
                             }
@@ -465,7 +467,7 @@ export function InspectorTools({
                 ) : (
                   <Play className="h-4 w-4" />
                 )}
-                {executing ? "Calling..." : "Call Tool"}
+                {executing ? t("inspector:toolsComponent.calling") : t("inspector:toolsComponent.callTool")}
               </Button>
             </div>
           )}
@@ -474,7 +476,7 @@ export function InspectorTools({
         {/* Right Column - Execution and History */}
         <div className="space-y-4">
           <h5 className="text-sm font-medium">
-            Execution History ({executions.length})
+            {t("inspector:toolsComponent.executionHistoryCount", { count: executions.length })}
           </h5>
 
           {executions.length > 0 ? (
@@ -500,7 +502,7 @@ export function InspectorTools({
                   {Object.keys(execution.arguments).length > 0 && (
                     <div className="mb-2">
                       <div className="text-xs font-medium text-muted-foreground mb-1">
-                        Arguments:
+                        {t("inspector:toolsComponent.arguments")}:
                       </div>
                       <CodeBlock
                         language="json"
@@ -515,7 +517,7 @@ export function InspectorTools({
                   {/* Error */}
                   {execution.error && (
                     <div className="text-xs text-red-600 bg-red-50 p-2 rounded mb-2">
-                      <div className="font-medium mb-1">Error:</div>
+                      <div className="font-medium mb-1">{t("inspector:toolsComponent.error")}:</div>
                       {execution.error}
                     </div>
                   )}
@@ -524,7 +526,7 @@ export function InspectorTools({
                   {execution.result && (
                     <div>
                       <div className="text-xs font-medium text-muted-foreground mb-1">
-                        Result:
+                        {t("inspector:toolsComponent.result")}:
                       </div>
                       <CodeBlock
                         language="json"
@@ -542,7 +544,7 @@ export function InspectorTools({
             <div className="rounded-lg border border-dashed p-6 text-center">
               <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                No executions yet. Select a tool and execute it to see results.
+                {t("inspector:toolsComponent.noExecutions")}
               </p>
             </div>
           )}
