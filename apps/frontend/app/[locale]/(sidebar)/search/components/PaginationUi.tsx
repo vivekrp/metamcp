@@ -1,12 +1,19 @@
+"use client";
+
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
+} from "lucide-react";
+import * as React from "react";
+
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface PaginationUiProps {
   currentPage: number;
@@ -19,6 +26,7 @@ export function PaginationUi({
   totalPages,
   onPageChange,
 }: PaginationUiProps) {
+  const { t } = useTranslations();
   const showEllipsisStart = currentPage > 3;
   const showEllipsisEnd = currentPage < totalPages - 2;
 
@@ -57,13 +65,53 @@ export function PaginationUi({
     return pages;
   };
 
+  // Create localized pagination components
+  const LocalizedPaginationPrevious = ({
+    onClick,
+    ...props
+  }: React.ComponentProps<typeof PaginationLink>) => (
+    <PaginationLink
+      aria-label={t("common:pagination.goToPage", { page: currentPage - 1 })}
+      size="default"
+      className="gap-1 px-2.5 sm:pl-2.5"
+      onClick={onClick}
+      {...props}
+    >
+      <ChevronLeftIcon />
+      <span className="hidden sm:block">{t("common:pagination.previous")}</span>
+    </PaginationLink>
+  );
+
+  const LocalizedPaginationNext = ({
+    onClick,
+    ...props
+  }: React.ComponentProps<typeof PaginationLink>) => (
+    <PaginationLink
+      aria-label={t("common:pagination.goToPage", { page: currentPage + 1 })}
+      size="default"
+      className="gap-1 px-2.5 sm:pr-2.5"
+      onClick={onClick}
+      {...props}
+    >
+      <span className="hidden sm:block">{t("common:pagination.next")}</span>
+      <ChevronRightIcon />
+    </PaginationLink>
+  );
+
+  const LocalizedPaginationEllipsis = () => (
+    <span aria-hidden className="flex size-9 items-center justify-center">
+      <MoreHorizontalIcon className="size-4" />
+      <span className="sr-only">{t("common:pagination.morePages")}</span>
+    </span>
+  );
+
   return (
     <Pagination className="justify-center">
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious
+          <LocalizedPaginationPrevious
             href="#"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.preventDefault();
               if (currentPage > 1) onPageChange(currentPage - 1);
             }}
@@ -73,17 +121,18 @@ export function PaginationUi({
         {getPageNumbers().map((pageNum, idx) =>
           pageNum === -1 ? (
             <PaginationItem key={`ellipsis-${idx}`}>
-              <PaginationEllipsis />
+              <LocalizedPaginationEllipsis />
             </PaginationItem>
           ) : (
             <PaginationItem key={pageNum}>
               <PaginationLink
                 href="#"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
                   onPageChange(pageNum);
                 }}
                 isActive={pageNum === currentPage}
+                aria-label={t("common:pagination.goToPage", { page: pageNum })}
               >
                 {pageNum}
               </PaginationLink>
@@ -92,9 +141,9 @@ export function PaginationUi({
         )}
 
         <PaginationItem>
-          <PaginationNext
+          <LocalizedPaginationNext
             href="#"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.preventDefault();
               if (currentPage < totalPages) onPageChange(currentPage + 1);
             }}

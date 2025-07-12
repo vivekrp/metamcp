@@ -64,5 +64,13 @@
     "processingCallback": "Processing OAuth callback...",
     "authorizationInProgress": "Authorization in progress...",
     "redirecting": "Redirecting..."
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "goToPage": "Go to page {{page}}",
+    "morePages": "More pages"
   }
 } 
