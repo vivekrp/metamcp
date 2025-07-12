@@ -49,11 +49,11 @@ export function LanguageSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="space-y-1">
-        {SUPPORTED_LOCALES.map((locale) => (
+        {SUPPORTED_LOCALES.map((locale, index) => (
           <DropdownMenuItem
             key={locale}
             onClick={() => handleLanguageChange(locale)}
-            className={`mb-1 ${currentLocale === locale ? "bg-accent" : ""}`}
+            className={`${index < SUPPORTED_LOCALES.length - 1 ? "mb-1" : ""} ${currentLocale === locale ? "bg-accent" : ""}`}
           >
             {LOCALE_NAMES[locale]}
           </DropdownMenuItem>

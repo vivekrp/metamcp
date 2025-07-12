@@ -3,7 +3,7 @@
 import {
   FileTerminal,
   Key,
-  Link,
+  Link as LinkIcon,
   Package,
   Search,
   SearchCode,
@@ -11,6 +11,7 @@ import {
   Settings,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -55,7 +56,7 @@ const getMenuItems = (t: (key: string) => string) => [
   {
     title: t("navigation:metamcpEndpoints"),
     url: "/endpoints",
-    icon: Link,
+    icon: LinkIcon,
   },
   {
     title: t("navigation:mcpInspector"),
@@ -80,11 +81,11 @@ function LiveLogsMenuItem() {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
-        <a href="/live-logs">
+        <Link href="/live-logs">
           <FileTerminal />
           <span>{t("navigation:liveLogs")}</span>
           <LogsStatusIndicator />
-        </a>
+        </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -116,7 +117,7 @@ function UserInfoFooter() {
         </div>
         <Separator />
         {user && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2">
             <div className="flex flex-col">
               <span className="text-sm font-medium">
                 {user.name || user.email}
@@ -125,7 +126,7 @@ function UserInfoFooter() {
                 {user.email}
               </span>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
               {t("auth:signOut")}
             </Button>
           </div>
@@ -167,10 +168,10 @@ export default function SidebarLayout({
                 {items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
