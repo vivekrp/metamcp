@@ -15,6 +15,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslations } from "@/hooks/useTranslations";
 
 import { InspectorPing } from "./inspector/inspector-ping";
 import { InspectorPrompts } from "./inspector/inspector-prompts";
@@ -38,6 +39,7 @@ export function Inspector({
   makeRequest,
   serverCapabilities,
 }: InspectorProps) {
+  const { t } = useTranslations();
   const [activeTab, setActiveTab] = useState("tools");
 
   // Check server capabilities to determine which tabs to show
@@ -51,7 +53,7 @@ export function Inspector({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <SearchCode className="h-5 w-5 text-muted-foreground" />
-        <h4 className="text-sm font-medium">MCP Inspector</h4>
+        <h4 className="text-sm font-medium">{t("inspector:title")}</h4>
         <span className="text-xs text-muted-foreground">
           Interactive testing and debugging interface
         </span>
@@ -61,27 +63,27 @@ export function Inspector({
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="tools" className="flex items-center gap-1">
             <Wrench className="h-4 w-4" />
-            Tools
+            {t("inspector:tools")}
           </TabsTrigger>
           <TabsTrigger value="resources" className="flex items-center gap-1">
             <FileText className="h-4 w-4" />
-            Resources
+            {t("inspector:resources")}
           </TabsTrigger>
           <TabsTrigger value="prompts" className="flex items-center gap-1">
             <MessageSquare className="h-4 w-4" />
-            Prompts
+            {t("inspector:prompts")}
           </TabsTrigger>
           <TabsTrigger value="ping" className="flex items-center gap-1">
             <Zap className="h-4 w-4" />
-            Ping
+            {t("inspector:ping")}
           </TabsTrigger>
           <TabsTrigger value="roots" className="flex items-center gap-1">
             <FolderTree className="h-4 w-4" />
-            Roots
+            {t("inspector:roots")}
           </TabsTrigger>
           <TabsTrigger value="sampling" className="flex items-center gap-1">
             <ActivitySquare className="h-4 w-4" />
-            Sampling
+            {t("inspector:sampling")}
           </TabsTrigger>
         </TabsList>
 

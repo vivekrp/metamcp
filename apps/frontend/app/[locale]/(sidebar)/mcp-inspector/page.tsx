@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useConnection } from "@/hooks/useConnection";
+import { useTranslations } from "@/hooks/useTranslations";
 import { Notification } from "@/lib/notificationTypes";
 import { trpc } from "@/lib/trpc";
 
@@ -30,6 +31,7 @@ interface NotificationEntry {
 }
 
 function McpInspectorContent() {
+  const { t } = useTranslations();
   const [selectedServerUuid, setSelectedServerUuid] = useState<string>("");
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
@@ -151,14 +153,14 @@ function McpInspectorContent() {
   const getConnectionStatusInfo = () => {
     switch (connection.connectionStatus) {
       case "connected":
-        return { text: "Connected", color: "text-green-600" };
+        return { text: t("inspector:connected"), color: "text-green-600" };
       case "disconnected":
-        return { text: "Disconnected", color: "text-gray-500" };
+        return { text: t("inspector:disconnected"), color: "text-gray-500" };
       case "error":
       case "error-connecting-to-proxy":
-        return { text: "Connection Error", color: "text-red-600" };
+        return { text: t("inspector:connectionError"), color: "text-red-600" };
       default:
-        return { text: "Connecting...", color: "text-yellow-600" };
+        return { text: t("inspector:connecting"), color: "text-yellow-600" };
     }
   };
 
@@ -184,9 +186,9 @@ function McpInspectorContent() {
         <div className="flex items-center gap-3">
           <SearchCode className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">MCP Inspector</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("inspector:title")}</h1>
             <p className="text-muted-foreground">
-              Interactive testing and debugging interface for MCP servers
+              {t("inspector:subtitle")}
             </p>
           </div>
         </div>
@@ -195,7 +197,7 @@ function McpInspectorContent() {
 
         {/* MCP Server Selection */}
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">Server:</span>
+          <span className="text-sm font-medium">{t("inspector:serverSelection")}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -203,17 +205,17 @@ function McpInspectorContent() {
                 className="justify-between min-w-[300px]"
               >
                 <span>
-                  {selectedServer ? selectedServer.name : "Select a server..."}
+                  {selectedServer ? selectedServer.name : t("inspector:selectServerDropdown")}
                 </span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[300px]">
               {serversLoading ? (
-                <DropdownMenuItem disabled>Loading servers...</DropdownMenuItem>
+                <DropdownMenuItem disabled>{t("inspector:loadingServers")}</DropdownMenuItem>
               ) : servers.length === 0 ? (
                 <DropdownMenuItem disabled>
-                  No servers available
+                  {t("inspector:noServersAvailable")}
                 </DropdownMenuItem>
               ) : (
                 servers.map((server) => (
@@ -237,7 +239,7 @@ function McpInspectorContent() {
           {/* Connection Status and Controls */}
           {selectedServer && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Status:</span>
+              <span className="text-sm text-muted-foreground">{t("inspector:connectionStatus")}</span>
               <span className={`text-sm font-medium ${connectionInfo.color}`}>
                 {connectionInfo.text}
               </span>
@@ -248,8 +250,8 @@ function McpInspectorContent() {
                 disabled={connection.connectionStatus === "connecting"}
               >
                 {connection.connectionStatus === "connected"
-                  ? "Reconnect"
-                  : "Connect"}
+                  ? t("inspector:reconnectButton")
+                  : t("inspector:connectButton")}
               </Button>
               <Button
                 variant="outline"
@@ -257,7 +259,7 @@ function McpInspectorContent() {
                 onClick={() => setEditDialogOpen(true)}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Server
+                {t("inspector:editServerButton")}
               </Button>
             </div>
           )}
@@ -289,8 +291,8 @@ function McpInspectorContent() {
               <div className="flex justify-center">
                 <div className="text-sm text-muted-foreground">
                   {connection.connectionStatus === "connecting"
-                    ? "Connecting to MCP server..."
-                    : "Connect to MCP server to start inspecting"}
+                    ? t("inspector:connectingToServer")
+                    : t("inspector:connectToStart")}
                 </div>
               </div>
             </div>
@@ -298,10 +300,9 @@ function McpInspectorContent() {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Server className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Server Selected</h3>
+            <h3 className="text-lg font-semibold mb-2">{t("inspector:noServerSelected")}</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Please select an MCP server from the dropdown above to start
-              inspecting its capabilities and testing its functionality.
+              {t("inspector:noServerSelectedDesc")}
             </p>
           </div>
         )}
