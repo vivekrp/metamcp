@@ -22,4 +22,4 @@ export function useTranslations() {
   };
 
   return { t, isLoading, locale };
-} 
+}

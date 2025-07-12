@@ -10,7 +10,7 @@ export function useLocale() {
   useEffect(() => {
     const segments = pathname.split("/").filter(Boolean);
     const firstSegment = segments[0];
-    
+
     if (SUPPORTED_LOCALES.includes(firstSegment as SupportedLocale)) {
       setLocale(firstSegment as SupportedLocale);
     } else {
@@ -19,4 +19,4 @@ export function useLocale() {
   }, [pathname]);
 
   return locale;
-} 
+}
