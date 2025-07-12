@@ -24,6 +24,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface ResourceContent {
   uri: string;
@@ -45,6 +46,7 @@ export function InspectorResources({
   makeRequest,
   enabled = true,
 }: InspectorResourcesProps) {
+  const { t } = useTranslations();
   const [resources, setResources] = useState<Resource[]>([]);
   const [resourceTemplates, setResourceTemplates] = useState<
     ResourceTemplate[]
@@ -94,11 +96,11 @@ export function InspectorResources({
         setNextResourceCursor(response.nextCursor);
 
         if (response.resources && response.resources.length === 0 && !cursor) {
-          toast.info("No resources found on MCP server");
+          toast.info(t("inspector:resourcesComponent.noResourcesFound"));
         }
       } catch (error) {
         console.error("Error fetching resources:", error);
-        toast.error("Failed to fetch resources from MCP server", {
+        toast.error(t("inspector:resourcesComponent.fetchResourcesError"), {
           description: error instanceof Error ? error.message : String(error),
         });
         if (!cursor) {
@@ -144,7 +146,9 @@ export function InspectorResources({
           response.resourceTemplates.length === 0 &&
           !cursor
         ) {
-          toast.info("No resource templates found on MCP server");
+          toast.info(
+            t("inspector:resourcesComponent.noResourceTemplatesFound"),
+          );
         }
       } catch (error) {
         console.error("Error fetching resource templates:", error);
@@ -190,15 +194,19 @@ export function InspectorResources({
       if (response?.contents && response.contents.length > 0) {
         setResourceContent(response.contents[0]!);
         toast.success(
-          `Resource "${resource.name || resource.uri}" read successfully`,
+          t("inspector:resourcesComponent.resourceReadSuccess", {
+            resourceName: resource.name || resource.uri,
+          }),
         );
       } else {
-        toast.error("No content found in resource");
+        toast.error(t("inspector:resourcesComponent.noContentFound"));
       }
     } catch (error) {
       console.error("Error reading resource:", error);
       toast.error(
-        `Failed to read resource "${resource.name || resource.uri}"`,
+        t("inspector:resourcesComponent.resourceReadError", {
+          resourceName: resource.name || resource.uri,
+        }),
         {
           description: error instanceof Error ? error.message : String(error),
         },
@@ -225,10 +233,12 @@ export function InspectorResources({
       newSubscriptions.add(uri);
       setResourceSubscriptions(newSubscriptions);
 
-      toast.success(`Subscribed to resource "${uri}"`);
+      toast.success(
+        t("inspector:resourcesComponent.subscribeSuccess", { uri }),
+      );
     } catch (error) {
       console.error("Error subscribing to resource:", error);
-      toast.error(`Failed to subscribe to resource "${uri}"`, {
+      toast.error(t("inspector:resourcesComponent.subscribeError", { uri }), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -251,10 +261,12 @@ export function InspectorResources({
       newSubscriptions.delete(uri);
       setResourceSubscriptions(newSubscriptions);
 
-      toast.success(`Unsubscribed from resource "${uri}"`);
+      toast.success(
+        t("inspector:resourcesComponent.unsubscribeSuccess", { uri }),
+      );
     } catch (error) {
       console.error("Error unsubscribing from resource:", error);
-      toast.error(`Failed to unsubscribe from resource "${uri}"`, {
+      toast.error(t("inspector:resourcesComponent.unsubscribeError", { uri }), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -264,9 +276,11 @@ export function InspectorResources({
     if (content.text) {
       return content.text;
     } else if (content.blob) {
-      return `[Binary content - ${content.blob.length} characters]`;
+      return t("inspector:resourcesComponent.binaryContent", {
+        length: content.blob.length,
+      });
     }
-    return "[No content available]";
+    return t("inspector:resourcesComponent.noContentAvailable");
   };
 
   const getResourceDisplayName = (resource: Resource) => {
@@ -277,9 +291,11 @@ export function InspectorResources({
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-        <h4 className="text-sm font-medium">Resources Not Supported</h4>
+        <h4 className="text-sm font-medium">
+          {t("inspector:resourcesComponent.resourcesNotSupported")}
+        </h4>
         <p className="text-xs text-muted-foreground mt-1">
-          This MCP server doesn&apos;t support resources.
+          {t("inspector:resourcesComponent.resourcesNotSupportedDesc")}
         </p>
       </div>
     );
@@ -292,7 +308,9 @@ export function InspectorResources({
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-green-500" />
           <span className="text-sm font-medium">
-            Resources ({resources.length})
+            {t("inspector:resourcesComponent.resourcesCount", {
+              count: resources.length,
+            })}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -302,7 +320,7 @@ export function InspectorResources({
             onClick={clearResources}
             disabled={loading || resources.length === 0}
           >
-            Clear
+            {t("inspector:resourcesComponent.clear")}
           </Button>
           <Button
             variant="outline"
@@ -313,7 +331,9 @@ export function InspectorResources({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            {loading ? "Loading..." : "Load Resources"}
+            {loading
+              ? t("inspector:resourcesComponent.loading")
+              : t("inspector:resourcesComponent.loadResources")}
           </Button>
           {nextResourceCursor && (
             <Button
@@ -322,7 +342,7 @@ export function InspectorResources({
               onClick={() => fetchResources(nextResourceCursor)}
               disabled={loading}
             >
-              Load More
+              {t("inspector:resourcesComponent.loadMore")}
             </Button>
           )}
         </div>
@@ -335,7 +355,9 @@ export function InspectorResources({
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4 text-blue-500" />
               <span className="text-sm font-medium">
-                Resource Templates ({resourceTemplates.length})
+                {t("inspector:resourcesComponent.resourceTemplatesCount", {
+                  count: resourceTemplates.length,
+                })}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -345,7 +367,7 @@ export function InspectorResources({
                 onClick={clearResourceTemplates}
                 disabled={templatesLoading || resourceTemplates.length === 0}
               >
-                Clear Templates
+                {t("inspector:resourcesComponent.clearTemplates")}
               </Button>
               {nextTemplateCursor && (
                 <Button
@@ -354,7 +376,7 @@ export function InspectorResources({
                   onClick={() => fetchResourceTemplates(nextTemplateCursor)}
                   disabled={templatesLoading}
                 >
-                  Load More Templates
+                  {t("inspector:resourcesComponent.loadMoreTemplates")}
                 </Button>
               )}
             </div>
@@ -369,7 +391,8 @@ export function InspectorResources({
                 <div className="flex items-center gap-2 mb-1">
                   <Plus className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">
-                    {template.name || "Unnamed Template"}
+                    {template.name ||
+                      t("inspector:resourcesComponent.unnamedTemplate")}
                   </span>
                 </div>
                 {template.description && (
@@ -390,15 +413,16 @@ export function InspectorResources({
       <div className="grid gap-4 md:grid-cols-2">
         {/* Left: Resource List */}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Available Resources</h4>
+          <h4 className="text-sm font-semibold">
+            {t("inspector:resourcesComponent.availableResources")}
+          </h4>
           {loading && resources.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              Loading resources...
+              {t("inspector:resourcesComponent.loadingResources")}
             </div>
           ) : resources.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              Click &quot;Load Resources&quot; to fetch available resources from
-              the MCP server.
+              {t("inspector:resourcesComponent.clickLoadResources")}
             </div>
           ) : (
             <div className="space-y-1">
@@ -432,7 +456,7 @@ export function InspectorResources({
                     <div className="flex items-center gap-1">
                       {resourceSubscriptions.has(resource.uri) && (
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          Subscribed
+                          {t("inspector:resourcesComponent.subscribed")}
                         </span>
                       )}
                       <button
@@ -457,9 +481,15 @@ export function InspectorResources({
                   {expandedResource === resource.uri && (
                     <div className="mt-2 pt-2 border-t space-y-2">
                       <div className="text-xs text-muted-foreground">
-                        <div>URI: {resource.uri}</div>
+                        <div>
+                          {t("inspector:resourcesComponent.uri")}:{" "}
+                          {resource.uri}
+                        </div>
                         {resource.mimeType && (
-                          <div>MIME Type: {resource.mimeType}</div>
+                          <div>
+                            {t("inspector:resourcesComponent.mimeType")}:{" "}
+                            {resource.mimeType}
+                          </div>
                         )}
                       </div>
                       <div className="flex gap-2">
@@ -472,7 +502,7 @@ export function InspectorResources({
                           disabled={reading}
                         >
                           <Eye className="h-3 w-3 mr-1" />
-                          Read
+                          {t("inspector:resourcesComponent.read")}
                         </Button>
                         {!resourceSubscriptions.has(resource.uri) ? (
                           <Button
@@ -483,7 +513,7 @@ export function InspectorResources({
                               subscribeToResource(resource.uri);
                             }}
                           >
-                            Subscribe
+                            {t("inspector:resourcesComponent.subscribe")}
                           </Button>
                         ) : (
                           <Button
@@ -494,7 +524,7 @@ export function InspectorResources({
                               unsubscribeFromResource(resource.uri);
                             }}
                           >
-                            Unsubscribe
+                            {t("inspector:resourcesComponent.unsubscribe")}
                           </Button>
                         )}
                       </div>
@@ -508,26 +538,34 @@ export function InspectorResources({
 
         {/* Right: Resource Content */}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Resource Content</h4>
+          <h4 className="text-sm font-semibold">
+            {t("inspector:resourcesComponent.resourceContent")}
+          </h4>
           {!selectedResource ? (
             <div className="text-sm text-muted-foreground">
-              Select a resource to view its content
+              {t("inspector:resourcesComponent.selectResource")}
             </div>
           ) : reading ? (
             <div className="text-sm text-muted-foreground">
-              Reading resource content...
+              {t("inspector:resourcesComponent.readingContent")}
             </div>
           ) : !resourceContent ? (
             <div className="text-sm text-muted-foreground">
-              Click &quot;Read&quot; to load the content of &quot;
-              {getResourceDisplayName(selectedResource)}&quot;
+              {t("inspector:resourcesComponent.clickRead", {
+                resourceName: getResourceDisplayName(selectedResource),
+              })}
             </div>
           ) : (
             <div className="space-y-2">
               <div className="text-xs text-muted-foreground">
-                <div>URI: {resourceContent.uri}</div>
+                <div>
+                  {t("inspector:resourcesComponent.uri")}: {resourceContent.uri}
+                </div>
                 {resourceContent.mimeType && (
-                  <div>MIME Type: {resourceContent.mimeType}</div>
+                  <div>
+                    {t("inspector:resourcesComponent.mimeType")}:{" "}
+                    {resourceContent.mimeType}
+                  </div>
                 )}
               </div>
               <div className="border rounded-lg p-3 bg-gray-50 max-h-96 overflow-y-auto">
@@ -551,13 +589,10 @@ export function InspectorResources({
           <FileText className="h-5 w-5 text-green-500 mt-0.5" />
           <div>
             <h4 className="text-sm font-medium text-green-900 mb-1">
-              About Resources
+              {t("inspector:resourcesComponent.aboutResources")}
             </h4>
             <p className="text-xs text-green-700">
-              Resources provide access to data that the MCP server can read.
-              This includes files, web content, databases, or any other data
-              sources. You can subscribe to resources to receive notifications
-              when they change.
+              {t("inspector:resourcesComponent.aboutResourcesDesc")}
             </p>
           </div>
         </div>
