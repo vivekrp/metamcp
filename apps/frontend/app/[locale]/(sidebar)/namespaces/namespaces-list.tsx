@@ -179,7 +179,7 @@ export function NamespacesList() {
         const namespace = row.original;
         const isPublic = namespace.user_id === null;
         return (
-          <div className="px-3 py-2">
+          <div className="py-2">
             <span
               className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                 isPublic
