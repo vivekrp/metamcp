@@ -35,53 +35,54 @@ import {
 } from "@/components/ui/sidebar";
 import { useTranslations } from "@/hooks/useTranslations";
 import { authClient } from "@/lib/auth-client";
+import { getLocalizedPath, SupportedLocale } from "@/lib/i18n";
 
-// Menu items function
-const getMenuItems = (t: (key: string) => string) => [
+// Menu items function - now takes locale parameter
+const getMenuItems = (t: (key: string) => string, locale: SupportedLocale) => [
   {
     title: t("navigation:exploreMcpServers"),
-    url: "/search",
+    url: getLocalizedPath("/search", locale),
     icon: Search,
   },
   {
     title: t("navigation:mcpServers"),
-    url: "/mcp-servers",
+    url: getLocalizedPath("/mcp-servers", locale),
     icon: Server,
   },
   {
     title: t("navigation:metamcpNamespaces"),
-    url: "/namespaces",
+    url: getLocalizedPath("/namespaces", locale),
     icon: Package,
   },
   {
     title: t("navigation:metamcpEndpoints"),
-    url: "/endpoints",
+    url: getLocalizedPath("/endpoints", locale),
     icon: LinkIcon,
   },
   {
     title: t("navigation:mcpInspector"),
-    url: "/mcp-inspector",
+    url: getLocalizedPath("/mcp-inspector", locale),
     icon: SearchCode,
   },
   {
     title: t("navigation:apiKeys"),
-    url: "/api-keys",
+    url: getLocalizedPath("/api-keys", locale),
     icon: Key,
   },
   {
     title: t("navigation:settings"),
-    url: "/settings",
+    url: getLocalizedPath("/settings", locale),
     icon: Settings,
   },
 ];
 
 function LiveLogsMenuItem() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
-        <Link href="/live-logs">
+        <Link href={getLocalizedPath("/live-logs", locale)}>
           <FileTerminal />
           <span>{t("navigation:liveLogs")}</span>
           <LogsStatusIndicator />
@@ -141,8 +142,8 @@ export default function SidebarLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { t } = useTranslations();
-  const items = getMenuItems(t);
+  const { t, locale } = useTranslations();
+  const items = getMenuItems(t, locale);
 
   return (
     <SidebarProvider>
