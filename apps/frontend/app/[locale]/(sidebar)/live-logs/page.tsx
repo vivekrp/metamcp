@@ -15,9 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslations } from "@/hooks/useTranslations";
 import { useLogsStore } from "@/lib/stores/logs-store";
 
 export default function LiveLogsPage() {
+  const { t } = useTranslations();
   const [showClearDialog, setShowClearDialog] = useState(false);
   const {
     logs,
@@ -33,28 +35,28 @@ export default function LiveLogsPage() {
   const handleClearLogs = async () => {
     try {
       await clearLogs();
-      toast.success("Logs cleared successfully");
+      toast.success(t("logs:logsClearSuccess"));
       setShowClearDialog(false);
     } catch (_error) {
-      toast.error("Failed to clear logs");
+      toast.error(t("logs:logsClearError"));
     }
   };
 
   const handleRefresh = async () => {
     try {
       await fetchLogs();
-      toast.success("Logs refreshed");
+      toast.success(t("logs:refreshSuccess"));
     } catch (_error) {
-      toast.error("Failed to refresh logs");
+      toast.error(t("logs:refreshError"));
     }
   };
 
   const handleToggleAutoRefresh = () => {
     setAutoRefresh(!isAutoRefreshing);
     if (!isAutoRefreshing) {
-      toast.success("Auto-refresh enabled");
+      toast.success(t("logs:autoRefreshEnabled"));
     } else {
-      toast.info("Auto-refresh disabled");
+      toast.info(t("logs:autoRefreshDisabled"));
     }
   };
 
@@ -81,21 +83,29 @@ export default function LiveLogsPage() {
         <div className="flex items-center gap-3">
           <FileTerminal className="h-6 w-6 text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-semibold">Live Logs</h1>
+            <h1 className="text-2xl font-semibold">{t("logs:title")}</h1>
             <p className="text-sm text-muted-foreground">
-              MetaMCP server logs and error messages
+              {t("logs:subtitle")}
               {lastFetch && (
                 <span className="ml-2">
-                  (Last updated: {formatTimestamp(lastFetch)})
+                  (
+                  {t("logs:lastUpdated", {
+                    timestamp: formatTimestamp(lastFetch),
+                  })}
+                  )
                 </span>
               )}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">{totalCount} total logs</Badge>
+          <Badge variant="outline">
+            {t("logs:totalLogs", { count: totalCount })}
+          </Badge>
           <Button variant="outline" size="sm" onClick={handleToggleAutoRefresh}>
-            {isAutoRefreshing ? "Stop" : "Start"} Auto-refresh
+            {isAutoRefreshing
+              ? t("logs:stopAutoRefresh")
+              : t("logs:startAutoRefresh")}
           </Button>
           <Button
             variant="outline"
@@ -106,7 +116,7 @@ export default function LiveLogsPage() {
             <RefreshCw
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
             />
-            Refresh
+            {t("logs:refresh")}
           </Button>
           <Button
             variant="destructive"
@@ -115,7 +125,7 @@ export default function LiveLogsPage() {
             disabled={isLoading || logs.length === 0}
           >
             <Trash2 className="h-4 w-4" />
-            Clear logs
+            {t("logs:clearLogs")}
           </Button>
         </div>
       </div>
@@ -123,10 +133,10 @@ export default function LiveLogsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span>Console Output</span>
+            <span>{t("logs:consoleOutput")}</span>
             {isAutoRefreshing && (
               <Badge variant="secondary" className="text-xs">
-                Live
+                {t("logs:live")}
               </Badge>
             )}
           </CardTitle>
@@ -135,7 +145,7 @@ export default function LiveLogsPage() {
           <div className="bg-black rounded-lg p-4 font-mono text-sm max-h-[600px] overflow-y-auto">
             {logs.length === 0 ? (
               <div className="text-gray-400 text-center py-8">
-                {isLoading ? "Loading logs..." : "No logs to display"}
+                {isLoading ? t("logs:loadingLogs") : t("logs:noLogsDisplay")}
               </div>
             ) : (
               <div className="space-y-1">
@@ -167,22 +177,19 @@ export default function LiveLogsPage() {
 
       {logs.length > 0 && (
         <div className="text-sm text-muted-foreground text-center">
-          Showing {logs.length} of {totalCount} logs (newest first)
+          {t("logs:showingLogs", { count: logs.length, total: totalCount })}
         </div>
       )}
 
       <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Clear All Logs</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to clear all logs? This action cannot be
-              undone and will permanently remove all log entries.
-            </DialogDescription>
+            <DialogTitle>{t("logs:clearAllLogs")}</DialogTitle>
+            <DialogDescription>{t("logs:clearLogsConfirm")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowClearDialog(false)}>
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -190,7 +197,7 @@ export default function LiveLogsPage() {
               disabled={isLoading}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear logs
+              {t("logs:clearLogs")}
             </Button>
           </DialogFooter>
         </DialogContent>
