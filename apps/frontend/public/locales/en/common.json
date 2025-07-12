@@ -47,6 +47,8 @@
   "chinese": "中文",
   "current": "Current",
   "creating": "Creating...",
+  "updating": "Updating...",
+  "unexpectedError": "An unexpected error occurred",
   "corsError": {
     "title": "CORS Policy Violation",
     "description": "You're accessing MetaMCP from an unauthorized domain. For security reasons, this application enforces a strict CORS (Cross-Origin Resource Sharing) policy.",

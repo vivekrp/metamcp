@@ -47,6 +47,8 @@
   "chinese": "中文",
   "current": "当前",
   "creating": "创建中...",
+  "updating": "更新中...",
+  "unexpectedError": "发生了意外错误",
   "corsError": {
     "title": "CORS 策略违规",
     "description": "您正在从未授权的域访问 MetaMCP。出于安全考虑，此应用程序实施严格的 CORS（跨域资源共享）策略。",
