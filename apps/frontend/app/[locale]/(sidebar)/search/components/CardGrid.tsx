@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 import type { SearchIndex } from "@/types/search";
 
@@ -56,6 +57,7 @@ function CreateServerDialog({
   defaultValues,
 }: CreateServerDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslations();
 
   // Get the tRPC query client for cache invalidation
   const utils = trpc.useUtils();
@@ -65,8 +67,10 @@ function CreateServerDialog({
     onSuccess: (data) => {
       // Check if the operation was actually successful
       if (data.success) {
-        toast.success("MCP Server Created", {
-          description: `Successfully created "${form.getValues().name}" server`,
+        toast.success(t("search:dialog.messages.success"), {
+          description: t("search:dialog.messages.successDescription", {
+            name: form.getValues().name,
+          }),
         });
         onOpenChange(false);
         form.reset(defaultValues);
@@ -74,7 +78,8 @@ function CreateServerDialog({
         utils.frontend.mcpServers.list.invalidate();
       } else {
         // Handle business logic errors returned by the backend
-        const errorMessage = data.message || "Failed to create MCP server";
+        const errorMessage =
+          data.message || t("search:dialog.messages.createFailed");
 
         // Check if this is a unique constraint violation for server name
         if (
@@ -86,8 +91,8 @@ function CreateServerDialog({
             type: "manual",
             message: errorMessage,
           });
-          toast.error("Server Name Already Exists", {
-            description: "Please choose a different server name",
+          toast.error(t("search:dialog.messages.nameExists"), {
+            description: t("search:dialog.messages.nameExistsDescription"),
           });
         } else if (
           errorMessage.includes("is invalid") &&
@@ -98,13 +103,12 @@ function CreateServerDialog({
             type: "manual",
             message: errorMessage,
           });
-          toast.error("Invalid Server Name", {
-            description:
-              "Server names must only contain letters, numbers, underscores, and hyphens",
+          toast.error(t("search:dialog.messages.invalidName"), {
+            description: t("search:dialog.messages.invalidNameDescription"),
           });
         } else {
           // Generic error handling
-          toast.error("Failed to Create Server", {
+          toast.error(t("search:dialog.messages.createFailed"), {
             description: errorMessage,
           });
         }
@@ -123,8 +127,8 @@ function CreateServerDialog({
           type: "manual",
           message: error.message,
         });
-        toast.error("Server Name Already Exists", {
-          description: "Please choose a different server name",
+        toast.error(t("search:dialog.messages.nameExists"), {
+          description: t("search:dialog.messages.nameExistsDescription"),
         });
       } else if (
         error.message.includes("is invalid") &&
@@ -135,14 +139,14 @@ function CreateServerDialog({
           type: "manual",
           message: error.message,
         });
-        toast.error("Invalid Server Name", {
-          description:
-            "Server names must only contain letters, numbers, underscores, and hyphens",
+        toast.error(t("search:dialog.messages.invalidName"), {
+          description: t("search:dialog.messages.invalidNameDescription"),
         });
       } else {
         // Generic error handling
-        toast.error("Failed to Create Server", {
-          description: error.message || "An unexpected error occurred",
+        toast.error(t("search:dialog.messages.createFailed"), {
+          description:
+            error.message || t("search:dialog.messages.unexpectedError"),
         });
       }
     },
@@ -224,9 +228,9 @@ function CreateServerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create MCP Server</DialogTitle>
+          <DialogTitle>{t("search:dialog.title")}</DialogTitle>
           <DialogDescription>
-            Configure a new Model Context Protocol server.
+            {t("search:dialog.description")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -236,9 +240,12 @@ function CreateServerDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("search:dialog.form.name")}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter server name" />
+                    <Input
+                      {...field}
+                      placeholder={t("search:dialog.form.placeholders.name")}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -250,11 +257,13 @@ function CreateServerDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("search:dialog.form.description")}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Enter server description"
+                      placeholder={t(
+                        "search:dialog.form.placeholders.description",
+                      )}
                       rows={3}
                     />
                   </FormControl>
@@ -268,14 +277,15 @@ function CreateServerDialog({
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
+                  <FormLabel>{t("search:dialog.form.type")}</FormLabel>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
                         className="w-full justify-between"
                       >
-                        {field.value || "Select type"}
+                        {field.value ||
+                          t("search:dialog.form.placeholders.selectType")}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -303,7 +313,7 @@ function CreateServerDialog({
               name="user_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ownership</FormLabel>
+                  <FormLabel>{t("search:dialog.form.ownership")}</FormLabel>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -311,8 +321,8 @@ function CreateServerDialog({
                         className="w-full justify-between"
                       >
                         {field.value === null
-                          ? "Everyone (Public)"
-                          : "For myself (Private)"}
+                          ? t("search:dialog.form.ownership.public")
+                          : t("search:dialog.form.ownership.private")}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -323,16 +333,15 @@ function CreateServerDialog({
                       <DropdownMenuItem
                         onClick={() => field.onChange(undefined)}
                       >
-                        For myself (Private)
+                        {t("search:dialog.form.ownership.private")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => field.onChange(null)}>
-                        Everyone (Public)
+                        {t("search:dialog.form.ownership.public")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Private servers are only accessible to you. Public servers
-                    are accessible to all users.
+                    {t("search:dialog.form.ownership.helpText")}
                   </p>
                   <FormMessage />
                 </FormItem>
@@ -346,9 +355,14 @@ function CreateServerDialog({
                   name="command"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Command</FormLabel>
+                      <FormLabel>{t("search:dialog.form.command")}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., npx" />
+                        <Input
+                          {...field}
+                          placeholder={t(
+                            "search:dialog.form.placeholders.command",
+                          )}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -360,11 +374,13 @@ function CreateServerDialog({
                   name="args"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Arguments</FormLabel>
+                      <FormLabel>{t("search:dialog.form.arguments")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="Space-separated arguments"
+                          placeholder={t(
+                            "search:dialog.form.placeholders.arguments",
+                          )}
                         />
                       </FormControl>
                       <FormMessage />
@@ -377,11 +393,13 @@ function CreateServerDialog({
                   name="env"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Environment Variables</FormLabel>
+                      <FormLabel>{t("search:dialog.form.envVars")}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="KEY=value (one per line)"
+                          placeholder={t(
+                            "search:dialog.form.placeholders.envVars",
+                          )}
                           rows={3}
                         />
                       </FormControl>
@@ -401,11 +419,11 @@ function CreateServerDialog({
                   name="url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL</FormLabel>
+                      <FormLabel>{t("search:dialog.form.url")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="https://example.com"
+                          placeholder={t("search:dialog.form.placeholders.url")}
                           type="url"
                         />
                       </FormControl>
@@ -419,9 +437,16 @@ function CreateServerDialog({
                   name="bearerToken"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bearer Token (Optional)</FormLabel>
+                      <FormLabel>
+                        {t("search:dialog.form.bearerToken")}
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Bearer token" />
+                        <Input
+                          {...field}
+                          placeholder={t(
+                            "search:dialog.form.placeholders.bearerToken",
+                          )}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -440,10 +465,12 @@ function CreateServerDialog({
                 }}
                 disabled={isSubmitting}
               >
-                Cancel
+                {t("search:dialog.buttons.cancel")}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Server"}
+                {isSubmitting
+                  ? t("search:dialog.buttons.creating")
+                  : t("search:dialog.buttons.create")}
               </Button>
             </div>
           </form>
@@ -458,6 +485,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
   const [selectedItem, setSelectedItem] = useState<CreateServerFormData | null>(
     null,
   );
+  const { t } = useTranslations();
 
   const handleAddServer = (item: SearchIndex[string]) => {
     // Prepare default values for the form
@@ -497,7 +525,9 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
             <CardContent className="flex-grow space-y-3">
               {item.package_name && (
                 <div>
-                  <span className="text-sm font-medium">Package:</span>{" "}
+                  <span className="text-sm font-medium">
+                    {t("search:card.package")}
+                  </span>{" "}
                   <span className="text-sm text-muted-foreground">
                     {item.package_name}
                   </span>
@@ -505,7 +535,9 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
               )}
 
               <div>
-                <span className="text-sm font-medium">Command:</span>{" "}
+                <span className="text-sm font-medium">
+                  {t("search:card.command")}
+                </span>{" "}
                 <code className="text-sm bg-muted px-1 py-0.5 rounded">
                   {item.command}
                 </code>
@@ -513,7 +545,9 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
 
               {item.args && item.args.length > 0 && (
                 <div>
-                  <span className="text-sm font-medium">Args:</span>{" "}
+                  <span className="text-sm font-medium">
+                    {t("search:card.args")}
+                  </span>{" "}
                   <code className="text-sm bg-muted px-1 py-0.5 rounded">
                     {item.args.join(" ")}
                   </code>
@@ -523,7 +557,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
               {item.envs.length > 0 && (
                 <div>
                   <span className="text-sm font-medium block mb-2">
-                    Environment Variables:
+                    {t("search:card.envVars")}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {item.envs.map((env) => (
@@ -537,7 +571,9 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
 
               {item.package_registry && (
                 <div>
-                  <span className="text-sm font-medium">Registry:</span>{" "}
+                  <span className="text-sm font-medium">
+                    {t("search:card.registry")}
+                  </span>{" "}
                   <span className="text-sm text-muted-foreground">
                     {item.package_registry}
                   </span>
@@ -553,7 +589,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
                     rel="noopener noreferrer"
                   >
                     <Github className="w-4 h-4 mr-2" />
-                    GitHub
+                    {t("search:card.github")}
                   </Link>
                 </Button>
               )}
@@ -564,7 +600,7 @@ export default function CardGrid({ items }: { items: SearchIndex }) {
                 onClick={() => handleAddServer(item)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Server
+                {t("search:card.addServer")}
               </Button>
             </CardFooter>
           </Card>
