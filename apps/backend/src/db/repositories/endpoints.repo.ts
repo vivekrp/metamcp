@@ -72,7 +72,9 @@ export class EndpointsRepository {
   }
 
   // Find endpoints accessible to a specific user with namespace data (public + user's own endpoints)
-  async findAllAccessibleToUserWithNamespaces(userId: string): Promise<DatabaseEndpointWithNamespace[]> {
+  async findAllAccessibleToUserWithNamespaces(
+    userId: string,
+  ): Promise<DatabaseEndpointWithNamespace[]> {
     const endpointsData = await db
       .select({
         // Endpoint fields

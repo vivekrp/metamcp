@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     "MetaMCP is dev platform for dynamically configuring and deploying MCPs",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+interface RootLayoutProps {
   children: React.ReactNode;
-}>) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html>
       <head>
         <PublicEnvScript />
       </head>

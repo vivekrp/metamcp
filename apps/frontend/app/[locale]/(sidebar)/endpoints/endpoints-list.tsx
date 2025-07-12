@@ -49,9 +49,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getAppUrl } from "@/lib/env";
 import { trpc } from "@/lib/trpc";
-
-import { getAppUrl } from "../../../lib/env";
 
 interface EndpointsListProps {
   onRefresh?: () => void;

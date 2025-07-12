@@ -11,7 +11,9 @@ import {
   Settings,
 } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LogsStatusIndicator } from "@/components/logs-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -30,59 +32,57 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useTranslations } from "@/hooks/useTranslations";
 import { authClient } from "@/lib/auth-client";
 
-// Menu items (removed Home item)
-const items = [
+// Menu items function
+const getMenuItems = (t: (key: string) => string) => [
   {
-    title: "Explore MCP Servers (beta)",
+    title: t("navigation:exploreMcpServers"),
     url: "/search",
     icon: Search,
   },
   {
-    title: "MCP Servers",
+    title: t("navigation:mcpServers"),
     url: "/mcp-servers",
     icon: Server,
   },
   {
-    title: "MetaMCP Namespaces",
+    title: t("navigation:metamcpNamespaces"),
     url: "/namespaces",
     icon: Package,
   },
   {
-    title: "MetaMCP Endpoints",
+    title: t("navigation:metamcpEndpoints"),
     url: "/endpoints",
     icon: Link,
   },
   {
-    title: "MCP Inspector",
+    title: t("navigation:mcpInspector"),
     url: "/mcp-inspector",
     icon: SearchCode,
   },
   {
-    title: "API Keys",
+    title: t("navigation:apiKeys"),
     url: "/api-keys",
     icon: Key,
   },
   {
-    title: "Settings",
+    title: t("navigation:settings"),
     url: "/settings",
     icon: Settings,
   },
 ];
 
 function LiveLogsMenuItem() {
+  const { t } = useTranslations();
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
-        <a
-          href="/live-logs"
-          className="flex items-center justify-between w-full"
-        >
-          <div className="flex items-center gap-2">
-            <FileTerminal className="h-4 w-4" />
-            <span>Live Logs</span>
-          </div>
+        <a href="/live-logs">
+          <FileTerminal />
+          <span>{t("navigation:liveLogs")}</span>
           <LogsStatusIndicator />
         </a>
       </SidebarMenuButton>
@@ -91,45 +91,45 @@ function LiveLogsMenuItem() {
 }
 
 function UserInfoFooter() {
-  const { data: session } = authClient.useSession();
+  const { t } = useTranslations();
+  const [user, setUser] = useState<any>(null);
+
+  // Get user info
+  useEffect(() => {
+    authClient.getSession().then((session) => {
+      if (session?.data?.user) {
+        setUser(session.data.user);
+      }
+    });
+  }, []);
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          window.location.href = "/login";
-        },
-      },
-    });
+    await authClient.signOut();
+    window.location.href = "/login";
   };
-
-  if (!session?.user) {
-    return null;
-  }
 
   return (
     <SidebarFooter>
-      <div className="space-y-3 p-2">
-        <Separator />
-        <div className="space-y-2">
-          <div className="text-xs text-muted-foreground">Signed in as</div>
-          <div className="space-y-1">
-            <div className="text-sm font-medium truncate">
-              {session.user.name}
-            </div>
-            <div className="text-xs text-muted-foreground truncate">
-              {session.user.email}
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSignOut}
-            className="w-full"
-          >
-            Sign Out
-          </Button>
+      <div className="flex flex-col gap-2 p-2">
+        <div className="flex items-center justify-between">
+          <LanguageSwitcher />
         </div>
+        <Separator />
+        {user && (
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">
+                {user.name || user.email}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {user.email}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              {t("auth:signOut")}
+            </Button>
+          </div>
+        )}
       </div>
     </SidebarFooter>
   );
@@ -140,6 +140,9 @@ export default function SidebarLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useTranslations();
+  const items = getMenuItems(t);
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -158,7 +161,7 @@ export default function SidebarLayout({
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Application</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("navigation:application")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map((item) => (
@@ -182,7 +185,7 @@ export default function SidebarLayout({
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1 cursor-pointer" />
+            <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
           </div>
         </header>
