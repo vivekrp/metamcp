@@ -25,7 +25,7 @@ export const endpointsImplementations = {
     userId: string,
   ): Promise<z.infer<typeof CreateEndpointResponseSchema>> => {
     try {
-      // Check if endpoint name already exists
+      // Check if endpoint name already exists (must be globally unique)
       const existingEndpoint = await endpointsRepository.findByName(input.name);
       if (existingEndpoint) {
         return {

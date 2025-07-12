@@ -58,23 +58,32 @@ export default function EndpointsPage() {
   // tRPC mutation for creating endpoint
   const createEndpointMutation = trpc.frontend.endpoints.create.useMutation({
     onSuccess: (data) => {
-      console.log("Endpoint created successfully:", data);
-      toast.success(t("endpoints:endpointCreated"), {
-        description: t("endpoints:endpointCreatedDescription", {
-          name: form.getValues().name,
-        }),
-      });
-      setCreateOpen(false);
-      form.reset({
-        name: "",
-        description: "",
-        namespaceUuid: "",
-        user_id: undefined, // Default to "For myself" (Private)
-      });
-      setSelectedNamespaceUuid("");
-      setSelectedNamespaceName("");
-      // Invalidate and refetch the endpoint list
-      utils.frontend.endpoints.list.invalidate();
+      // Check if the operation was actually successful
+      if (data.success) {
+        console.log("Endpoint created successfully:", data);
+        toast.success(t("endpoints:endpointCreated"), {
+          description: t("endpoints:endpointCreatedDescription", {
+            name: form.getValues().name,
+          }),
+        });
+        setCreateOpen(false);
+        form.reset({
+          name: "",
+          description: "",
+          namespaceUuid: "",
+          user_id: undefined, // Default to "For myself" (Private)
+        });
+        setSelectedNamespaceUuid("");
+        setSelectedNamespaceName("");
+        // Invalidate and refetch the endpoint list
+        utils.frontend.endpoints.list.invalidate();
+      } else {
+        // Handle business logic failures
+        console.error("Endpoint creation failed:", data.message);
+        toast.error(t("endpoints:createEndpointError"), {
+          description: data.message || "An unexpected error occurred",
+        });
+      }
     },
     onError: (error) => {
       console.error("Error creating endpoint:", error);

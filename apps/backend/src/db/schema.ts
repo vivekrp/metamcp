@@ -250,8 +250,8 @@ export const endpointsTable = pgTable(
   (table) => [
     index("endpoints_namespace_uuid_idx").on(table.namespace_uuid),
     index("endpoints_user_id_idx").on(table.user_id),
-    // Allow same name for different users, but unique within user scope (including public)
-    unique("endpoints_name_user_unique_idx").on(table.name, table.user_id),
+    // Endpoints must be globally unique because they're used in URLs like /metamcp/[name]/sse
+    unique("endpoints_name_unique").on(table.name),
     sql`CONSTRAINT endpoints_name_url_compatible_check CHECK (
         name ~ '^[a-zA-Z0-9_-]+$'
       )`,
