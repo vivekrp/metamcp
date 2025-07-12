@@ -19,9 +19,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 export function ExportImportButtons() {
+  const { t } = useTranslations();
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [importJson, setImportJson] = useState("");
@@ -40,13 +42,24 @@ export function ExportImportButtons() {
       // Check if the operation was actually successful
       if (result.success) {
         console.log(`Successfully imported ${result.imported} MCP servers`);
-        toast.success("MCP Servers Imported", {
-          description: `Successfully imported ${result.imported} server${result.imported !== 1 ? "s" : ""}`,
+        const plural = result.imported !== 1 ? "s" : "";
+        toast.success(t("mcp-servers:import.imported"), {
+          description: t("mcp-servers:import.importedDescription", {
+            count: result.imported,
+            plural,
+          }),
         });
         if (result.errors && result.errors.length > 0) {
           console.warn("Import errors:", result.errors);
-          toast.warning("Import Completed with Warnings", {
-            description: `${result.errors.length} server${result.errors.length !== 1 ? "s" : ""} failed to import`,
+          const errorPlural = result.errors.length !== 1 ? "s" : "";
+          toast.warning(t("mcp-servers:import.importedWithWarnings"), {
+            description: t(
+              "mcp-servers:import.importedWithWarningsDescription",
+              {
+                count: result.errors.length,
+                plural: errorPlural,
+              },
+            ),
           });
         }
 
@@ -60,20 +73,22 @@ export function ExportImportButtons() {
       } else {
         // Handle business logic failures
         console.error("Import failed:", result.message);
-        toast.error("Import Failed", {
-          description: result.message || "Failed to import servers",
+        toast.error(t("mcp-servers:import.importFailed"), {
+          description:
+            result.message || t("mcp-servers:import.importFailedDescription"),
         });
-        setImportError(result.message || "Failed to import servers");
+        setImportError(
+          result.message || t("mcp-servers:import.importFailedDescription"),
+        );
       }
     },
     onError: (error) => {
       console.error("Error importing MCP servers:", error);
-      toast.error("Import Failed", {
-        description: error.message || "Failed to import servers",
+      toast.error(t("mcp-servers:import.importFailed"), {
+        description:
+          error.message || t("mcp-servers:import.importFailedDescription"),
       });
-      setImportError(
-        "Failed to import servers. Check the console for details.",
-      );
+      setImportError(t("mcp-servers:import.checkConsole"));
     },
   });
 
@@ -133,8 +148,8 @@ export function ExportImportButtons() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Export Downloaded", {
-      description: "MCP servers configuration has been downloaded",
+    toast.success(t("mcp-servers:export.downloaded"), {
+      description: t("mcp-servers:export.downloadedDescription"),
     });
   };
 
@@ -143,8 +158,8 @@ export function ExportImportButtons() {
     const exportData = generateExportJson();
     const jsonString = JSON.stringify(exportData, null, 2);
     navigator.clipboard.writeText(jsonString).then(() => {
-      toast.success("Copied to Clipboard", {
-        description: "MCP servers configuration has been copied to clipboard",
+      toast.success(t("mcp-servers:export.copiedToClipboard"), {
+        description: t("mcp-servers:export.copiedDescription"),
       });
     });
   };
@@ -156,13 +171,13 @@ export function ExportImportButtons() {
     try {
       parsedJson = JSON.parse(importJson);
     } catch (_e) {
-      setImportError("Invalid JSON format");
+      setImportError(t("mcp-servers:import.invalidJson"));
       return;
     }
 
     // Validate the JSON structure
     if (!parsedJson.mcpServers || typeof parsedJson.mcpServers !== "object") {
-      setImportError('JSON must contain a "mcpServers" object');
+      setImportError(t("mcp-servers:import.invalidStructure"));
       return;
     }
 
@@ -183,20 +198,21 @@ export function ExportImportButtons() {
         <DialogTrigger asChild>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Export JSON
+            {t("mcp-servers:export.exportJson")}
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Export MCP Servers</DialogTitle>
+            <DialogTitle>{t("mcp-servers:export.title")}</DialogTitle>
             <DialogDescription>
-              Export your MCP server configurations as JSON. You can download
-              the file or copy it to clipboard.
+              {t("mcp-servers:export.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Preview:</label>
+              <label className="text-sm font-medium mb-2 block">
+                {t("mcp-servers:export.preview")}
+              </label>
               <CodeBlock language="json" maxHeight="256px" className="text-xs">
                 {JSON.stringify(generateExportJson(), null, 2)}
               </CodeBlock>
@@ -207,13 +223,13 @@ export function ExportImportButtons() {
                 variant="outline"
                 onClick={() => setExportOpen(false)}
               >
-                Close
+                {t("common:close")}
               </Button>
               <Button type="button" variant="outline" onClick={copyExportJson}>
-                Copy to Clipboard
+                {t("mcp-servers:export.copyToClipboard")}
               </Button>
               <Button type="button" onClick={downloadExportJson}>
-                Download JSON
+                {t("mcp-servers:export.downloadJson")}
               </Button>
             </div>
           </div>
@@ -225,16 +241,14 @@ export function ExportImportButtons() {
         <DialogTrigger asChild>
           <Button variant="outline">
             <Upload className="mr-2 h-4 w-4" />
-            Import JSON
+            {t("mcp-servers:import.importJson")}
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Import MCP Servers</DialogTitle>
+            <DialogTitle>{t("mcp-servers:import.title")}</DialogTitle>
             <DialogDescription>
-              Import multiple MCP server configurations from JSON. This will
-              incrementally add MCP servers without overwriting what you have
-              here. The JSON should follow the format:
+              {t("mcp-servers:import.description")}
             </DialogDescription>
             <CodeBlock
               language="json"
@@ -267,15 +281,17 @@ export function ExportImportButtons() {
             </CodeBlock>
           </DialogHeader>
           <div className="space-y-4 flex-1 overflow-hidden">
-            <div className="flex flex-col h-full">
-              <label className="text-sm font-medium mb-2">JSON Content:</label>
+            <div className="flex flex-col h-full p-1">
+              <label className="text-sm font-medium mb-2">
+                {t("mcp-servers:import.jsonContent")}
+              </label>
               <Textarea
                 value={importJson}
                 onChange={(e) => {
                   setImportJson(e.target.value);
                   setImportError("");
                 }}
-                placeholder="Paste your JSON here"
+                placeholder={t("mcp-servers:import.placeholder")}
                 className="font-mono text-sm flex-1 min-h-[200px] max-h-[300px] resize-none overflow-y-auto"
               />
               {importError && (
@@ -294,14 +310,16 @@ export function ExportImportButtons() {
               }}
               disabled={bulkImportMutation.isPending}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               type="button"
               disabled={bulkImportMutation.isPending}
               onClick={handleImport}
             >
-              {bulkImportMutation.isPending ? "Importing..." : "Import"}
+              {bulkImportMutation.isPending
+                ? t("mcp-servers:import.importing")
+                : t("mcp-servers:import.importJson")}
             </Button>
           </div>
         </DialogContent>
