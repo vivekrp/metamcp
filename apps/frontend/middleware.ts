@@ -9,7 +9,7 @@ function getLocale(request: NextRequest): string {
   // Check if there's a locale in the pathname
   const pathname = request.nextUrl.pathname;
   const pathnameHasLocale = locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   );
 
   if (pathnameHasLocale) {
@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
 
   // Handle i18n routing first
   const pathnameHasLocale = locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   );
 
   let locale = defaultLocale;
