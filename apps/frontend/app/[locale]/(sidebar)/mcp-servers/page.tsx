@@ -62,8 +62,13 @@ export default function McpServersPage() {
     },
   });
 
+  // Get tRPC utils for cache invalidation
+  const utils = trpc.useUtils();
+
   const createMutation = trpc.frontend.mcpServers.create.useMutation({
     onSuccess: () => {
+      // Invalidate and refetch the server list
+      utils.frontend.mcpServers.list.invalidate();
       setIsDialogOpen(false);
       form.reset();
       toast.success(t("mcp-servers:serverCreated"));

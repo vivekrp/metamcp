@@ -55,7 +55,7 @@ export function Inspector({
         <SearchCode className="h-5 w-5 text-muted-foreground" />
         <h4 className="text-sm font-medium">{t("inspector:title")}</h4>
         <span className="text-xs text-muted-foreground">
-          Interactive testing and debugging interface
+          {t("inspector:subtitle")}
         </span>
       </div>
 
