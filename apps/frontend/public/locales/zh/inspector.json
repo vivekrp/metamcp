@@ -51,5 +51,29 @@
   "lastRefresh": "最后刷新",
   "autoRefresh": "自动刷新",
   "enableAutoRefresh": "启用自动刷新",
-  "disableAutoRefresh": "禁用自动刷新"
+  "disableAutoRefresh": "禁用自动刷新",
+  "pingComponent": {
+    "title": "服务器连接测试",
+    "clearHistory": "清除历史",
+    "pinging": "测试中...",
+    "currentStatus": "当前状态",
+    "serverResponsive": "服务器响应",
+    "serverUnreachable": "服务器不可达",
+    "method": "方法",
+    "successRate": "成功率",
+    "avgResponse": "平均响应",
+    "totalPings": "总测试次数",
+    "pingHistory": "测试历史",
+    "noPingHistory": "暂无测试历史。点击“测试服务器”来测试连接。",
+    "success": "成功",
+    "failed": "失败",
+    "aboutPing": "关于测试",
+    "aboutPingDescription": "测试功能检查MCP服务器是否响应。它首先尝试标准的“ping”方法，如果不可用，则回退到使用“tools/list”来验证服务器是否可达。响应时间有助于评估服务器性能。",
+    "pingSuccessMessage": "测试成功 ({{duration}}ms)",
+    "pingFallbackMessage": "服务器通过回退方式响应 ({{duration}}ms)",
+    "pingFailedMessage": "测试失败 ({{duration}}ms)",
+    "fallbackMethod": "tools/list (回退)",
+    "pingAndFallback": "ping + 回退",
+    "error": "错误"
+  }
 } 

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface PingHistory {
   id: string;
@@ -30,6 +31,7 @@ interface InspectorPingProps {
 }
 
 export function InspectorPing({ makeRequest }: InspectorPingProps) {
+  const { t } = useTranslations();
   const [pinging, setPinging] = useState(false);
   const [pingHistory, setPingHistory] = useState<PingHistory[]>([]);
   const [currentPing, setCurrentPing] = useState<PingHistory | null>(null);
@@ -70,7 +72,9 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
 
       setCurrentPing(successPing);
       setPingHistory((prev) => [successPing, ...prev].slice(0, 10)); // Keep last 10 pings
-      toast.success(`Ping successful (${duration}ms)`);
+      toast.success(
+        t("inspector:pingComponent.pingSuccessMessage", { duration }),
+      );
     } catch (_pingError) {
       // If ping method doesn't exist, try a fallback method
       try {
@@ -91,12 +95,14 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
           ...newPing,
           success: true,
           duration,
-          method: "tools/list (fallback)",
+          method: t("inspector:pingComponent.fallbackMethod"),
         };
 
         setCurrentPing(successPing);
         setPingHistory((prev) => [successPing, ...prev].slice(0, 10));
-        toast.success(`Server responsive via fallback (${duration}ms)`);
+        toast.success(
+          t("inspector:pingComponent.pingFallbackMessage", { duration }),
+        );
       } catch (fallbackError) {
         const duration = Date.now() - startTime;
         const failedPing = {
@@ -107,17 +113,20 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
             fallbackError instanceof Error
               ? fallbackError.message
               : String(fallbackError),
-          method: "ping + fallback",
+          method: t("inspector:pingComponent.pingAndFallback"),
         };
 
         setCurrentPing(failedPing);
         setPingHistory((prev) => [failedPing, ...prev].slice(0, 10));
-        toast.error(`Ping failed (${duration}ms)`, {
-          description:
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : String(fallbackError),
-        });
+        toast.error(
+          t("inspector:pingComponent.pingFailedMessage", { duration }),
+          {
+            description:
+              fallbackError instanceof Error
+                ? fallbackError.message
+                : String(fallbackError),
+          },
+        );
       }
     } finally {
       setPinging(false);
@@ -170,7 +179,9 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-yellow-500" />
-          <span className="text-sm font-medium">Server Connectivity Test</span>
+          <span className="text-sm font-medium">
+            {t("inspector:pingComponent.title")}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -179,7 +190,7 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
             onClick={clearHistory}
             disabled={pinging || pingHistory.length === 0}
           >
-            Clear History
+            {t("inspector:pingComponent.clearHistory")}
           </Button>
           <Button
             onClick={handlePing}
@@ -187,7 +198,9 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
             className="flex items-center gap-2"
           >
             <Activity className={`h-4 w-4 ${pinging ? "animate-pulse" : ""}`} />
-            {pinging ? "Pinging..." : "Ping Server"}
+            {pinging
+              ? t("inspector:pingComponent.pinging")
+              : t("inspector:pingServer")}
           </Button>
         </div>
       </div>
@@ -195,7 +208,9 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
       {/* Current Status */}
       {currentPing && (
         <div className="rounded-lg border p-4">
-          <h4 className="text-sm font-semibold mb-3">Current Status</h4>
+          <h4 className="text-sm font-semibold mb-3">
+            {t("inspector:pingComponent.currentStatus")}
+          </h4>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {(() => {
@@ -211,18 +226,19 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
                   className={`text-sm font-medium ${getStatusColor(currentPing.success)}`}
                 >
                   {currentPing.success
-                    ? "Server Responsive"
-                    : "Server Unreachable"}
+                    ? t("inspector:pingComponent.serverResponsive")
+                    : t("inspector:pingComponent.serverUnreachable")}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Response time: {formatDuration(currentPing.duration)}
+                  {t("inspector:responseTime")}:{" "}
+                  {formatDuration(currentPing.duration)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Method: {currentPing.method}
+                  {t("inspector:pingComponent.method")}: {currentPing.method}
                 </div>
                 {currentPing.error && (
                   <div className="text-xs text-red-600 mt-1">
-                    Error: {currentPing.error}
+                    {t("inspector:pingComponent.error")}: {currentPing.error}
                   </div>
                 )}
               </div>
@@ -241,19 +257,25 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
             <div className="text-2xl font-bold text-green-600">
               {getSuccessRate()}%
             </div>
-            <div className="text-xs text-muted-foreground">Success Rate</div>
+            <div className="text-xs text-muted-foreground">
+              {t("inspector:pingComponent.successRate")}
+            </div>
           </div>
           <div className="rounded-lg border p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">
               {getAverageResponseTime()}ms
             </div>
-            <div className="text-xs text-muted-foreground">Avg Response</div>
+            <div className="text-xs text-muted-foreground">
+              {t("inspector:pingComponent.avgResponse")}
+            </div>
           </div>
           <div className="rounded-lg border p-4 text-center">
             <div className="text-2xl font-bold text-purple-600">
               {pingHistory.length}
             </div>
-            <div className="text-xs text-muted-foreground">Total Pings</div>
+            <div className="text-xs text-muted-foreground">
+              {t("inspector:pingComponent.totalPings")}
+            </div>
           </div>
         </div>
       )}
@@ -261,14 +283,13 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
       {/* Ping History */}
       <div className="space-y-4">
         <h4 className="text-sm font-semibold">
-          Ping History ({pingHistory.length})
+          {t("inspector:pingComponent.pingHistory")} ({pingHistory.length})
         </h4>
         {pingHistory.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center">
             <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">
-              No ping history yet. Click &quot;Ping Server&quot; to test
-              connectivity.
+              {t("inspector:pingComponent.noPingHistory")}
             </p>
           </div>
         ) : (
@@ -289,7 +310,9 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
                         <span
                           className={`font-medium ${getStatusColor(ping.success)}`}
                         >
-                          {ping.success ? "Success" : "Failed"}
+                          {ping.success
+                            ? t("inspector:pingComponent.success")
+                            : t("inspector:pingComponent.failed")}
                         </span>
                         <span className="text-muted-foreground ml-2">
                           {formatDuration(ping.duration)}
@@ -343,14 +366,10 @@ export function InspectorPing({ makeRequest }: InspectorPingProps) {
           <Zap className="h-5 w-5 text-yellow-500 mt-0.5" />
           <div>
             <h4 className="text-sm font-medium text-yellow-900 mb-1">
-              About Ping
+              {t("inspector:pingComponent.aboutPing")}
             </h4>
             <p className="text-xs text-yellow-700">
-              The ping test checks if the MCP server is responsive. It first
-              tries the standard &quot;ping&quot; method, and if that&apos;s not
-              available, falls back to testing with &quot;tools/list&quot; to
-              verify the server is reachable. Response times help assess server
-              performance.
+              {t("inspector:pingComponent.aboutPingDescription")}
             </p>
           </div>
         </div>

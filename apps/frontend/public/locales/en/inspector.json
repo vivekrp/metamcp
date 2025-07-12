@@ -51,5 +51,29 @@
   "lastRefresh": "Last Refresh",
   "autoRefresh": "Auto Refresh",
   "enableAutoRefresh": "Enable Auto Refresh",
-  "disableAutoRefresh": "Disable Auto Refresh"
+  "disableAutoRefresh": "Disable Auto Refresh",
+  "pingComponent": {
+    "title": "Server Connectivity Test",
+    "clearHistory": "Clear History",
+    "pinging": "Pinging...",
+    "currentStatus": "Current Status",
+    "serverResponsive": "Server Responsive",
+    "serverUnreachable": "Server Unreachable",
+    "method": "Method",
+    "successRate": "Success Rate",
+    "avgResponse": "Avg Response",
+    "totalPings": "Total Pings",
+    "pingHistory": "Ping History",
+    "noPingHistory": "No ping history yet. Click \"Ping Server\" to test connectivity.",
+    "success": "Success",
+    "failed": "Failed",
+    "aboutPing": "About Ping",
+    "aboutPingDescription": "The ping test checks if the MCP server is responsive. It first tries the standard \"ping\" method, and if that's not available, falls back to testing with \"tools/list\" to verify the server is reachable. Response times help assess server performance.",
+    "pingSuccessMessage": "Ping successful ({{duration}}ms)",
+    "pingFallbackMessage": "Server responsive via fallback ({{duration}}ms)",
+    "pingFailedMessage": "Ping failed ({{duration}}ms)",
+    "fallbackMethod": "tools/list (fallback)",
+    "pingAndFallback": "ping + fallback",
+    "error": "Error"
+  }
 } 
