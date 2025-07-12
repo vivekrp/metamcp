@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import { ToolManagementSkeleton } from "@/components/skeletons/tool-management-skeleton";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { EnhancedNamespaceToolsTable } from "./enhanced-namespace-tools-table";
@@ -46,6 +47,9 @@ export function NamespaceToolManagement({
   const [hasAttemptedInitialFetch, setHasAttemptedInitialFetch] =
     useState(false);
 
+  // Get translations
+  const { t } = useTranslations();
+
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
 
@@ -65,20 +69,20 @@ export function NamespaceToolManagement({
     trpc.frontend.namespaces.refreshTools.useMutation({
       onSuccess: (response) => {
         if (response.success) {
-          toast.success("Tools refreshed successfully", {
+          toast.success(t("namespaces:toolManagement.toolsRefreshed"), {
             description: response.message,
           });
           // Invalidate the namespace tools query to refresh the data
           utils.frontend.namespaces.getTools.invalidate({ namespaceUuid });
         } else {
-          toast.error("Failed to refresh tools", {
+          toast.error(t("namespaces:toolManagement.toolsRefreshFailed"), {
             description: response.message,
           });
         }
       },
       onError: (error) => {
         console.error("Error refreshing tools:", error);
-        toast.error("Failed to refresh tools", {
+        toast.error(t("namespaces:toolManagement.toolsRefreshFailed"), {
           description: error.message,
         });
       },
@@ -131,9 +135,7 @@ export function NamespaceToolManagement({
   // Handle MCP refresh for all servers
   const handleRefreshAllTools = async () => {
     if (!makeRequest) {
-      console.warn(
-        "MetaMCP connection not available, falling back to database refresh",
-      );
+      console.warn(t("namespaces:toolManagement.metaMCPNotAvailable"));
       setLoading(true);
       try {
         await refetchTools();
@@ -177,11 +179,11 @@ export function NamespaceToolManagement({
         });
       } else {
         console.log("No tools found in MetaMCP response");
-        toast.info("No tools found in MetaMCP connection");
+        toast.info(t("namespaces:toolManagement.noToolsFromMetaMCP"));
       }
     } catch (error) {
       console.error("Error fetching tools from MetaMCP:", error);
-      toast.error("Failed to fetch tools from MetaMCP connection", {
+      toast.error(t("namespaces:toolManagement.fetchToolsError"), {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
@@ -241,33 +243,35 @@ export function NamespaceToolManagement({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm font-medium">Tools Overview:</span>
+            <span className="text-sm font-medium">
+              {t("namespaces:toolManagement.toolsOverview")}
+            </span>
             <span className="text-sm text-muted-foreground">
-              {serverCount} servers
+              {serverCount} {t("namespaces:toolManagement.servers")}
             </span>
             <span className="text-muted-foreground">•</span>
             <span className="text-sm text-muted-foreground">
-              {activeServerCount} active
+              {activeServerCount} {t("namespaces:toolManagement.active")}
             </span>
             <span className="text-muted-foreground">•</span>
             <Wrench className="h-4 w-4 text-blue-500" />
             <span className="text-sm text-muted-foreground">
-              {mcpToolCount} from MetaMCP
+              {mcpToolCount} {t("namespaces:toolManagement.fromMetaMCP")}
             </span>
             <span className="text-muted-foreground">•</span>
             <Database className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {savedToolCount} saved
+              {savedToolCount} {t("namespaces:toolManagement.saved")}
             </span>
             <span className="text-muted-foreground">•</span>
             <span className="text-sm text-muted-foreground">
-              {activeToolCount} active
+              {activeToolCount} {t("namespaces:toolManagement.active")}
             </span>
             {newToolsCount > 0 && (
               <>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-sm text-amber-600 font-medium">
-                  {newToolsCount} new
+                  {newToolsCount} {t("namespaces:toolManagement.new")}
                 </span>
               </>
             )}
@@ -281,7 +285,7 @@ export function NamespaceToolManagement({
               disabled={true}
             >
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Refresh Tools
+              {t("namespaces:toolManagement.refreshTools")}
             </Button>
           </div>
         </div>
@@ -300,33 +304,35 @@ export function NamespaceToolManagement({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wrench className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Tools Overview:</span>
+          <span className="text-sm font-medium">
+            {t("namespaces:toolManagement.toolsOverview")}
+          </span>
           <span className="text-sm text-muted-foreground">
-            {serverCount} servers
+            {serverCount} {t("namespaces:toolManagement.servers")}
           </span>
           <span className="text-muted-foreground">•</span>
           <span className="text-sm text-muted-foreground">
-            {activeServerCount} active
+            {activeServerCount} {t("namespaces:toolManagement.active")}
           </span>
           <span className="text-muted-foreground">•</span>
           <Wrench className="h-4 w-4 text-blue-500" />
           <span className="text-sm text-muted-foreground">
-            {mcpToolCount} from MetaMCP
+            {mcpToolCount} {t("namespaces:toolManagement.fromMetaMCP")}
           </span>
           <span className="text-muted-foreground">•</span>
           <Database className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {savedToolCount} saved
+            {savedToolCount} {t("namespaces:toolManagement.saved")}
           </span>
           <span className="text-muted-foreground">•</span>
           <span className="text-sm text-muted-foreground">
-            {activeToolCount} active
+            {activeToolCount} {t("namespaces:toolManagement.active")}
           </span>
           {newToolsCount > 0 && (
             <>
               <span className="text-muted-foreground">•</span>
               <span className="text-sm text-amber-600 font-medium">
-                {newToolsCount} new
+                {newToolsCount} {t("namespaces:toolManagement.new")}
               </span>
             </>
           )}
@@ -342,7 +348,7 @@ export function NamespaceToolManagement({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading || isToolsLoading ? "animate-spin" : ""}`}
             />
-            Refresh Tools
+            {t("namespaces:toolManagement.refreshTools")}
           </Button>
         </div>
       </div>
@@ -362,11 +368,11 @@ export function NamespaceToolManagement({
       ) : (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <h4 className="text-sm font-medium">No Tools Available</h4>
+          <h4 className="text-sm font-medium">
+            {t("namespaces:toolManagement.noToolsAvailable")}
+          </h4>
           <p className="text-xs text-muted-foreground mt-1">
-            No tools have been found from MetaMCP or saved to this namespace
-            yet. Connect to MetaMCP and refresh to discover tools from your
-            servers.
+            {t("namespaces:toolManagement.noToolsDescription")}
           </p>
         </div>
       )}

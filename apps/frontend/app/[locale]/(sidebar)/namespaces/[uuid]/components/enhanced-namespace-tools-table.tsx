@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 // MCP Tool type from MetaMCP
@@ -105,6 +106,9 @@ export function EnhancedNamespaceToolsTable({
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
+  // Get translations
+  const { t } = useTranslations();
+
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
 
@@ -113,16 +117,18 @@ export function EnhancedNamespaceToolsTable({
     trpc.frontend.namespaces.updateToolStatus.useMutation({
       onSuccess: (response) => {
         if (response.success) {
-          toast.success("Tool status updated successfully");
+          toast.success(t("namespaces:enhancedToolsTable.toolStatusUpdated"));
           // Invalidate the namespace tools query to refresh the data
           utils.frontend.namespaces.getTools.invalidate({ namespaceUuid });
         } else {
-          toast.error("Failed to update tool status");
+          toast.error(
+            t("namespaces:enhancedToolsTable.toolStatusUpdateFailed"),
+          );
         }
       },
       onError: (error) => {
         console.error("Error updating tool status:", error);
-        toast.error("Failed to update tool status", {
+        toast.error(t("namespaces:enhancedToolsTable.toolStatusUpdateFailed"), {
           description: error.message,
         });
       },
@@ -239,7 +245,7 @@ export function EnhancedNamespaceToolsTable({
   // Handle status toggle (only for saved tools)
   const handleStatusToggle = async (tool: EnhancedNamespaceTool) => {
     if (!tool.sources.saved || !tool.uuid || !tool.serverUuid) {
-      toast.error("Cannot toggle status for tools not saved to namespace");
+      toast.error(t("namespaces:enhancedToolsTable.cannotToggleStatus"));
       return;
     }
 
@@ -337,7 +343,7 @@ export function EnhancedNamespaceToolsTable({
           className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
         >
           <Wrench className="h-3 w-3" />
-          MetaMCP
+          {t("namespaces:enhancedToolsTable.sources.metamcp")}
         </span>,
       );
     }
@@ -349,7 +355,7 @@ export function EnhancedNamespaceToolsTable({
           className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded"
         >
           <Database className="h-3 w-3" />
-          Saved
+          {t("namespaces:enhancedToolsTable.sources.saved")}
         </span>,
       );
     }
@@ -362,7 +368,7 @@ export function EnhancedNamespaceToolsTable({
       badges[0] || (
         <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
           <Wrench className="h-3 w-3" />
-          Unknown
+          {t("namespaces:enhancedToolsTable.sources.unknown")}
         </span>
       )
     );
@@ -438,7 +444,7 @@ export function EnhancedNamespaceToolsTable({
       <div className="p-8 text-center">
         <Wrench className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">
-          No tools found from MetaMCP or saved to namespace
+          {t("namespaces:enhancedToolsTable.noToolsFound")}
         </p>
         {onRefreshTools && (
           <Button
@@ -451,7 +457,7 @@ export function EnhancedNamespaceToolsTable({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            Refresh Tools
+            {t("namespaces:enhancedToolsTable.refreshTools")}
           </Button>
         )}
       </div>
@@ -465,14 +471,17 @@ export function EnhancedNamespaceToolsTable({
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search tools..."
+            placeholder={t("namespaces:enhancedToolsTable.searchTools")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {filteredAndSortedTools.length} of {enhancedTools.length} tools
+          {t("namespaces:enhancedToolsTable.toolsCount", {
+            count: filteredAndSortedTools.length,
+            total: enhancedTools.length,
+          })}
         </div>
       </div>
 
@@ -480,12 +489,14 @@ export function EnhancedNamespaceToolsTable({
         <div className="p-8 text-center">
           <Wrench className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <h4 className="text-sm font-medium">
-            {searchTerm ? "No tools match your search" : "No Tools Found"}
+            {searchTerm
+              ? t("namespaces:enhancedToolsTable.noToolsMatch")
+              : t("namespaces:enhancedToolsTable.noToolsFound")}
           </h4>
           <p className="text-xs text-muted-foreground mt-1">
             {searchTerm
-              ? "Try adjusting your search terms or clear the search to see all tools."
-              : "No tools found from MetaMCP or saved to namespace"}
+              ? t("namespaces:enhancedToolsTable.tryAdjustingSearch")
+              : t("namespaces:enhancedToolsTable.noToolsFound")}
           </p>
           {searchTerm ? (
             <Button
@@ -494,7 +505,7 @@ export function EnhancedNamespaceToolsTable({
               onClick={() => setSearchTerm("")}
               className="mt-2"
             >
-              Clear Search
+              {t("namespaces:enhancedToolsTable.clearSearch")}
             </Button>
           ) : (
             onRefreshTools && (
@@ -508,7 +519,7 @@ export function EnhancedNamespaceToolsTable({
                 <RefreshCw
                   className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
                 />
-                Refresh Tools
+                {t("namespaces:enhancedToolsTable.refreshTools")}
               </Button>
             )
           )}
@@ -525,7 +536,7 @@ export function EnhancedNamespaceToolsTable({
                     onClick={() => handleSort("name")}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Tool Name
+                    {t("namespaces:enhancedToolsTable.toolName")}
                     {renderSortIcon("name")}
                   </Button>
                 </TableHead>
@@ -535,7 +546,7 @@ export function EnhancedNamespaceToolsTable({
                     onClick={() => handleSort("serverName")}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    MCP Server
+                    {t("namespaces:enhancedToolsTable.mcpServer")}
                     {renderSortIcon("serverName")}
                   </Button>
                 </TableHead>
@@ -545,7 +556,7 @@ export function EnhancedNamespaceToolsTable({
                     onClick={() => handleSort("status")}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Status
+                    {t("namespaces:enhancedToolsTable.status")}
                     {renderSortIcon("status")}
                   </Button>
                 </TableHead>
@@ -555,18 +566,20 @@ export function EnhancedNamespaceToolsTable({
                     onClick={() => handleSort("description")}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Description
+                    {t("namespaces:enhancedToolsTable.description")}
                     {renderSortIcon("description")}
                   </Button>
                 </TableHead>
-                <TableHead className="w-[100px]">Source</TableHead>
+                <TableHead className="w-[100px]">
+                  {t("namespaces:enhancedToolsTable.source")}
+                </TableHead>
                 <TableHead className="w-[130px]">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort("updated_at")}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Updated At
+                    {t("namespaces:enhancedToolsTable.updatedAt")}
                     {renderSortIcon("updated_at")}
                   </Button>
                 </TableHead>
@@ -604,7 +617,7 @@ export function EnhancedNamespaceToolsTable({
                           <span className="truncate">{tool.name}</span>
                           {tool.isTemporary && (
                             <span className="text-xs bg-amber-100 text-amber-700 px-1 rounded flex-shrink-0">
-                              new
+                              {t("namespaces:enhancedToolsTable.badges.new")}
                             </span>
                           )}
                         </div>
@@ -629,7 +642,7 @@ export function EnhancedNamespaceToolsTable({
                           </div>
                         ) : (
                           <span className="text-sm text-muted-foreground italic">
-                            Unknown server
+                            {t("namespaces:enhancedToolsTable.unknownServer")}
                           </span>
                         )}
                       </TableCell>
@@ -644,7 +657,7 @@ export function EnhancedNamespaceToolsTable({
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground italic">
-                            Not saved
+                            {t("namespaces:enhancedToolsTable.notSaved")}
                           </span>
                         )}
                       </TableCell>
@@ -656,7 +669,7 @@ export function EnhancedNamespaceToolsTable({
                             </p>
                           ) : (
                             <span className="text-sm text-muted-foreground italic">
-                              No description
+                              {t("namespaces:enhancedToolsTable.noDescription")}
                             </span>
                           )}
                         </div>
@@ -674,7 +687,7 @@ export function EnhancedNamespaceToolsTable({
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground italic">
-                            Not saved
+                            {t("namespaces:enhancedToolsTable.notSaved")}
                           </span>
                         )}
                       </TableCell>
@@ -696,12 +709,16 @@ export function EnhancedNamespaceToolsTable({
                               {isExpanded ? (
                                 <>
                                   <EyeOff className="mr-2 h-4 w-4" />
-                                  Hide Details
+                                  {t(
+                                    "namespaces:enhancedToolsTable.hideDetails",
+                                  )}
                                 </>
                               ) : (
                                 <>
                                   <Eye className="mr-2 h-4 w-4" />
-                                  Show Details
+                                  {t(
+                                    "namespaces:enhancedToolsTable.showDetails",
+                                  )}
                                 </>
                               )}
                             </DropdownMenuItem>
@@ -709,7 +726,9 @@ export function EnhancedNamespaceToolsTable({
                               <DropdownMenuItem asChild>
                                 <Link href={`/mcp-servers/${tool.serverUuid}`}>
                                   <Server className="mr-2 h-4 w-4" />
-                                  View Server
+                                  {t(
+                                    "namespaces:enhancedToolsTable.viewServer",
+                                  )}
                                 </Link>
                               </DropdownMenuItem>
                             )}
@@ -729,7 +748,10 @@ export function EnhancedNamespaceToolsTable({
                                 <div className="flex items-center gap-2">
                                   <Hash className="h-4 w-4 text-muted-foreground" />
                                   <span className="text-sm font-medium">
-                                    UUID:
+                                    {t(
+                                      "namespaces:enhancedToolsTable.toolInfo.uuid",
+                                    )}
+                                    :
                                   </span>
                                   <code className="text-sm bg-background px-2 py-1 rounded border">
                                     {tool.uuid}
@@ -740,7 +762,10 @@ export function EnhancedNamespaceToolsTable({
                                 <div className="flex items-center gap-2">
                                   <Server className="h-4 w-4 text-muted-foreground" />
                                   <span className="text-sm font-medium">
-                                    Server:
+                                    {t(
+                                      "namespaces:enhancedToolsTable.toolInfo.server",
+                                    )}
+                                    :
                                   </span>
                                   {tool.serverUuid ? (
                                     <Link
@@ -758,14 +783,20 @@ export function EnhancedNamespaceToolsTable({
                               )}
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">
-                                  Source:
+                                  {t(
+                                    "namespaces:enhancedToolsTable.toolInfo.source",
+                                  )}
+                                  :
                                 </span>
                                 {getSourceBadge(tool)}
                               </div>
                               {tool.status && (
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">
-                                    Status:
+                                    {t(
+                                      "namespaces:enhancedToolsTable.toolInfo.status",
+                                    )}
+                                    :
                                   </span>
                                   <span
                                     className={`text-xs font-medium ${
@@ -774,7 +805,13 @@ export function EnhancedNamespaceToolsTable({
                                         : "text-gray-500"
                                     }`}
                                   >
-                                    {tool.status}
+                                    {tool.status === "ACTIVE"
+                                      ? t(
+                                          "namespaces:enhancedToolsTable.active",
+                                        )
+                                      : t(
+                                          "namespaces:enhancedToolsTable.inactive",
+                                        )}
                                   </span>
                                 </div>
                               )}
@@ -784,7 +821,9 @@ export function EnhancedNamespaceToolsTable({
                             {tool.description && (
                               <div>
                                 <h5 className="text-sm font-medium mb-2">
-                                  Tool Description
+                                  {t(
+                                    "namespaces:enhancedToolsTable.toolDescription",
+                                  )}
                                 </h5>
                                 <div className="bg-background p-3 rounded border">
                                   <p className="text-sm text-muted-foreground">
@@ -797,12 +836,12 @@ export function EnhancedNamespaceToolsTable({
                             {/* Tool Schema */}
                             <div>
                               <h5 className="text-sm font-medium mb-2">
-                                Tool Schema
+                                {t("namespaces:enhancedToolsTable.toolSchema")}
                               </h5>
                               <div className="bg-background p-3 rounded border">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-xs font-medium">
-                                    Type:
+                                    {t("namespaces:enhancedToolsTable.type")}:
                                   </span>
                                   <code className="text-xs bg-muted px-2 py-1 rounded">
                                     {String(
@@ -816,7 +855,10 @@ export function EnhancedNamespaceToolsTable({
                                 {parameters.length > 0 && (
                                   <div>
                                     <span className="text-xs font-medium">
-                                      Parameters:
+                                      {t(
+                                        "namespaces:enhancedToolsTable.parameters",
+                                      )}
+                                      :
                                     </span>
                                     <div className="mt-2 space-y-2">
                                       {parameters.map((param, index) => (
@@ -853,7 +895,9 @@ export function EnhancedNamespaceToolsTable({
                             {/* Full Schema JSON (for debugging) */}
                             <details className="text-xs">
                               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                                Show full schema JSON
+                                {t(
+                                  "namespaces:enhancedToolsTable.showFullSchemaJson",
+                                )}
                               </summary>
                               <div className="mt-2">
                                 <CodeBlock

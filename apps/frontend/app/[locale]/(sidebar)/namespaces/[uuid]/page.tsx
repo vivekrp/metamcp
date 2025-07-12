@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConnection } from "@/hooks/useConnection";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { NamespaceServersTable } from "./components/namespace-servers-table";
@@ -34,6 +35,7 @@ export default function NamespaceDetailPage({
 }: NamespaceDetailPageProps) {
   const { uuid } = use(params);
   const router = useRouter();
+  const { t } = useTranslations();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
@@ -56,22 +58,23 @@ export default function NamespaceDetailPage({
       if (result.success) {
         // Invalidate the list cache since namespace was deleted
         utils.frontend.namespaces.list.invalidate();
-        toast.success("Namespace deleted successfully");
+        toast.success(t("namespaces:namespaceDeletedSuccess"));
         // Navigate back to the namespaces list
         router.push("/namespaces");
       } else {
         // Handle business logic failures
         console.error("Delete failed:", result.message);
-        toast.error("Failed to delete namespace", {
+        toast.error(t("namespaces:failedToDeleteNamespace"), {
           description:
-            result.message || "An error occurred while deleting the namespace",
+            result.message ||
+            t("namespaces:detail.anErrorOccurredWhileDeleting"),
         });
         setShowDeleteDialog(false);
       }
     },
     onError: (error) => {
       console.error("Error deleting namespace:", error);
-      toast.error("Failed to delete namespace", {
+      toast.error(t("namespaces:failedToDeleteNamespace"), {
         description: error.message,
       });
       setShowDeleteDialog(false);
@@ -136,18 +139,30 @@ export default function NamespaceDetailPage({
   const getConnectionStatusInfo = () => {
     switch (connection.connectionStatus) {
       case "connected":
-        return { text: "Connected", color: "text-green-600", icon: Plug };
+        return {
+          text: t("namespaces:detail.connected"),
+          color: "text-green-600",
+          icon: Plug,
+        };
       case "disconnected":
-        return { text: "Disconnected", color: "text-gray-500", icon: Server };
+        return {
+          text: t("namespaces:detail.disconnected"),
+          color: "text-gray-500",
+          icon: Server,
+        };
       case "error":
       case "error-connecting-to-proxy":
         return {
-          text: "Connection Error",
+          text: t("namespaces:detail.connectionError"),
           color: "text-red-600",
           icon: Server,
         };
       default:
-        return { text: "Connecting...", color: "text-yellow-600", icon: Plug };
+        return {
+          text: t("namespaces:detail.connecting"),
+          color: "text-yellow-600",
+          icon: Plug,
+        };
     }
   };
 
@@ -174,7 +189,7 @@ export default function NamespaceDetailPage({
           <Link href="/namespaces">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Namespaces
+              {t("namespaces:detail.backToNamespaces")}
             </Button>
           </Link>
         </div>
@@ -182,17 +197,18 @@ export default function NamespaceDetailPage({
           <div className="flex flex-col items-center justify-center mx-auto max-w-md">
             <Hash className="size-12 text-red-400" />
             <h3 className="mt-4 text-lg font-semibold">
-              Error Loading Namespace
+              {t("namespaces:detail.errorLoadingNamespace")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              {error.message || "Failed to load namespace details"}
+              {error.message ||
+                t("namespaces:detail.failedToLoadNamespaceDetails")}
             </p>
             <Button
               onClick={() => refetch()}
               className="mt-4"
               variant="outline"
             >
-              Retry
+              {t("namespaces:detail.retry")}
             </Button>
           </div>
         </div>
@@ -207,7 +223,7 @@ export default function NamespaceDetailPage({
           <Link href="/namespaces">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Namespaces
+              {t("namespaces:detail.backToNamespaces")}
             </Button>
           </Link>
         </div>
@@ -286,7 +302,7 @@ export default function NamespaceDetailPage({
         <Link href="/namespaces">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Namespaces
+            {t("namespaces:detail.backToNamespaces")}
           </Button>
         </Link>
         <div className="flex items-center gap-2">
@@ -296,14 +312,14 @@ export default function NamespaceDetailPage({
             onClick={() => setEditDialogOpen(true)}
           >
             <Edit className="h-4 w-4 mr-2" />
-            Edit Namespace
+            {t("namespaces:editNamespace")}
           </Button>
           <Button
             variant="destructive"
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
           >
-            Delete Namespace
+            {t("namespaces:deleteNamespace")}
           </Button>
         </div>
       </div>
@@ -320,11 +336,11 @@ export default function NamespaceDetailPage({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Namespace</DialogTitle>
+            <DialogTitle>{t("namespaces:deleteNamespace")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{namespace?.name}?&quot;
-              This will remove all MCP server associations. This action cannot
-              be undone.
+              {t("namespaces:detail.deleteNamespaceConfirmation", {
+                name: namespace?.name,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -333,14 +349,16 @@ export default function NamespaceDetailPage({
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {t("namespaces:cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteNamespace}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete Namespace"}
+              {deleteMutation.isPending
+                ? t("namespaces:deleting")
+                : t("namespaces:deleteNamespace")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -362,7 +380,9 @@ export default function NamespaceDetailPage({
           <div className="flex items-center space-x-4">
             {/* MetaMCP Connection Status */}
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">MetaMCP Connection:</span>
+              <span className="text-sm font-medium">
+                {t("namespaces:detail.metaMcpConnection")}:
+              </span>
               <ConnectionIcon className="h-4 w-4" />
               <span className={`text-sm font-medium ${connectionInfo.color}`}>
                 {connectionInfo.text}
@@ -374,8 +394,8 @@ export default function NamespaceDetailPage({
                 disabled={connection.connectionStatus === "connecting"}
               >
                 {connection.connectionStatus === "connected"
-                  ? "Reconnect"
-                  : "Connect"}
+                  ? t("namespaces:detail.reconnect")
+                  : t("namespaces:detail.connect")}
               </Button>
             </div>
           </div>
@@ -385,11 +405,13 @@ export default function NamespaceDetailPage({
         <div className="grid gap-6 md:grid-cols-2">
           {/* Basic Information */}
           <div className="rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t("namespaces:detail.basicInformation")}
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  UUID:
+                  {t("namespaces:detail.uuid")}:
                 </span>
                 <p className="text-sm font-mono text-right flex-1 ml-6">
                   {namespace.uuid}
@@ -397,7 +419,7 @@ export default function NamespaceDetailPage({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Name:
+                  {t("namespaces:name")}:
                 </span>
                 <p className="text-sm font-medium text-right flex-1 ml-6">
                   {namespace.name}
@@ -405,15 +427,15 @@ export default function NamespaceDetailPage({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Description:
+                  {t("namespaces:descriptionLabel")}:
                 </span>
                 <p className="text-sm text-right flex-1 ml-6">
-                  {namespace.description || "No description"}
+                  {namespace.description || t("namespaces:noDescription")}
                 </p>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Created:
+                  {t("namespaces:created")}:
                 </span>
                 <div className="flex items-center gap-2 flex-1 ml-6 justify-end">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
@@ -422,7 +444,7 @@ export default function NamespaceDetailPage({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Last Updated:
+                  {t("namespaces:detail.lastUpdated")}:
                 </span>
                 <div className="flex items-center gap-2 flex-1 ml-6 justify-end">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
@@ -434,22 +456,26 @@ export default function NamespaceDetailPage({
 
           {/* Statistics */}
           <div className="rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Statistics</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t("namespaces:detail.statistics")}
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  MCP Servers:
+                  {t("namespaces:detail.mcpServers")}:
                 </span>
                 <div className="flex-1 ml-6 flex justify-end">
                   <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
                     {namespace.servers.length}{" "}
-                    {namespace.servers.length === 1 ? "server" : "servers"}
+                    {namespace.servers.length === 1
+                      ? t("namespaces:detail.server")
+                      : t("namespaces:detail.servers")}
                   </span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Active Servers:
+                  {t("namespaces:detail.activeServers")}:
                 </span>
                 <div className="flex-1 ml-6 flex justify-end">
                   <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
@@ -457,13 +483,13 @@ export default function NamespaceDetailPage({
                       namespace.servers.filter((s) => s.status === "ACTIVE")
                         .length
                     }{" "}
-                    active
+                    {t("namespaces:detail.active")}
                   </span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Server Types:
+                  {t("namespaces:detail.serverTypes")}:
                 </span>
                 <div className="flex-1 ml-6 flex justify-end">
                   <div className="flex flex-wrap gap-1 justify-end">
@@ -486,7 +512,9 @@ export default function NamespaceDetailPage({
 
         {/* Section 2: MCP Servers Data Table */}
         <div className="rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4">MCP Servers</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            {t("namespaces:detail.mcpServers")}
+          </h3>
           <NamespaceServersTable
             servers={namespace.servers}
             namespaceUuid={namespace.uuid}
@@ -495,7 +523,9 @@ export default function NamespaceDetailPage({
 
         {/* Section 3: Tools Management */}
         <div className="rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4">Tools Management</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            {t("namespaces:detail.toolsManagement")}
+          </h3>
           {connection.connectionStatus === "connected" ? (
             <NamespaceToolManagement
               servers={namespace.servers}
@@ -511,8 +541,8 @@ export default function NamespaceDetailPage({
               <div className="flex justify-center">
                 <div className="text-sm text-muted-foreground">
                   {connection.connectionStatus === "connecting"
-                    ? "Connecting to MetaMCP..."
-                    : "Connect to MetaMCP to enable enhanced tool management"}
+                    ? t("namespaces:detail.connectingToMetaMcp")
+                    : t("namespaces:detail.connectToMetaMcpToEnable")}
                 </div>
               </div>
             </div>

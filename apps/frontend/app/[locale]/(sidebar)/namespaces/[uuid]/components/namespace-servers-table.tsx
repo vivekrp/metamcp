@@ -42,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 interface NamespaceServersTableProps {
@@ -54,6 +55,7 @@ export function NamespaceServersTable({
   namespaceUuid,
 }: NamespaceServersTableProps) {
   const router = useRouter();
+  const { t } = useTranslations();
   const [sorting, setSorting] = useState<SortingState>([
     {
       id: "name",
@@ -69,8 +71,10 @@ export function NamespaceServersTable({
   const updateServerStatusMutation =
     trpc.frontend.namespaces.updateServerStatus.useMutation({
       onSuccess: (data) => {
-        toast.success("Server Status Updated", {
-          description: data.message || "Server status updated successfully",
+        toast.success(t("namespaces:serversTable.serverStatusUpdated"), {
+          description:
+            data.message ||
+            t("namespaces:serversTable.serverStatusUpdatedDescription"),
         });
         // Use setData to update the cache directly instead of invalidating
         // This preserves the current sort order and table state
@@ -99,8 +103,8 @@ export function NamespaceServersTable({
         );
       },
       onError: (error) => {
-        toast.error("Failed to Update Server Status", {
-          description: error.message || "An unexpected error occurred",
+        toast.error(t("namespaces:serversTable.failedToUpdateServerStatus"), {
+          description: error.message || t("common:unexpectedError"),
         });
         // Revert the optimistic update on error
         utils.frontend.namespaces.get.invalidate({ uuid: namespaceUuid });
@@ -147,7 +151,7 @@ export function NamespaceServersTable({
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Name
+            {t("common:name")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -174,7 +178,7 @@ export function NamespaceServersTable({
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Type
+            {t("common:type")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -198,7 +202,7 @@ export function NamespaceServersTable({
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Status
+            {t("common:status")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -217,7 +221,9 @@ export function NamespaceServersTable({
                   handleStatusToggle(server.uuid, server.status)
                 }
                 disabled={isUpdating}
-                aria-label={`Toggle ${server.name} status`}
+                aria-label={t("namespaces:serversTable.toggleStatus", {
+                  name: server.name,
+                })}
               />
             </div>
           </div>
@@ -226,22 +232,28 @@ export function NamespaceServersTable({
     },
     {
       accessorKey: "details",
-      header: "Configuration",
+      header: t("namespaces:serversTable.configuration"),
       cell: ({ row }) => {
         const server = row.original;
         const details = [];
 
         if (server.command) {
-          details.push(`Command: ${server.command}`);
+          details.push(
+            `${t("namespaces:serversTable.command")}: ${server.command}`,
+          );
         }
         if (server.args.length > 0) {
-          details.push(`Args: ${server.args.join(" ")}`);
+          details.push(
+            `${t("namespaces:serversTable.args")}: ${server.args.join(" ")}`,
+          );
         }
         if (server.url) {
-          details.push(`URL: ${server.url}`);
+          details.push(`${t("namespaces:serversTable.url")}: ${server.url}`);
         }
         if (Object.keys(server.env).length > 0) {
-          details.push(`Env: ${Object.keys(server.env).length} vars`);
+          details.push(
+            `${t("namespaces:serversTable.env")}: ${t("namespaces:serversTable.envVars", { count: Object.keys(server.env).length })}`,
+          );
         }
 
         return (
@@ -263,7 +275,7 @@ export function NamespaceServersTable({
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created
+            {t("common:created")}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -279,7 +291,7 @@ export function NamespaceServersTable({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("common:actions"),
       cell: ({ row }) => {
         const server = row.original;
 
@@ -341,15 +353,15 @@ export function NamespaceServersTable({
                 onClick={() => navigator.clipboard.writeText(server.uuid)}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy server UUID
+                {t("namespaces:serversTable.copyServerUuid")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyServerJson}>
                 <FileText className="mr-2 h-4 w-4" />
-                Copy server JSON
+                {t("namespaces:serversTable.copyServerJson")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleViewDetails}>
                 <Eye className="mr-2 h-4 w-4" />
-                View details
+                {t("namespaces:serversTable.viewDetails")}
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
@@ -358,7 +370,7 @@ export function NamespaceServersTable({
                   rel="noopener noreferrer"
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Open in new tab
+                  {t("namespaces:serversTable.openInNewTab")}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -392,9 +404,11 @@ export function NamespaceServersTable({
       <div className="rounded-lg border border-dashed p-12 text-center">
         <div className="flex flex-col items-center justify-center mx-auto max-w-md">
           <Server className="size-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">No MCP Servers</h3>
+          <h3 className="mt-4 text-lg font-semibold">
+            {t("namespaces:serversTable.noServers")}
+          </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            This namespace doesn&apos;t have any MCP servers configured yet.
+            {t("namespaces:serversTable.noServersDescription")}
           </p>
         </div>
       </div>
@@ -407,7 +421,7 @@ export function NamespaceServersTable({
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search servers by name..."
+            placeholder={t("namespaces:serversTable.searchServers")}
             value={globalFilter || ""}
             onChange={(event) => setGlobalFilter(event.target.value || "")}
             className="pl-8"
@@ -457,7 +471,7 @@ export function NamespaceServersTable({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {t("common:noData")}
                 </TableCell>
               </TableRow>
             )}
@@ -466,7 +480,9 @@ export function NamespaceServersTable({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} server(s) total
+          {t("namespaces:serversTable.serversTotal", {
+            count: table.getFilteredRowModel().rows.length,
+          })}
         </div>
       </div>
     </div>
