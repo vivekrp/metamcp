@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 
 import { SearchSkeleton } from "@/components/skeletons/search-skeleton";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/hooks/useLocale";
 import { useTranslations } from "@/hooks/useTranslations";
+import { getLocalizedPath } from "@/lib/i18n";
 import type { PaginatedSearchResult } from "@/types/search";
 
 import CardGrid from "./components/CardGrid";
@@ -18,6 +20,7 @@ const PAGE_SIZE = 6;
 function SearchContent() {
   const { t } = useTranslations();
   const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const query = searchParams.get("query") || "";
   const offset = parseInt(searchParams.get("offset") || "0");
@@ -47,17 +50,19 @@ function SearchContent() {
         const params = new URLSearchParams();
         if (searchQuery) params.set("query", searchQuery);
         params.set("offset", "0");
-        router.push(`/search?${params.toString()}`);
+        const searchPath = getLocalizedPath("/search", locale);
+        router.push(`${searchPath}?${params.toString()}`);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, query, router]);
+  }, [searchQuery, query, router, locale]);
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams);
     params.set("offset", ((page - 1) * PAGE_SIZE).toString());
-    router.push(`/search?${params.toString()}`);
+    const searchPath = getLocalizedPath("/search", locale);
+    router.push(`${searchPath}?${params.toString()}`);
   };
 
   if (isLoading) {
