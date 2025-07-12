@@ -16,19 +16,19 @@ function getLocale(request: NextRequest): string {
     return pathname.split("/")[1] || defaultLocale;
   }
 
-  // Check Accept-Language header
+  // Check cookies for saved preference first (user's explicit choice)
+  const savedLocale = request.cookies.get("preferred-language")?.value;
+  if (savedLocale && locales.includes(savedLocale)) {
+    return savedLocale;
+  }
+
+  // Check Accept-Language header as fallback
   const acceptLanguage = request.headers.get("accept-language");
   if (acceptLanguage) {
     // Simple language detection - look for zh in accept-language
     if (acceptLanguage.includes("zh")) {
       return "zh";
     }
-  }
-
-  // Check cookies for saved preference
-  const savedLocale = request.cookies.get("preferred-language")?.value;
-  if (savedLocale && locales.includes(savedLocale)) {
-    return savedLocale;
   }
 
   return defaultLocale;

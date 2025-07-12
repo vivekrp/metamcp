@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "@/hooks/useTranslations";
 import {
+  getLocalizedPath,
   getPathnameWithoutLocale,
   LOCALE_NAMES,
   SUPPORTED_LOCALES,
@@ -26,11 +27,14 @@ export function LanguageSwitcher() {
   const handleLanguageChange = (newLanguage: SupportedLocale) => {
     if (newLanguage === currentLocale) return;
 
+    // Set cookie to persist language preference
+    document.cookie = `preferred-language=${newLanguage}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+
     // Get the current path without locale
     const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
 
-    // Build the new path with the new locale
-    const newPath = `/${newLanguage}${pathnameWithoutLocale === "/" ? "" : pathnameWithoutLocale}`;
+    // Build the new path with the new locale using the utility function
+    const newPath = getLocalizedPath(pathnameWithoutLocale, newLanguage);
 
     // Navigate to the new path
     router.push(newPath);

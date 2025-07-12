@@ -41,8 +41,10 @@
   "optional": "可选",
   "noData": "暂无数据",
   "selectLanguage": "选择语言",
+  "switchLanguage": "切换语言",
   "language": "语言",
   "english": "English",
   "chinese": "中文",
-  "current": "当前"
+  "current": "当前",
+  "creating": "创建中..."
 } 

@@ -41,8 +41,10 @@
   "optional": "Optional",
   "noData": "No data available",
   "selectLanguage": "Select Language",
+  "switchLanguage": "Switch Language",
   "language": "Language",
   "english": "English",
   "chinese": "中文",
-  "current": "Current"
+  "current": "Current",
+  "creating": "Creating..."
 } 
