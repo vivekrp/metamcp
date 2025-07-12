@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslations } from "@/hooks/useTranslations";
 
 // MCP Tool type from the protocol
 interface MCPTool {
@@ -94,6 +95,7 @@ export function UnifiedToolsTable({
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const { t } = useTranslations();
 
   // Combine and enhance tools from both sources
   const enhancedTools: EnhancedTool[] = (() => {
@@ -233,7 +235,7 @@ export function UnifiedToolsTable({
           className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
         >
           <Wrench className="h-3 w-3" />
-          MCP
+          {t("mcp-servers:tools.mcp")}
         </span>,
       );
     }
@@ -245,7 +247,7 @@ export function UnifiedToolsTable({
           className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded"
         >
           <Database className="h-3 w-3" />
-          Saved
+          {t("mcp-servers:tools.saved")}
         </span>,
       );
     }
@@ -258,7 +260,7 @@ export function UnifiedToolsTable({
       badges[0] || (
         <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
           <Wrench className="h-3 w-3" />
-          Unknown
+          {t("mcp-servers:tools.unknown")}
         </span>
       )
     );
@@ -292,7 +294,7 @@ export function UnifiedToolsTable({
       <div className="p-8 text-center">
         <Wrench className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">
-          No tools found from MCP server or database
+          {t("mcp-servers:tools.noToolsFoundDescription")}
         </p>
         {onRefreshMcpTools && (
           <Button
@@ -305,7 +307,7 @@ export function UnifiedToolsTable({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            Refresh Tools
+            {t("mcp-servers:tools.refreshTools")}
           </Button>
         )}
       </div>
@@ -319,14 +321,17 @@ export function UnifiedToolsTable({
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search tools..."
+            placeholder={t("mcp-servers:tools.searchTools")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {filteredAndSortedTools.length} of {enhancedTools.length} tools
+          {t("mcp-servers:tools.toolsCount", {
+            count: filteredAndSortedTools.length,
+            total: enhancedTools.length,
+          })}
         </div>
       </div>
 
@@ -334,12 +339,14 @@ export function UnifiedToolsTable({
         <div className="p-8 text-center">
           <Wrench className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <h4 className="text-sm font-medium">
-            {searchTerm ? "No tools match your search" : "No Tools Found"}
+            {searchTerm
+              ? t("mcp-servers:tools.noToolsMatch")
+              : t("mcp-servers:tools.noToolsFound")}
           </h4>
           <p className="text-xs text-muted-foreground mt-1">
             {searchTerm
-              ? "Try adjusting your search terms or clear the search to see all tools."
-              : "No tools found from MCP server or database"}
+              ? t("mcp-servers:tools.noToolsMatchDescription")
+              : t("mcp-servers:tools.noToolsFoundDescription")}
           </p>
           {searchTerm ? (
             <Button
@@ -348,7 +355,7 @@ export function UnifiedToolsTable({
               onClick={() => setSearchTerm("")}
               className="mt-2"
             >
-              Clear Search
+              {t("mcp-servers:tools.clearSearch")}
             </Button>
           ) : (
             onRefreshMcpTools && (
@@ -362,7 +369,7 @@ export function UnifiedToolsTable({
                 <RefreshCw
                   className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
                 />
-                Refresh Tools
+                {t("mcp-servers:tools.refreshTools")}
               </Button>
             )
           )}
@@ -378,7 +385,7 @@ export function UnifiedToolsTable({
                   onClick={() => handleSort("name")}
                   className="h-auto p-0 font-medium hover:bg-transparent"
                 >
-                  Tool Name
+                  {t("mcp-servers:tools.toolName")}
                   {renderSortIcon("name")}
                 </Button>
               </TableHead>
@@ -388,18 +395,18 @@ export function UnifiedToolsTable({
                   onClick={() => handleSort("description")}
                   className="h-auto p-0 font-medium hover:bg-transparent"
                 >
-                  Description
+                  {t("mcp-servers:tools.description")}
                   {renderSortIcon("description")}
                 </Button>
               </TableHead>
-              <TableHead>Source</TableHead>
+              <TableHead>{t("mcp-servers:tools.source")}</TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
                   onClick={() => handleSort("updated_at")}
                   className="h-auto p-0 font-medium hover:bg-transparent"
                 >
-                  Updated At
+                  {t("mcp-servers:tools.updatedAt")}
                   {renderSortIcon("updated_at")}
                 </Button>
               </TableHead>
@@ -436,7 +443,9 @@ export function UnifiedToolsTable({
                         <Wrench className="h-4 w-4 text-blue-500" />
                         <span>{tool.name}</span>
                         {tool.isTemporary && !tool.sources.database && (
-                          <span className="text-xs text-amber-600">(New)</span>
+                          <span className="text-xs text-amber-600">
+                            ({t("mcp-servers:tools.new")})
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -449,7 +458,7 @@ export function UnifiedToolsTable({
                           </p>
                         ) : (
                           <span className="text-sm text-muted-foreground italic">
-                            No description
+                            {t("mcp-servers:tools.noDescription")}
                           </span>
                         )}
                       </div>
@@ -467,7 +476,7 @@ export function UnifiedToolsTable({
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground italic">
-                          Not saved
+                          {t("mcp-servers:tools.notSaved")}
                         </span>
                       )}
                     </TableCell>
@@ -486,12 +495,12 @@ export function UnifiedToolsTable({
                             {isExpanded ? (
                               <>
                                 <EyeOff className="mr-2 h-4 w-4" />
-                                Hide Details
+                                {t("mcp-servers:tools.hideDetails")}
                               </>
                             ) : (
                               <>
                                 <Eye className="mr-2 h-4 w-4" />
-                                Show Details
+                                {t("mcp-servers:tools.showDetails")}
                               </>
                             )}
                           </DropdownMenuItem>
@@ -511,7 +520,7 @@ export function UnifiedToolsTable({
                               <div className="flex items-center gap-2">
                                 <Hash className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm font-medium">
-                                  UUID:
+                                  {t("mcp-servers:tools.uuid")}:
                                 </span>
                                 <code className="text-sm bg-background px-2 py-1 rounded border">
                                   {tool.uuid}
@@ -520,7 +529,7 @@ export function UnifiedToolsTable({
                             )}
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">
-                                Source:
+                                {t("mcp-servers:tools.source")}:
                               </span>
                               {getSourceBadge(tool)}
                             </div>
@@ -529,12 +538,12 @@ export function UnifiedToolsTable({
                           {/* Tool Schema */}
                           <div>
                             <h5 className="text-sm font-medium mb-2">
-                              Tool Schema
+                              {t("mcp-servers:tools.toolSchema")}
                             </h5>
                             <div className="bg-background p-3 rounded border">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-xs font-medium">
-                                  Type:
+                                  {t("mcp-servers:tools.type")}:
                                 </span>
                                 <code className="text-xs bg-muted px-2 py-1 rounded">
                                   {String(
@@ -548,7 +557,7 @@ export function UnifiedToolsTable({
                               {parameters.length > 0 && (
                                 <div>
                                   <span className="text-xs font-medium">
-                                    Parameters:
+                                    {t("mcp-servers:tools.parameters")}:
                                   </span>
                                   <div className="mt-2 space-y-2">
                                     {parameters.map((param, index) => (
@@ -585,7 +594,7 @@ export function UnifiedToolsTable({
                           {/* Full Schema JSON (for debugging) */}
                           <details className="text-xs">
                             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                              Show full schema JSON
+                              {t("mcp-servers:tools.showFullSchema")}
                             </summary>
                             <div className="mt-2">
                               <CodeBlock

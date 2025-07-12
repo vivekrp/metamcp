@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { UnifiedToolsTable } from "./tools-data-table";
@@ -48,6 +49,7 @@ export function ToolManagement({
   const [mcpTools, setMcpTools] = useState<MCPTool[]>([]);
   const [loading, setLoading] = useState(false);
   const hasInitiallyFetched = useRef(false);
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -65,17 +67,19 @@ export function ToolManagement({
     onSuccess: (response) => {
       if (response.success) {
         const foundCount = mcpTools.length;
-        toast.success(`Found ${foundCount} tools from MCP server`);
+        toast.success(
+          t("mcp-servers:tools.foundToolsFromMcp", { count: foundCount }),
+        );
         // Invalidate and refetch the tools list
         utils.frontend.tools.getByMcpServerUuid.invalidate({ mcpServerUuid });
         refetchDbTools();
       } else {
-        toast.error(response.error || "Failed to save tools");
+        toast.error(response.error || t("mcp-servers:tools.failedToSaveTools"));
       }
     },
     onError: (error) => {
       console.error("Error saving tools:", error);
-      toast.error("Failed to save tools", {
+      toast.error(t("mcp-servers:tools.failedToSaveTools"), {
         description: error.message,
       });
     },
@@ -110,22 +114,22 @@ export function ToolManagement({
             tools: toolsToSave,
           });
         } else {
-          toast.info("No tools found on MCP server");
+          toast.info(t("mcp-servers:tools.noToolsFromMcp"));
         }
       } else {
         setMcpTools([]);
-        toast.info("No tools found on MCP server");
+        toast.info(t("mcp-servers:tools.noToolsFromMcp"));
       }
     } catch (error) {
       console.error("Error fetching MCP tools:", error);
-      toast.error("Failed to fetch tools from MCP server", {
+      toast.error(t("mcp-servers:tools.failedToFetchTools"), {
         description: error instanceof Error ? error.message : String(error),
       });
       setMcpTools([]);
     } finally {
       setLoading(false);
     }
-  }, [makeRequest, mcpServerUuid, saveToolsMutation]);
+  }, [makeRequest, mcpServerUuid, saveToolsMutation, t]);
 
   // Auto-fetch tools when component mounts - but only once
   useEffect(() => {
@@ -148,20 +152,22 @@ export function ToolManagement({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wrench className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Tools Overview:</span>
+          <span className="text-sm font-medium">
+            {t("mcp-servers:tools.overview")}:
+          </span>
           <span className="text-sm text-muted-foreground">
-            {mcpToolCount} from MCP
+            {mcpToolCount} {t("mcp-servers:tools.fromMcp")}
           </span>
           <span className="text-muted-foreground">•</span>
           <Database className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {dbToolCount} saved
+            {dbToolCount} {t("mcp-servers:tools.saved")}
           </span>
           {newToolsCount > 0 && (
             <>
               <span className="text-muted-foreground">•</span>
               <span className="text-sm text-amber-600 font-medium">
-                {newToolsCount} new
+                {newToolsCount} {t("mcp-servers:tools.new")}
               </span>
             </>
           )}
@@ -177,7 +183,7 @@ export function ToolManagement({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            Refresh Tools
+            {t("mcp-servers:tools.refreshTools")}
           </Button>
         </div>
       </div>
@@ -197,10 +203,11 @@ export function ToolManagement({
       {!loading && mcpToolCount === 0 && dbToolCount === 0 && (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <h4 className="text-sm font-medium">No Tools Available</h4>
+          <h4 className="text-sm font-medium">
+            {t("mcp-servers:tools.noToolsAvailable")}
+          </h4>
           <p className="text-xs text-muted-foreground mt-1">
-            This MCP server doesn&apos;t expose any tools, or there was an error
-            fetching them. Try refreshing to check again.
+            {t("mcp-servers:tools.noToolsDescription")}
           </p>
         </div>
       )}

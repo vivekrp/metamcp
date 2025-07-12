@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConnection } from "@/hooks/useConnection";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
 
 import { ToolManagement } from "./components/tool-management";
@@ -36,6 +37,7 @@ export default function McpServerDetailPage({
 }: McpServerDetailPageProps) {
   const { uuid } = use(params);
   const router = useRouter();
+  const { t } = useTranslations();
 
   // State to track which sensitive fields are revealed
   const [revealedEnvVars, setRevealedEnvVars] = useState<Set<string>>(
@@ -82,22 +84,22 @@ export default function McpServerDetailPage({
       if (result.success) {
         // Invalidate the list cache since server was deleted
         utils.frontend.mcpServers.list.invalidate();
-        toast.success("Server deleted successfully");
+        toast.success(t("mcp-servers:detail.deleteServerSuccess"));
         // Navigate back to the servers list
         router.push("/mcp-servers");
       } else {
         // Handle business logic failures
         console.error("Delete failed:", result.message);
-        toast.error("Failed to delete server", {
+        toast.error(t("mcp-servers:detail.deleteServerError"), {
           description:
-            result.message || "An error occurred while deleting the server",
+            result.message || t("mcp-servers:detail.deleteServerError"),
         });
         setShowDeleteDialog(false);
       }
     },
     onError: (error) => {
       console.error("Error deleting server:", error);
-      toast.error("Failed to delete server", {
+      toast.error(t("mcp-servers:detail.deleteServerError"), {
         description: error.message,
       });
       setShowDeleteDialog(false);
@@ -160,18 +162,30 @@ export default function McpServerDetailPage({
   const getConnectionStatusInfo = () => {
     switch (connection.connectionStatus) {
       case "connected":
-        return { text: "Connected", color: "text-green-600", icon: Plug };
+        return {
+          text: t("mcp-servers:connected"),
+          color: "text-green-600",
+          icon: Plug,
+        };
       case "disconnected":
-        return { text: "Disconnected", color: "text-gray-500", icon: Server };
+        return {
+          text: t("mcp-servers:disconnected"),
+          color: "text-gray-500",
+          icon: Server,
+        };
       case "error":
       case "error-connecting-to-proxy":
         return {
-          text: "Connection Error",
+          text: t("mcp-servers:detail.connectionError"),
           color: "text-red-600",
           icon: Server,
         };
       default:
-        return { text: "Connecting...", color: "text-yellow-600", icon: Plug };
+        return {
+          text: t("mcp-servers:detail.connecting"),
+          color: "text-yellow-600",
+          icon: Plug,
+        };
     }
   };
 
@@ -187,7 +201,7 @@ export default function McpServerDetailPage({
           <Link href="/mcp-servers">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to MCP Servers
+              {t("mcp-servers:detail.backToServers")}
             </Button>
           </Link>
         </div>
@@ -195,17 +209,17 @@ export default function McpServerDetailPage({
           <div className="flex flex-col items-center justify-center mx-auto max-w-md">
             <Server className="size-12 text-red-400" />
             <h3 className="mt-4 text-lg font-semibold">
-              Error Loading MCP Server
+              {t("mcp-servers:detail.errorLoadingTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              {error.message || "Failed to load MCP server details"}
+              {error.message || t("mcp-servers:detail.errorLoadingDescription")}
             </p>
             <Button
               onClick={() => refetch()}
               className="mt-4"
               variant="outline"
             >
-              Retry
+              {t("mcp-servers:detail.retry")}
             </Button>
           </div>
         </div>
@@ -220,7 +234,7 @@ export default function McpServerDetailPage({
           <Link href="/mcp-servers">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to MCP Servers
+              {t("mcp-servers:detail.backToServers")}
             </Button>
           </Link>
         </div>
@@ -270,7 +284,7 @@ export default function McpServerDetailPage({
         <Link href="/mcp-servers">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to MCP Servers
+            {t("mcp-servers:detail.backToServers")}
           </Button>
         </Link>
         <div className="flex items-center gap-2">
@@ -280,14 +294,14 @@ export default function McpServerDetailPage({
             onClick={() => setEditDialogOpen(true)}
           >
             <Edit className="h-4 w-4 mr-2" />
-            Edit Server
+            {t("mcp-servers:detail.editServer")}
           </Button>
           <Button
             variant="destructive"
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
           >
-            Delete Server
+            {t("mcp-servers:detail.deleteServer")}
           </Button>
         </div>
       </div>
@@ -304,10 +318,13 @@ export default function McpServerDetailPage({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete MCP Server</DialogTitle>
+            <DialogTitle>
+              {t("mcp-servers:detail.deleteConfirmTitle")}
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{server?.name}?&quot; This
-              action cannot be undone.
+              {t("mcp-servers:detail.deleteConfirmDescription", {
+                name: server?.name,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -316,14 +333,16 @@ export default function McpServerDetailPage({
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteServer}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete Server"}
+              {deleteMutation.isPending
+                ? t("mcp-servers:detail.deleting")
+                : t("mcp-servers:detail.deleteServer")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -342,7 +361,9 @@ export default function McpServerDetailPage({
             {/* MCP Connection Status - only show if server exists */}
             {server && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">MCP Connection:</span>
+                <span className="text-sm font-medium">
+                  {t("mcp-servers:detail.mcpConnection")}:
+                </span>
                 <ConnectionIcon className="h-4 w-4" />
                 <span className={`text-sm font-medium ${connectionInfo.color}`}>
                   {connectionInfo.text}
@@ -354,8 +375,8 @@ export default function McpServerDetailPage({
                   disabled={connection.connectionStatus === "connecting"}
                 >
                   {connection.connectionStatus === "connected"
-                    ? "Reconnect"
-                    : "Connect"}
+                    ? t("mcp-servers:detail.reconnect")
+                    : t("mcp-servers:detail.connect")}
                 </Button>
               </div>
             )}
@@ -367,11 +388,13 @@ export default function McpServerDetailPage({
           <div className="grid gap-6 md:grid-cols-2">
             {/* Basic Information */}
             <div className="rounded-lg border p-6">
-              <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {t("mcp-servers:detail.basicInformation")}
+              </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-muted-foreground">
-                    UUID:
+                    {t("mcp-servers:detail.uuid")}:
                   </span>
                   <p className="text-sm font-mono text-right flex-1 ml-6">
                     {server.uuid}
@@ -379,7 +402,7 @@ export default function McpServerDetailPage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-muted-foreground">
-                    Type:
+                    {t("mcp-servers:detail.type")}:
                   </span>
                   <div className="flex-1 ml-6 flex justify-end">
                     <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
@@ -389,7 +412,7 @@ export default function McpServerDetailPage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-muted-foreground">
-                    Created:
+                    {t("mcp-servers:detail.created")}:
                   </span>
                   <p className="text-sm text-right flex-1 ml-6">
                     {new Date(server.created_at).toLocaleDateString()}{" "}
@@ -401,12 +424,14 @@ export default function McpServerDetailPage({
 
             {/* Configuration */}
             <div className="rounded-lg border p-6">
-              <h3 className="text-lg font-semibold mb-4">Configuration</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {t("mcp-servers:detail.configuration")}
+              </h3>
               <div className="space-y-4">
                 {server.command && (
                   <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
-                      Command:
+                      {t("mcp-servers:detail.command")}:
                     </span>
                     <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.command}
@@ -416,7 +441,7 @@ export default function McpServerDetailPage({
                 {server.args.length > 0 && (
                   <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
-                      Arguments:
+                      {t("mcp-servers:detail.arguments")}:
                     </span>
                     <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.args.join(" ")}
@@ -426,7 +451,7 @@ export default function McpServerDetailPage({
                 {server.url && (
                   <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
-                      URL:
+                      {t("mcp-servers:detail.url")}:
                     </span>
                     <p className="text-sm font-mono bg-gray-50 p-2 rounded break-all">
                       {server.url}
@@ -436,7 +461,7 @@ export default function McpServerDetailPage({
                 {server.bearerToken && (
                   <div className="space-y-2">
                     <span className="text-sm font-medium text-muted-foreground">
-                      Auth Bearer Token:
+                      {t("mcp-servers:detail.authBearerToken")}:
                     </span>
                     <div className="flex items-start gap-2 bg-gray-50 p-2 rounded">
                       <span className="text-sm font-mono text-muted-foreground flex-1 break-all">
@@ -452,7 +477,9 @@ export default function McpServerDetailPage({
                           setBearerTokenRevealed(!bearerTokenRevealed)
                         }
                         title={
-                          bearerTokenRevealed ? "Hide token" : "Show token"
+                          bearerTokenRevealed
+                            ? t("mcp-servers:detail.hideToken")
+                            : t("mcp-servers:detail.showToken")
                         }
                       >
                         {bearerTokenRevealed ? (
@@ -471,7 +498,7 @@ export default function McpServerDetailPage({
             {Object.keys(server.env).length > 0 && (
               <div className="rounded-lg border p-6 md:col-span-2">
                 <h3 className="text-lg font-semibold mb-4">
-                  Environment Variables
+                  {t("mcp-servers:detail.environmentVariables")}
                 </h3>
                 <div className="space-y-3">
                   {Object.entries(server.env).map(([key, value]) => {
@@ -494,7 +521,11 @@ export default function McpServerDetailPage({
                             size="sm"
                             className="h-6 w-6 p-0 flex-shrink-0"
                             onClick={() => toggleEnvVarVisibility(key)}
-                            title={isRevealed ? "Hide value" : "Show value"}
+                            title={
+                              isRevealed
+                                ? t("mcp-servers:detail.hideValue")
+                                : t("mcp-servers:detail.showValue")
+                            }
                           >
                             {isRevealed ? (
                               <EyeOff className="h-3 w-3" />
@@ -520,7 +551,9 @@ export default function McpServerDetailPage({
         {/* Tools Management */}
         {server && (
           <div className="rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Tools Management</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t("mcp-servers:detail.toolsManagement")}
+            </h3>
             {connection.connectionStatus === "connected" ? (
               <ToolManagement
                 mcpServerUuid={uuid}
@@ -532,8 +565,8 @@ export default function McpServerDetailPage({
                 <div className="flex justify-center">
                   <div className="text-sm text-muted-foreground">
                     {connection.connectionStatus === "connecting"
-                      ? "Connecting to MCP server..."
-                      : "Connect to MCP server to manage tools"}
+                      ? t("mcp-servers:detail.connectingToServer")
+                      : t("mcp-servers:detail.connectToManageTools")}
                   </div>
                 </div>
               </div>
