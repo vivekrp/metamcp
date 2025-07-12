@@ -36,7 +36,6 @@
   "cancel": "取消",
   "delete": "删除",
   "save": "保存",
-  "edit": "编辑",
   "private": "私有",
   "public": "公开",
   "created": "创建时间",
@@ -166,5 +165,27 @@
     "noToolsFromMetaMCP": "MetaMCP 连接中未找到工具",
     "fetchToolsError": "从 MetaMCP 连接获取工具失败",
     "metaMCPNotAvailable": "MetaMCP 连接不可用，回退到数据库刷新"
+  },
+  "edit": {
+    "title": "编辑命名空间",
+    "description": "更新命名空间名称、描述并管理 MCP 服务器关联。",
+    "nameLabel": "名称",
+    "nameRequired": "名称 *",
+    "namePlaceholder": "输入命名空间名称",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "输入命名空间描述（可选）",
+    "mcpServersLabel": "MCP 服务器（已选择 {{count}} 个）",
+    "loadingServers": "正在加载服务器...",
+    "noMcpServersAvailable": "没有可用的 MCP 服务器",
+    "createMcpServersFirst": "请先创建一些 MCP 服务器以添加到此命名空间",
+    "selectMcpServersHelp": "选择要包含在此命名空间中的 MCP 服务器。您可以随时添加或移除服务器。",
+    "cancel": "取消",
+    "updateButton": "更新命名空间",
+    "updating": "更新中...",
+    "updateSuccess": "命名空间已更新",
+    "updateSuccessDescription": "命名空间已成功更新",
+    "updateFailed": "更新失败",
+    "updateFailedDescription": "更新命名空间失败",
+    "unexpectedError": "发生了意外错误"
   }
 } 

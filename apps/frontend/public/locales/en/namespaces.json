@@ -36,7 +36,6 @@
   "cancel": "Cancel",
   "delete": "Delete",
   "save": "Save",
-  "edit": "Edit",
   "private": "Private",
   "public": "Public",
   "created": "Created",
@@ -166,5 +165,27 @@
     "noToolsFromMetaMCP": "No tools found in MetaMCP connection",
     "fetchToolsError": "Failed to fetch tools from MetaMCP connection",
     "metaMCPNotAvailable": "MetaMCP connection not available, falling back to database refresh"
+  },
+  "edit": {
+    "title": "Edit Namespace",
+    "description": "Update the namespace name, description, and manage MCP server associations.",
+    "nameLabel": "Name",
+    "nameRequired": "Name *",
+    "namePlaceholder": "Enter namespace name",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Enter namespace description (optional)",
+    "mcpServersLabel": "MCP Servers ({{count}} selected)",
+    "loadingServers": "Loading servers...",
+    "noMcpServersAvailable": "No MCP servers available",
+    "createMcpServersFirst": "Create some MCP servers first to add them to this namespace",
+    "selectMcpServersHelp": "Select the MCP servers to include in this namespace. You can add or remove servers at any time.",
+    "cancel": "Cancel",
+    "updateButton": "Update Namespace",
+    "updating": "Updating...",
+    "updateSuccess": "Namespace Updated",
+    "updateSuccessDescription": "Namespace has been updated successfully",
+    "updateFailed": "Update Failed",
+    "updateFailedDescription": "Failed to update namespace",
+    "unexpectedError": "An unexpected error occurred"
   }
 } 
