@@ -79,7 +79,7 @@ function LoginForm() {
       } else {
         router.push(callbackUrl);
       }
-    } catch (err) {
+    } catch (_err) {
       setError(t("auth:signInError"));
     } finally {
       setIsLoading(false);
