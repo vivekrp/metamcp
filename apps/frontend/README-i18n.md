@@ -1,13 +1,8 @@
 # Internationalization (i18n) Setup
 
-This project uses Next.js's built-in internationalization support with English and Chinese languages.
+This projects uses Next.js locale in middleware and client side translation.
 
-## Overview
-
-- **Primary Language**: English (en)
-- **Secondary Language**: Chinese Simplified (zh)
-- **Framework**: Next.js App Router with [locale] routing
-- **Auto-translation**: OpenAI GPT-4o (for generating Chinese translations)
+Default locale is en (English) while zh (Simplified Chinese) is supported. The author can recognize both languages so can better support the translation accuracy there, but you are welcomed to contribute more languages following this doc.
 
 ## Project Structure
 
@@ -39,7 +34,6 @@ apps/frontend/
 │   └── zh/                       # Chinese translations
 │       └── (auto-generated)
 ├── lib/
-│   ├── dictionaries.ts          # Server-side i18n utilities
 │   └── i18n.ts                  # Client-side i18n utilities
 ├── hooks/
 │   ├── useLocale.ts             # Hook to get current locale
@@ -50,30 +44,6 @@ apps/frontend/
 ```
 
 ## Usage
-
-### Server Components
-
-For server components, use the `getDictionary` function:
-
-```tsx
-import { getDictionary } from "@/lib/dictionaries";
-
-export default async function ServerComponent({ 
-  params 
-}: { 
-  params: Promise<{ locale: string }> 
-}) {
-  const { locale } = await params;
-  const dict = await getDictionary(locale as SupportedLocale);
-  
-  return (
-    <div>
-      <h1>{dict.common.title}</h1>
-      <p>{dict.auth.signIn}</p>
-    </div>
-  );
-}
-```
 
 ### Client Components
 
@@ -135,15 +105,7 @@ const localizedPath = getLocalizedPath("/mcp-servers", "zh");
 ## Adding New Translations
 
 1. **Add to English files first** in `public/locales/en/`
-2. **Run the translation script** to generate Chinese translations
-3. **Review and edit** the generated translations as needed
-
-### Translation Script
-
-```bash
-# Generate Chinese translations from English
-node scripts/translate.js
-```
+2. **Add other languages** in new locale
 
 ## Translation Keys
 
@@ -211,7 +173,7 @@ function Header() {
 
 ### 3. Fallbacks
 
-- Chinese translations automatically fall back to English if missing
+- Other language translations automatically fall back to English if missing
 - Keys are returned as-is if no translation is found
 
 ## Troubleshooting
@@ -222,26 +184,12 @@ function Header() {
 2. **Hydration errors**: Ensure consistent rendering between server and client
 3. **Locale not detected**: Check middleware configuration and URL structure
 
-### Debug Tips
-
-- Use browser dev tools to inspect locale detection
-- Check that translation files are properly formatted JSON
-- Verify that the locale is correctly passed to components
-
-## Migration Notes
-
-This project was migrated from `react-i18next` to Next.js native i18n for better performance and simpler architecture. The key changes include:
-
-- Server-side translation loading with `getDictionary`
-- Client-side hooks with `useTranslations`
-- Locale-based routing with `[locale]` segments
-- Simplified middleware for locale detection
 
 ## Contributing
 
 When adding new features:
 
 1. Add English translations first
-2. Use the translation script to generate Chinese versions
+2. Add other languages (you can use agent like Cursor to generate other files for other locale)
 3. Test both locales thoroughly
 4. Update this documentation if adding new patterns 
