@@ -83,7 +83,8 @@ function SearchContent() {
       {error && (
         <div>
           {t("search:error")}:{" "}
-          {error.message + " | You may need a proxy server."}
+          {error.message +
+            " | You may need a proxy server to access Cloudflare."}
         </div>
       )}
       {data?.results && <CardGrid items={data.results} />}
