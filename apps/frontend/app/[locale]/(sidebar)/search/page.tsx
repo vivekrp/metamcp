@@ -82,7 +82,8 @@ function SearchContent() {
 
       {error && (
         <div>
-          {t("search:error")}: {error.message}
+          {t("search:error")}:{" "}
+          {error.message + " | You may need a proxy server."}
         </div>
       )}
       {data?.results && <CardGrid items={data.results} />}
