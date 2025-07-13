@@ -4,11 +4,8 @@ import { z } from "zod";
 export const createEndpointFormSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      "Name must be URL compatible (alphanumeric, underscore, and hyphen only)",
-    ),
+    .min(1, "validation:endpointName.required")
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid("Please select a valid namespace"),
   enableApiKeyAuth: z.boolean(),
@@ -20,11 +17,8 @@ export const createEndpointFormSchema = z.object({
 export const editEndpointFormSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      "Name must be URL compatible (alphanumeric, underscore, and hyphen only)",
-    ),
+    .min(1, "validation:endpointName.required")
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid("Please select a valid namespace"),
   enableApiKeyAuth: z.boolean().optional(),
@@ -35,8 +29,8 @@ export const editEndpointFormSchema = z.object({
 export const CreateEndpointRequestSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Name must be URL compatible"),
+    .min(1, "validation:endpointName.required")
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid(),
   enableApiKeyAuth: z.boolean().default(true),
@@ -90,8 +84,8 @@ export const UpdateEndpointRequestSchema = z.object({
   uuid: z.string(),
   name: z
     .string()
-    .min(1, "Name is required")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Name must be URL compatible"),
+    .min(1, "validation:endpointName.required")
+    .regex(/^[a-zA-Z0-9_-]+$/, "validation:endpointName.urlCompatible"),
   description: z.string().optional(),
   namespaceUuid: z.string().uuid(),
   enableApiKeyAuth: z.boolean().optional(),

@@ -13,7 +13,7 @@ export const ApiKeySchema = z.object({
 export const CreateApiKeyFormSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required")
+    .min(1, "validation:apiKeyName.required")
     .max(100, "Name must be less than 100 characters")
     .regex(
       /^[a-zA-Z0-9_\s-]+$/,
@@ -25,7 +25,7 @@ export const CreateApiKeyFormSchema = z.object({
 export const CreateApiKeyRequestSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required")
+    .min(1, "validation:apiKeyName.required")
     .max(100, "Name must be less than 100 characters")
     .regex(
       /^[a-zA-Z0-9_\s-]+$/,
@@ -45,7 +45,7 @@ export const UpdateApiKeyRequestSchema = z.object({
   uuid: z.string().uuid(),
   name: z
     .string()
-    .min(1, "Name is required")
+    .min(1, "validation:apiKeyName.required")
     .max(100, "Name must be less than 100 characters")
     .regex(
       /^[a-zA-Z0-9_\s-]+$/,

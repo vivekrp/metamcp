@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   EditServerFormData,
   EditServerFormSchema,
@@ -29,7 +28,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 interface EditMcpServerProps {
   server: McpServer | null;
@@ -45,6 +46,7 @@ export function EditMcpServer({
   onSuccess,
 }: EditMcpServerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -59,15 +61,17 @@ export function EditMcpServer({
           utils.frontend.mcpServers.get.invalidate({ uuid: server.uuid });
         }
 
-        toast.success("MCP Server Updated", {
-          description: "Server configuration has been updated successfully",
+        toast.success(t("mcp-servers:serverUpdated"), {
+          description: t("mcp-servers:serverUpdateSuccess", {
+            name: data.data.name,
+          }),
         });
         onSuccess(data.data);
         onClose();
         editForm.reset();
       } else {
         // Handle business logic errors returned by the backend
-        const errorMessage = data.message || "Failed to update MCP server";
+        const errorMessage = data.message || t("mcp-servers:serverUpdateError");
 
         // Check if this is a unique constraint violation for server name
         if (
@@ -79,8 +83,8 @@ export function EditMcpServer({
             type: "manual",
             message: errorMessage,
           });
-          toast.error("Server Name Already Exists", {
-            description: "Please choose a different server name",
+          toast.error(t("mcp-servers:serverNameExists"), {
+            description: t("mcp-servers:serverNameExistsDesc"),
           });
         } else if (
           errorMessage.includes("is invalid") &&
@@ -91,13 +95,12 @@ export function EditMcpServer({
             type: "manual",
             message: errorMessage,
           });
-          toast.error("Invalid Server Name", {
-            description:
-              "Server names must only contain letters, numbers, underscores, and hyphens",
+          toast.error(t("mcp-servers:invalidServerName"), {
+            description: t("mcp-servers:invalidServerNameDesc"),
           });
         } else {
           // Generic error handling
-          toast.error("Update Failed", {
+          toast.error(t("mcp-servers:serverUpdateError"), {
             description: errorMessage,
           });
         }
@@ -116,8 +119,8 @@ export function EditMcpServer({
           type: "manual",
           message: error.message,
         });
-        toast.error("Server Name Already Exists", {
-          description: "Please choose a different server name",
+        toast.error(t("mcp-servers:serverNameExists"), {
+          description: t("mcp-servers:serverNameExistsDesc"),
         });
       } else if (
         error.message.includes("is invalid") &&
@@ -128,14 +131,13 @@ export function EditMcpServer({
           type: "manual",
           message: error.message,
         });
-        toast.error("Invalid Server Name", {
-          description:
-            "Server names must only contain letters, numbers, underscores, and hyphens",
+        toast.error(t("mcp-servers:invalidServerName"), {
+          description: t("mcp-servers:invalidServerNameDesc"),
         });
       } else {
         // Generic error handling
-        toast.error("Update Failed", {
-          description: error.message || "An unexpected error occurred",
+        toast.error(t("mcp-servers:serverUpdateError"), {
+          description: error.message || t("common:unexpectedError"),
         });
       }
     },
@@ -145,7 +147,7 @@ export function EditMcpServer({
   });
 
   const editForm = useForm<EditServerFormData>({
-    resolver: zodResolver(EditServerFormSchema),
+    resolver: createTranslatedZodResolver(EditServerFormSchema, t),
     defaultValues: {
       name: "",
       description: "",
@@ -249,11 +251,9 @@ export function EditMcpServer({
     } catch (error) {
       setIsUpdating(false);
       console.error("Error preparing server data:", error);
-      toast.error("Update Failed", {
+      toast.error(t("mcp-servers:serverUpdateError"), {
         description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
+          error instanceof Error ? error.message : t("common:unexpectedError"),
       });
     }
   };
@@ -267,9 +267,9 @@ export function EditMcpServer({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit MCP Server</DialogTitle>
+          <DialogTitle>{t("mcp-servers:editServer")}</DialogTitle>
           <DialogDescription>
-            Update the configuration for this MCP server.
+            {t("mcp-servers:addServerDescription")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -278,12 +278,12 @@ export function EditMcpServer({
         >
           <div className="flex flex-col gap-2">
             <label htmlFor="edit-name" className="text-sm font-medium">
-              Name
+              {t("mcp-servers:name")}
             </label>
             <Input
               id="edit-name"
               {...editForm.register("name")}
-              placeholder="My MCP Server"
+              placeholder={t("mcp-servers:namePlaceholder")}
             />
             {editForm.formState.errors.name && (
               <p className="text-sm text-red-500">
@@ -294,17 +294,19 @@ export function EditMcpServer({
 
           <div className="flex flex-col gap-2">
             <label htmlFor="edit-description" className="text-sm font-medium">
-              Description (Optional)
+              {t("mcp-servers:descriptionLabel")}
             </label>
             <Input
               id="edit-description"
               {...editForm.register("description")}
-              placeholder="Server description"
+              placeholder={t("mcp-servers:descriptionPlaceholder")}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Ownership</label>
+            <label className="text-sm font-medium">
+              {t("mcp-servers:ownership")}
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -313,8 +315,8 @@ export function EditMcpServer({
                   type="button"
                 >
                   {editForm.watch("user_id") === null
-                    ? "Everyone (Public)"
-                    : "For myself (Private)"}
+                    ? t("mcp-servers:public")
+                    : t("mcp-servers:private")}
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -322,23 +324,24 @@ export function EditMcpServer({
                 <DropdownMenuItem
                   onClick={() => editForm.setValue("user_id", undefined)}
                 >
-                  For myself (Private)
+                  {t("mcp-servers:private")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => editForm.setValue("user_id", null)}
                 >
-                  Everyone (Public)
+                  {t("mcp-servers:public")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <p className="text-xs text-muted-foreground">
-              Private servers are only accessible to you. Public servers are
-              accessible to all users.
+              {t("mcp-servers:ownershipHelp")}
             </p>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Type</label>
+            <label className="text-sm font-medium">
+              {t("mcp-servers:type")}
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -347,13 +350,13 @@ export function EditMcpServer({
                   type="button"
                 >
                   {editForm.watch("type") === McpServerTypeEnum.Enum.STDIO
-                    ? "Stdio"
+                    ? t("mcp-servers:stdio")
                     : editForm.watch("type") === McpServerTypeEnum.Enum.SSE
-                      ? "SSE"
+                      ? t("mcp-servers:sse")
                       : editForm.watch("type") ===
                           McpServerTypeEnum.Enum.STREAMABLE_HTTP
                         ? "Streamable HTTP"
-                        : "Select type"}
+                        : t("mcp-servers:selectType")}
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -363,14 +366,14 @@ export function EditMcpServer({
                     editForm.setValue("type", McpServerTypeEnum.Enum.STDIO)
                   }
                 >
-                  Stdio
+                  {t("mcp-servers:stdio")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
                     editForm.setValue("type", McpServerTypeEnum.Enum.SSE)
                   }
                 >
-                  SSE
+                  {t("mcp-servers:sse")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
@@ -390,12 +393,12 @@ export function EditMcpServer({
             <>
               <div className="flex flex-col gap-2">
                 <label htmlFor="edit-command" className="text-sm font-medium">
-                  Command
+                  {t("mcp-servers:command")}
                 </label>
                 <Input
                   id="edit-command"
                   {...editForm.register("command")}
-                  placeholder="uvx"
+                  placeholder={t("mcp-servers:commandPlaceholder")}
                 />
                 {editForm.formState.errors.command && (
                   <p className="text-sm text-red-500">
@@ -406,12 +409,12 @@ export function EditMcpServer({
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="edit-args" className="text-sm font-medium">
-                  Args (Optional)
+                  {t("mcp-servers:args")}
                 </label>
                 <Input
                   id="edit-args"
                   {...editForm.register("args")}
-                  placeholder="mcp_server_time --local-timezone=America/New_York"
+                  placeholder={t("mcp-servers:argsPlaceholder")}
                 />
                 <p className="text-xs text-muted-foreground">
                   Separate arguments with spaces
@@ -420,12 +423,12 @@ export function EditMcpServer({
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="edit-env" className="text-sm font-medium">
-                  Environment Variables (Optional)
+                  {t("mcp-servers:env")}
                 </label>
                 <Textarea
                   id="edit-env"
                   {...editForm.register("env")}
-                  placeholder="KEY=value&#10;ANOTHER_KEY=another_value"
+                  placeholder={t("mcp-servers:envPlaceholder")}
                   className="h-24"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -441,16 +444,12 @@ export function EditMcpServer({
             <>
               <div className="flex flex-col gap-2">
                 <label htmlFor="edit-url" className="text-sm font-medium">
-                  URL
+                  {t("mcp-servers:url")}
                 </label>
                 <Input
                   id="edit-url"
                   {...editForm.register("url")}
-                  placeholder={
-                    editForm.watch("type") === McpServerTypeEnum.Enum.SSE
-                      ? "https://example.com/sse"
-                      : "https://example.com/mcp"
-                  }
+                  placeholder={t("mcp-servers:urlPlaceholder")}
                 />
                 {editForm.formState.errors.url && (
                   <p className="text-sm text-red-500">
@@ -464,12 +463,12 @@ export function EditMcpServer({
                   htmlFor="edit-bearerToken"
                   className="text-sm font-medium"
                 >
-                  Auth Bearer Token (Optional)
+                  {t("mcp-servers:bearerToken")}
                 </label>
                 <Input
                   id="edit-bearerToken"
                   {...editForm.register("bearerToken")}
-                  placeholder="your-bearer-token"
+                  placeholder={t("mcp-servers:bearerTokenPlaceholder")}
                   type="password"
                 />
               </div>
@@ -483,10 +482,10 @@ export function EditMcpServer({
               onClick={handleClose}
               disabled={isUpdating}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={isUpdating}>
-              {isUpdating ? "Updating..." : "Update Server"}
+              {isUpdating ? t("common:updating") : t("common:update")}
             </Button>
           </div>
         </form>

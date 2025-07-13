@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   EditNamespaceFormData,
   editNamespaceFormSchema,
@@ -24,7 +23,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 interface EditNamespaceProps {
   namespace: NamespaceWithServers | null;
@@ -41,6 +42,7 @@ export function EditNamespace({
 }: EditNamespaceProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedServerUuids, setSelectedServerUuids] = useState<string[]>([]);
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -60,22 +62,23 @@ export function EditNamespace({
           utils.frontend.namespaces.get.invalidate({ uuid: namespace.uuid });
         }
 
-        toast.success("Namespace Updated", {
-          description: "Namespace has been updated successfully",
+        toast.success(t("namespaces:edit.updateSuccess"), {
+          description: t("namespaces:edit.updateSuccessDescription"),
         });
         onSuccess(data.data);
         onClose();
         editForm.reset();
       } else {
-        toast.error("Update Failed", {
-          description: data.message || "Failed to update namespace",
+        toast.error(t("namespaces:edit.updateFailed"), {
+          description:
+            data.message || t("namespaces:edit.updateFailedDescription"),
         });
       }
     },
     onError: (error) => {
       console.error("Error updating namespace:", error);
-      toast.error("Update Failed", {
-        description: error.message || "An unexpected error occurred",
+      toast.error(t("namespaces:edit.updateFailed"), {
+        description: error.message || t("namespaces:edit.unexpectedError"),
       });
     },
     onSettled: () => {
@@ -84,7 +87,7 @@ export function EditNamespace({
   });
 
   const editForm = useForm<EditNamespaceFormData>({
-    resolver: zodResolver(editNamespaceFormSchema),
+    resolver: createTranslatedZodResolver(editNamespaceFormSchema, t),
     defaultValues: {
       name: "",
       description: "",
@@ -139,11 +142,11 @@ export function EditNamespace({
     } catch (error) {
       setIsUpdating(false);
       console.error("Error preparing namespace data:", error);
-      toast.error("Update Failed", {
+      toast.error(t("namespaces:edit.updateFailed"), {
         description:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred",
+            : t("namespaces:edit.unexpectedError"),
       });
     }
   };
@@ -162,10 +165,9 @@ export function EditNamespace({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Namespace</DialogTitle>
+          <DialogTitle>{t("namespaces:edit.title")}</DialogTitle>
           <DialogDescription>
-            Update the namespace name, description, and manage MCP server
-            associations.
+            {t("namespaces:edit.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={editForm.handleSubmit(handleEditNamespace)}>
@@ -173,11 +175,11 @@ export function EditNamespace({
             {/* Namespace Name */}
             <div className="space-y-2">
               <label htmlFor="edit-name" className="text-sm font-medium">
-                Name *
+                {t("namespaces:edit.nameRequired")}
               </label>
               <Input
                 id="edit-name"
-                placeholder="Enter namespace name"
+                placeholder={t("namespaces:edit.namePlaceholder")}
                 {...editForm.register("name")}
                 disabled={isUpdating}
               />
@@ -191,11 +193,11 @@ export function EditNamespace({
             {/* Namespace Description */}
             <div className="space-y-2">
               <label htmlFor="edit-description" className="text-sm font-medium">
-                Description
+                {t("namespaces:edit.descriptionLabel")}
               </label>
               <Textarea
                 id="edit-description"
-                placeholder="Enter namespace description (optional)"
+                placeholder={t("namespaces:edit.descriptionPlaceholder")}
                 {...editForm.register("description")}
                 disabled={isUpdating}
                 rows={3}
@@ -210,24 +212,25 @@ export function EditNamespace({
             {/* MCP Servers Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                MCP Servers ({selectedServerUuids.length} selected)
+                {t("namespaces:edit.mcpServersLabel", {
+                  count: selectedServerUuids.length,
+                })}
               </label>
               <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto">
                 {serversLoading ? (
                   <div className="flex items-center justify-center py-4">
                     <div className="text-sm text-muted-foreground">
-                      Loading servers...
+                      {t("namespaces:edit.loadingServers")}
                     </div>
                   </div>
                 ) : availableServers.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-6 text-center">
                     <Server className="h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
-                      No MCP servers available
+                      {t("namespaces:edit.noMcpServersAvailable")}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Create some MCP servers first to add them to this
-                      namespace
+                      {t("namespaces:edit.createMcpServersFirst")}
                     </p>
                   </div>
                 ) : (
@@ -278,8 +281,7 @@ export function EditNamespace({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Select the MCP servers to include in this namespace. You can add
-                or remove servers at any time.
+                {t("namespaces:edit.selectMcpServersHelp")}
               </p>
             </div>
           </div>
@@ -291,10 +293,12 @@ export function EditNamespace({
               onClick={handleClose}
               disabled={isUpdating}
             >
-              Cancel
+              {t("namespaces:edit.cancel")}
             </Button>
             <Button type="submit" disabled={isUpdating}>
-              {isUpdating ? "Updating..." : "Update Namespace"}
+              {isUpdating
+                ? t("namespaces:edit.updating")
+                : t("namespaces:edit.updateButton")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   EditEndpointFormData,
   editEndpointFormSchema,
@@ -30,7 +29,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/hooks/useTranslations";
 import { trpc } from "@/lib/trpc";
+import { createTranslatedZodResolver } from "@/lib/zod-resolver";
 
 interface EditEndpointProps {
   endpoint: EndpointWithNamespace | null;
@@ -50,6 +51,7 @@ export function EditEndpoint({
     useState<string>("");
   const [selectedNamespaceName, setSelectedNamespaceName] =
     useState<string>("");
+  const { t } = useTranslations();
 
   // Get tRPC utils for cache invalidation
   const utils = trpc.useUtils();
@@ -71,8 +73,8 @@ export function EditEndpoint({
           utils.frontend.endpoints.get.invalidate({ uuid: endpoint.uuid });
         }
 
-        toast.success("Endpoint Updated", {
-          description: "Endpoint has been updated successfully",
+        toast.success(t("endpoints:edit.updateSuccess"), {
+          description: t("endpoints:edit.updateSuccessDescription"),
         });
 
         // Get the updated endpoint with namespace info for the callback
@@ -88,15 +90,16 @@ export function EditEndpoint({
         onClose();
         editForm.reset();
       } else {
-        toast.error("Update Failed", {
-          description: data.message || "Failed to update endpoint",
+        toast.error(t("endpoints:edit.updateFailed"), {
+          description:
+            data.message || t("endpoints:edit.updateFailedDescription"),
         });
       }
     },
     onError: (error) => {
       console.error("Error updating endpoint:", error);
-      toast.error("Update Failed", {
-        description: error.message || "An unexpected error occurred",
+      toast.error(t("endpoints:edit.updateFailed"), {
+        description: error.message || t("common:unexpectedError"),
       });
     },
     onSettled: () => {
@@ -105,7 +108,7 @@ export function EditEndpoint({
   });
 
   const editForm = useForm<EditEndpointFormData>({
-    resolver: zodResolver(editEndpointFormSchema),
+    resolver: createTranslatedZodResolver(editEndpointFormSchema, t),
     defaultValues: {
       name: "",
       description: "",
@@ -162,11 +165,9 @@ export function EditEndpoint({
     } catch (error) {
       setIsUpdating(false);
       console.error("Error preparing endpoint data:", error);
-      toast.error("Update Failed", {
+      toast.error(t("endpoints:edit.updateFailed"), {
         description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
+          error instanceof Error ? error.message : t("common:unexpectedError"),
       });
     }
   };
@@ -186,10 +187,9 @@ export function EditEndpoint({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Endpoint</DialogTitle>
+          <DialogTitle>{t("endpoints:edit.title")}</DialogTitle>
           <DialogDescription>
-            Update the endpoint name, description, and reassign to a different
-            namespace.
+            {t("endpoints:edit.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={editForm.handleSubmit(handleEditEndpoint)}>
@@ -197,11 +197,11 @@ export function EditEndpoint({
             {/* Endpoint Name */}
             <div className="space-y-2">
               <label htmlFor="edit-name" className="text-sm font-medium">
-                Name *
+                {t("endpoints:edit.nameLabel")} *
               </label>
               <Input
                 id="edit-name"
-                placeholder="Enter endpoint name"
+                placeholder={t("endpoints:edit.namePlaceholder")}
                 {...editForm.register("name")}
                 disabled={isUpdating}
               />
@@ -211,19 +211,18 @@ export function EditEndpoint({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                URL-compatible name (alphanumeric, underscore, and hyphen only).
-                This will be accessible at /metamcp/[name]
+                {t("endpoints:edit.nameHelpText")}
               </p>
             </div>
 
             {/* Endpoint Description */}
             <div className="space-y-2">
               <label htmlFor="edit-description" className="text-sm font-medium">
-                Description
+                {t("endpoints:edit.descriptionLabel")}
               </label>
               <Textarea
                 id="edit-description"
-                placeholder="Enter endpoint description (optional)"
+                placeholder={t("endpoints:edit.descriptionPlaceholder")}
                 {...editForm.register("description")}
                 disabled={isUpdating}
                 rows={3}
@@ -238,7 +237,7 @@ export function EditEndpoint({
             {/* Namespace Selection */}
             <div className="space-y-2">
               <label htmlFor="edit-namespace" className="text-sm font-medium">
-                Namespace *
+                {t("endpoints:edit.namespaceLabel")} *
               </label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -247,7 +246,8 @@ export function EditEndpoint({
                     className="w-full justify-between"
                     disabled={namespacesLoading || isUpdating}
                   >
-                    {selectedNamespaceName || "Select namespace"}
+                    {selectedNamespaceName ||
+                      t("endpoints:edit.selectNamespace")}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -286,22 +286,24 @@ export function EditEndpoint({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Select the namespace this endpoint should map to.
+                {t("endpoints:edit.namespaceHelpText")}
               </p>
             </div>
 
             {/* API Key Authentication Settings */}
             <div className="space-y-4 border-t pt-4">
-              <h4 className="text-sm font-medium">API Key Authentication</h4>
+              <h4 className="text-sm font-medium">
+                {t("endpoints:edit.apiKeyAuthSection")}
+              </h4>
 
               {/* Enable API Key Auth */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <label className="text-sm font-medium">
-                    Enable API Key Authentication
+                    {t("endpoints:edit.enableApiKeyAuthLabel")}
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Require API key for endpoint access
+                    {t("endpoints:edit.enableApiKeyAuthDescription")}
                   </p>
                 </div>
                 <Switch
@@ -318,11 +320,10 @@ export function EditEndpoint({
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <label className="text-sm font-medium">
-                      Use Query Parameter Authentication
+                      {t("endpoints:edit.useQueryParamAuthLabel")}
                     </label>
                     <p className="text-xs text-muted-foreground">
-                      Accept API key via ?api_key= in addition to Authorization
-                      header
+                      {t("endpoints:edit.useQueryParamAuthDescription")}
                     </p>
                   </div>
                   <Switch
@@ -344,13 +345,15 @@ export function EditEndpoint({
               onClick={handleClose}
               disabled={isUpdating}
             >
-              Cancel
+              {t("common:cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isUpdating || !selectedNamespaceUuid}
             >
-              {isUpdating ? "Updating..." : "Update Endpoint"}
+              {isUpdating
+                ? t("endpoints:edit.updating")
+                : t("endpoints:edit.updateEndpoint")}
             </Button>
           </DialogFooter>
         </form>

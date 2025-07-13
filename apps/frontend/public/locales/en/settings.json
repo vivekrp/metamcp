@@ -1,0 +1,21 @@
+{
+  "title": "Settings",
+  "description": "Manage application settings and preferences",
+  "authSettings": "Authentication Settings",
+  "authSettingsDescription": "Configure authentication and user registration settings",
+  "disableSignup": "Disable New User Registration",
+  "disableSignupDescription": "When enabled, new users will not be able to create accounts. Existing users can still log in.",
+  "loading": "Loading...",
+  "save": "Save",
+  "cancel": "Cancel",
+  "saved": "Settings saved successfully",
+  "error": "Failed to save settings",
+  "generalSettings": "General Settings",
+  "securitySettings": "Security Settings",
+  "notificationSettings": "Notification Settings",
+  "advancedSettings": "Advanced Settings",
+  "resetToDefaults": "Reset to Defaults",
+  "confirmReset": "Are you sure you want to reset all settings to their default values?",
+  "resetConfirmation": "This action cannot be undone. All custom settings will be lost.",
+  "reset": "Reset"
+} 

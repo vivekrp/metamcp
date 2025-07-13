@@ -1,0 +1,21 @@
+{
+  "title": "设置",
+  "description": "管理应用程序设置和偏好",
+  "authSettings": "身份验证设置",
+  "authSettingsDescription": "配置身份验证和用户注册设置",
+  "disableSignup": "禁用新用户注册",
+  "disableSignupDescription": "启用后，新用户将无法创建账户。现有用户仍可以登录。",
+  "loading": "加载中...",
+  "save": "保存",
+  "cancel": "取消",
+  "saved": "设置保存成功",
+  "error": "保存设置失败",
+  "generalSettings": "常规设置",
+  "securitySettings": "安全设置",
+  "notificationSettings": "通知设置",
+  "advancedSettings": "高级设置",
+  "resetToDefaults": "重置为默认值",
+  "confirmReset": "您确定要将所有设置重置为默认值吗？",
+  "resetConfirmation": "此操作无法撤消。所有自定义设置都将丢失。",
+  "reset": "重置"
+} 
