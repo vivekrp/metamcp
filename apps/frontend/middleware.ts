@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   // Skip middleware for static files and API routes
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
+    pathname.startsWith("/api/") ||
     pathname.startsWith("/trpc") ||
     pathname.startsWith("/mcp-proxy") ||
     pathname.startsWith("/metamcp") ||
@@ -117,6 +117,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Skip all internal paths (_next, etc.)
-    "/((?!_next|api|trpc|mcp-proxy|metamcp|service|health|.*\\..*).*)",
+    "/((?!_next|api/|trpc|mcp-proxy|metamcp|service|health|.*\\..*).*)",
   ],
 };
