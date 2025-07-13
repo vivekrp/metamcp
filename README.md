@@ -1,4 +1,4 @@
-# 🚀 MetaMCP (Aggregate MCP servers & apply middlewares; host & emit unified MCP servers out)
+# 🚀 MetaMCP (MCP Aggregator, Orchestrator, Middleware, Gateway in one docker)
 
 <div align="center">
 
