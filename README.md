@@ -316,6 +316,12 @@ sequenceDiagram
 - [ ] 🧪 Testing & Evaluation for MCP tool selection optimization
 - [ ] ⚡ Dynamically generate MCP servers
 
+## 🌐 i18n
+
+See [README-i18n.md](README-i18n.md)
+
+Currently en and zh locale are supported, but welcome contributions.
+
 ## 🤝 Contributing
 
 We welcome contributions! See details at **[CONTRIBUTING.md](CONTRIBUTING.md)**
