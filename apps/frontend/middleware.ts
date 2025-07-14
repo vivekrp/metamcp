@@ -66,6 +66,8 @@ export async function middleware(request: NextRequest) {
     // Redirect to the appropriate locale
     locale = getLocale(request);
     const newUrl = new URL(`/${locale}${pathname}`, request.url);
+    // Preserve query parameters during redirect
+    newUrl.search = request.nextUrl.search;
     return NextResponse.redirect(newUrl);
   }
 
