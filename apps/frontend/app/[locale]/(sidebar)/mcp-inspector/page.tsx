@@ -118,7 +118,7 @@ function McpInspectorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServerUuid, selectedServer, servers, clearNotifications]);
 
-  const handleConnectionToggle = () => {
+  const handleConnectionToggle = useMemoizedFn(() => {
     if (connection.connectionStatus === "connected") {
       connection.disconnect().then(() => {
         connection.connect();
@@ -126,15 +126,15 @@ function McpInspectorContent() {
     } else {
       connection.connect();
     }
-  };
+  });
 
   // Handle successful edit
-  const handleEditSuccess = () => {
+  const handleEditSuccess = useMemoizedFn(() => {
     setEditDialogOpen(false);
-  };
+  });
 
   // Get connection status display info
-  const getConnectionStatusInfo = () => {
+  const getConnectionStatusInfo = useMemoizedFn(() => {
     switch (connection.connectionStatus) {
       case "connected":
         return { text: t("inspector:connected"), color: "text-green-600" };
@@ -146,12 +146,12 @@ function McpInspectorContent() {
       default:
         return { text: t("inspector:connecting"), color: "text-yellow-600" };
     }
-  };
+  });
 
   const connectionInfo = getConnectionStatusInfo();
 
   // Function to handle server selection and update URL
-  const handleServerSelect = (serverUuid: string) => {
+  const handleServerSelect = useMemoizedFn((serverUuid: string) => {
     // Update URL parameter
     const params = new URLSearchParams(searchParams.toString());
     if (serverUuid) {
@@ -160,7 +160,7 @@ function McpInspectorContent() {
       params.delete("server");
     }
     router.replace(`/mcp-inspector?${params.toString()}`);
-  };
+  });
 
   return (
     <div className="space-y-6">
