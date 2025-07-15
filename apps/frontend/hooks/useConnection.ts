@@ -65,6 +65,7 @@ interface UseConnectionOptions {
   getRoots?: () => any[];
   isMetaMCP?: boolean;
   includeInactiveServers?: boolean;
+  enabled?: boolean; // Skip hook execution when false
 }
 
 export function useConnection({
@@ -82,6 +83,7 @@ export function useConnection({
   getRoots,
   isMetaMCP = false,
   includeInactiveServers = false,
+  enabled = true,
 }: UseConnectionOptions) {
   const authProvider = createAuthProvider(mcpServerUuid);
   const [connectionStatus, setConnectionStatus] =
@@ -283,18 +285,20 @@ export function useConnection({
 
   const connect = useMemoizedFn(
     async (_e?: unknown, retryCount: number = 0): Promise<void> => {
+      // Skip connection if hook is disabled
+      if (!enabled) {
+        console.warn("Cannot connect: useConnection hook is disabled");
+        setConnectionStatus("disconnected");
+        return;
+      }
+
       // For MetaMCP connections, we don't need server data
       if (!isMetaMCP) {
-        // Only connect if we have mcpServer data
-        if (!url) {
-          console.warn("Cannot connect: MCP server URL not available");
-          setConnectionStatus("disconnected");
-          return;
-        }
-
         // Ensure transportType is defined
         if (!transportType) {
-          console.error("Cannot connect: Transport type not defined");
+          console.error(
+            "Cannot connect: Transport type not defined or not fetched",
+          );
           setConnectionStatus("error");
           return;
         }
@@ -583,7 +587,10 @@ export function useConnection({
       if (mcpClient) {
         await mcpClient.close();
       }
-      authProvider.clear();
+      if (enabled) {
+        // Only clear auth provider if hook is enabled (to avoid clearing when just disabled)
+        authProvider.clear();
+      }
     } catch (error) {
       console.error("Error during disconnect:", error);
     } finally {
@@ -594,6 +601,14 @@ export function useConnection({
       setServerCapabilities(null);
     }
   });
+
+  // Handle enabled/disabled state changes
+  useEffect(() => {
+    if (!enabled && connectionStatus === "connected") {
+      // Disconnect when hook becomes disabled
+      disconnect();
+    }
+  }, [enabled, connectionStatus, disconnect]);
 
   // Cleanup handlers for component unmount and browser navigation
   useEffect(() => {

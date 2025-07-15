@@ -103,18 +103,20 @@ export default function NamespaceDetailPage({
     onStdErrNotification: (notification) => {
       console.error("MetaMCP StdErr:", notification);
     },
+    enabled: Boolean(namespace && !isLoading),
   });
 
-  // Auto-connect when namespace data is available and not already connected
+  // Auto-connect when hook is enabled and not already connected
   useEffect(() => {
     if (
       connection &&
       namespace &&
+      !isLoading &&
       connection.connectionStatus === "disconnected"
     ) {
       connection.connect();
     }
-  }, [namespace, connection]);
+  }, [namespace, connection, isLoading]);
 
   // Handle delete namespace
   const handleDeleteNamespace = async () => {

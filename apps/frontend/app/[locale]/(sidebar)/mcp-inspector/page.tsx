@@ -87,7 +87,7 @@ function McpInspectorContent() {
     addNotification(notification, "stderr");
   });
 
-  // MCP Connection setup - only create connection if server exists
+  // MCP Connection setup - only enable when server data is loaded and valid
   const connection = useConnection({
     mcpServerUuid: selectedServerUuid,
     transportType: selectedServer?.type || McpServerTypeEnum.Enum.STDIO,
@@ -98,6 +98,7 @@ function McpInspectorContent() {
     bearerToken: selectedServer?.bearerToken || undefined,
     onNotification,
     onStdErrNotification,
+    enabled: Boolean(selectedServer && !serversLoading && selectedServerUuid),
   });
 
   // Handle server connection logic and notifications
@@ -105,7 +106,8 @@ function McpInspectorContent() {
     // Clear notifications when switching servers
     clearNotifications();
 
-    if (connection && selectedServer) {
+    // Auto-connect when hook is enabled and not already connected
+    if (connection && selectedServer && !serversLoading && selectedServerUuid) {
       if (connection.connectionStatus === "connected") {
         // If we're connected but to a different server, disconnect first
         connection.disconnect().then(() => {
@@ -117,7 +119,13 @@ function McpInspectorContent() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServerUuid, selectedServer, servers, clearNotifications]);
+  }, [
+    selectedServerUuid,
+    selectedServer,
+    servers,
+    serversLoading,
+    clearNotifications,
+  ]);
 
   const handleConnectionToggle = useMemoizedFn(() => {
     if (connection.connectionStatus === "connected") {
@@ -239,7 +247,9 @@ function McpInspectorContent() {
                 variant="outline"
                 size="sm"
                 onClick={handleConnectionToggle}
-                disabled={connection.connectionStatus === "connecting"}
+                disabled={
+                  connection.connectionStatus === "connecting" || serversLoading
+                }
               >
                 {connection.connectionStatus === "connected"
                   ? t("inspector:reconnectButton")
