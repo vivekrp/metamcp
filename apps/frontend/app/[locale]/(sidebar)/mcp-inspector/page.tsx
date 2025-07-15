@@ -1,6 +1,7 @@
 "use client";
 
 import { McpServer } from "@repo/zod-types";
+import { useMemoizedFn } from "ahooks";
 import { ChevronDown, Edit, SearchCode, Server } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useMemo, useState } from "react";
@@ -32,11 +33,13 @@ interface NotificationEntry {
 
 function McpInspectorContent() {
   const { t } = useTranslations();
-  const [selectedServerUuid, setSelectedServerUuid] = useState<string>("");
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Get selectedServerUuid directly from search params
+  const selectedServerUuid = searchParams.get("server") || "";
 
   // Fetch MCP servers list
   const { data: serversResponse, isLoading: serversLoading } =
@@ -47,48 +50,42 @@ function McpInspectorContent() {
     return serversResponse?.success ? serversResponse.data : [];
   }, [serversResponse]);
 
-  // Auto-select server from URL parameter when servers are loaded
-  React.useEffect(() => {
-    const serverFromUrl = searchParams.get("server");
-    if (serverFromUrl && servers.length > 0 && !selectedServerUuid) {
-      // Check if the server UUID exists in the servers list
-      const serverExists = servers.find(
-        (server) => server.uuid === serverFromUrl,
-      );
-      if (serverExists) {
-        setSelectedServerUuid(serverFromUrl);
-      }
-    }
-  }, [servers, searchParams, selectedServerUuid]);
-
   // Get selected server details
   const selectedServer = servers.find(
     (server) => server.uuid === selectedServerUuid,
   );
 
-  // Notification management functions
-  const addNotification = (
-    notification: Notification,
-    type: "notification" | "stderr",
-  ) => {
-    const entry: NotificationEntry = {
-      id: `${Date.now()}-${Math.random()}`,
-      notification,
-      timestamp: new Date(),
-      type,
-    };
-    setNotifications((prev) => [entry, ...prev]);
-  };
+  // Notification management functions using useMemoizedFn
+  const addNotification = useMemoizedFn(
+    (notification: Notification, type: "notification" | "stderr") => {
+      const entry: NotificationEntry = {
+        id: `${Date.now()}-${Math.random()}`,
+        notification,
+        timestamp: new Date(),
+        type,
+      };
+      setNotifications((prev) => [entry, ...prev]);
+    },
+  );
 
-  const clearNotifications = () => {
+  const clearNotifications = useMemoizedFn(() => {
     setNotifications([]);
-  };
+  });
 
-  const removeNotification = (id: string) => {
+  const removeNotification = useMemoizedFn((id: string) => {
     setNotifications((prev) =>
       prev.filter((notification) => notification.id !== id),
     );
-  };
+  });
+
+  // Memoized notification callbacks for useConnection
+  const onNotification = useMemoizedFn((notification: Notification) => {
+    addNotification(notification, "notification");
+  });
+
+  const onStdErrNotification = useMemoizedFn((notification: Notification) => {
+    addNotification(notification, "stderr");
+  });
 
   // MCP Connection setup - only create connection if server exists
   const connection = useConnection({
@@ -98,47 +95,34 @@ function McpInspectorContent() {
     sseUrl: selectedServer?.url || "",
     env: selectedServer?.env || {},
     bearerToken: selectedServer?.bearerToken || undefined,
-    onNotification: (notification) => {
-      addNotification(notification, "notification");
-    },
-    onStdErrNotification: (notification) => {
-      addNotification(notification, "stderr");
-    },
+    onNotification,
+    onStdErrNotification,
   });
 
-  // Auto-connect when server is selected and not already connected
+  // Handle server connection logic and notifications
   React.useEffect(() => {
-    if (
-      connection &&
-      selectedServer &&
-      connection.connectionStatus === "disconnected"
-    ) {
-      connection.connect();
-    }
-  }, [selectedServer, connection]);
+    // Clear notifications when switching servers
+    clearNotifications();
 
-  // Auto-reconnect when switching to a different server
-  React.useEffect(() => {
-    if (
-      connection &&
-      selectedServer &&
-      connection.connectionStatus === "connected"
-    ) {
-      // If we're connected but to a different server, reconnect
-      connection.disconnect();
-      // The auto-connect effect above will handle reconnecting
+    if (connection && selectedServer) {
+      if (connection.connectionStatus === "connected") {
+        // If we're connected but to a different server, disconnect first
+        connection.disconnect().then(() => {
+          connection.connect();
+        });
+      } else if (connection.connectionStatus === "disconnected") {
+        // Auto-connect when server is selected and not already connected
+        connection.connect();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServerUuid, selectedServer]); // Only depend on selectedServerUuid to detect server changes
-
-  // Clear notifications when switching servers
-  React.useEffect(() => {
-    clearNotifications();
-  }, [selectedServerUuid]);
+  }, [selectedServerUuid, selectedServer, servers, clearNotifications]);
 
   const handleConnectionToggle = () => {
     if (connection.connectionStatus === "connected") {
-      connection.disconnect();
+      connection.disconnect().then(() => {
+        connection.connect();
+      });
     } else {
       connection.connect();
     }
@@ -168,7 +152,6 @@ function McpInspectorContent() {
 
   // Function to handle server selection and update URL
   const handleServerSelect = (serverUuid: string) => {
-    setSelectedServerUuid(serverUuid);
     // Update URL parameter
     const params = new URLSearchParams(searchParams.toString());
     if (serverUuid) {
