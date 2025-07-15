@@ -1,6 +1,6 @@
 "use client";
 
-import { McpServer } from "@repo/zod-types";
+import { McpServer, McpServerTypeEnum } from "@repo/zod-types";
 import { useMemoizedFn } from "ahooks";
 import { ChevronDown, Edit, SearchCode, Server } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -90,9 +90,10 @@ function McpInspectorContent() {
   // MCP Connection setup - only create connection if server exists
   const connection = useConnection({
     mcpServerUuid: selectedServerUuid,
+    transportType: selectedServer?.type || McpServerTypeEnum.Enum.STDIO,
     command: selectedServer?.command || "",
     args: selectedServer?.args?.join(" ") || "",
-    sseUrl: selectedServer?.url || "",
+    url: selectedServer?.url || "",
     env: selectedServer?.env || {},
     bearerToken: selectedServer?.bearerToken || undefined,
     onNotification,

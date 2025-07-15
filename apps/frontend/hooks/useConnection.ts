@@ -32,14 +32,13 @@ import {
   ServerCapabilities,
   ToolListChangedNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { McpServerTypeEnum } from "@repo/zod-types";
+import { McpServerType, McpServerTypeEnum } from "@repo/zod-types";
 import { useMemoizedFn } from "ahooks";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { SESSION_KEYS } from "@/lib/constants";
-import { trpc } from "@/lib/trpc";
 
 import { ConnectionStatus } from "../lib/constants";
 import { getAppUrl } from "../lib/env";
@@ -51,9 +50,10 @@ import { createAuthProvider } from "../lib/oauth-provider";
 
 interface UseConnectionOptions {
   mcpServerUuid: string;
+  transportType: McpServerType;
   command: string;
   args: string;
-  sseUrl: string;
+  url: string;
   env: Record<string, string>;
   bearerToken?: string;
   headerName?: string;
@@ -69,9 +69,10 @@ interface UseConnectionOptions {
 
 export function useConnection({
   mcpServerUuid,
+  transportType,
   command,
   args,
-  sseUrl,
+  url,
   env,
   bearerToken,
   headerName,
@@ -95,18 +96,6 @@ export function useConnection({
     { request: string; response?: string }[]
   >([]);
   const [completionsSupported, setCompletionsSupported] = useState(true);
-
-  const { data: mcpServerResponse } = trpc.frontend.mcpServers.get.useQuery(
-    {
-      uuid: mcpServerUuid,
-    },
-    {
-      enabled: !!mcpServerUuid, // Only query when UUID is not empty
-    },
-  );
-
-  const mcpServer = mcpServerResponse?.data;
-  const transportType = mcpServer?.type;
 
   const pushHistory = useMemoizedFn((request: object, response?: object) => {
     setRequestHistory((prev) => [
@@ -281,11 +270,11 @@ export function useConnection({
 
   const handleAuthError = useMemoizedFn(async (error: unknown) => {
     if (error instanceof SseError && error.code === 401) {
-      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, mcpServer?.url || "");
+      sessionStorage.setItem(SESSION_KEYS.SERVER_URL, url || "");
       sessionStorage.setItem(SESSION_KEYS.MCP_SERVER_UUID, mcpServerUuid);
 
       const result = await auth(authProvider, {
-        serverUrl: mcpServer?.url || "",
+        serverUrl: url || "",
       });
       return result === "AUTHORIZED";
     }
@@ -297,8 +286,8 @@ export function useConnection({
       // For MetaMCP connections, we don't need server data
       if (!isMetaMCP) {
         // Only connect if we have mcpServer data
-        if (!mcpServer) {
-          console.warn("Cannot connect: MCP server data not available");
+        if (!url) {
+          console.warn("Cannot connect: MCP server URL not available");
           setConnectionStatus("disconnected");
           return;
         }
@@ -363,7 +352,7 @@ export function useConnection({
         // Handle MetaMCP connections
         if (isMetaMCP) {
           // For MetaMCP, we use SSE connection to the metamcp proxy endpoint
-          mcpProxyServerUrl = new URL(sseUrl, getAppUrl());
+          mcpProxyServerUrl = new URL(url, getAppUrl());
           // Add includeInactiveServers as a query parameter
           if (includeInactiveServers) {
             mcpProxyServerUrl.searchParams.append(
@@ -398,10 +387,6 @@ export function useConnection({
               mcpProxyServerUrl.searchParams.append("command", command);
               mcpProxyServerUrl.searchParams.append("args", args);
               mcpProxyServerUrl.searchParams.append("env", JSON.stringify(env));
-              mcpProxyServerUrl.searchParams.append(
-                "mcpServerName",
-                mcpServer?.name || "",
-              );
               transportOptions = {
                 authProvider: authProvider,
                 eventSourceInit: {
@@ -424,11 +409,7 @@ export function useConnection({
 
             case McpServerTypeEnum.Enum.SSE:
               mcpProxyServerUrl = new URL(`/mcp-proxy/server/sse`, getAppUrl());
-              mcpProxyServerUrl.searchParams.append("url", sseUrl);
-              mcpProxyServerUrl.searchParams.append(
-                "mcpServerName",
-                mcpServer?.name || "",
-              );
+              mcpProxyServerUrl.searchParams.append("url", url);
               transportOptions = {
                 eventSourceInit: {
                   fetch: (
@@ -450,11 +431,7 @@ export function useConnection({
 
             case McpServerTypeEnum.Enum.STREAMABLE_HTTP:
               mcpProxyServerUrl = new URL(`/mcp-proxy/server/mcp`, getAppUrl());
-              mcpProxyServerUrl.searchParams.append("url", sseUrl);
-              mcpProxyServerUrl.searchParams.append(
-                "mcpServerName",
-                mcpServer?.name || "",
-              );
+              mcpProxyServerUrl.searchParams.append("url", url);
               transportOptions = {
                 eventSourceInit: {
                   fetch: (

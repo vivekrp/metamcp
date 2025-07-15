@@ -1,6 +1,6 @@
 "use client";
 
-import { McpServer } from "@repo/zod-types";
+import { McpServer, McpServerTypeEnum } from "@repo/zod-types";
 import { ArrowLeft, Edit, Eye, EyeOff, Plug, Server } from "lucide-react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
@@ -113,9 +113,10 @@ export default function McpServerDetailPage({
   // MCP Connection setup - only create connection if server exists
   const connection = useConnection({
     mcpServerUuid: uuid,
+    transportType: server?.type || McpServerTypeEnum.Enum.STDIO,
     command: server?.command || "",
     args: server?.args?.join(" ") || "",
-    sseUrl: server?.url || "",
+    url: server?.url || "",
     env: server?.env || {},
     bearerToken: server?.bearerToken || undefined,
     onNotification: (notification) => {
