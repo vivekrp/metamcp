@@ -6,28 +6,28 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "favicon": "/favicon.svg",
+  "favicon": {
+    "light": "/favicon.png",
+    "dark": "/favicon.png"
+  },
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#3b82f6",
+    "light": "#3b82f6",
+    "dark": "#3b82f6"
   },
   "navbar": {
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/metatool-ai/metamcp"
+        "href": "https://github.com/metatool-ai/metamcp",
+        "icon": "github"
       },
       {
         "label": "Discord",
-        "href": "https://discord.gg/mNsyat7mFX"
+        "href": "https://discord.gg/mNsyat7mFX",
+        "icon": "discord"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Try Demo",
-      "href": "https://demo.metamcp.com"
-    }
+    ]
   },
   "navigation": {
     "groups": [
