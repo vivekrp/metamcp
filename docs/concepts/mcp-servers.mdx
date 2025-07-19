@@ -28,7 +28,7 @@ MCP Servers are the building blocks of MetaMCP. Each server configuration define
 
 ## Server Types
 
-MetaMCP supports different types of MCP servers:
+MetaMCP supports three types of MCP servers:
 
 <AccordionGroup>
   <Accordion icon="terminal" title="STDIO Servers">
@@ -51,40 +51,32 @@ MetaMCP supports different types of MCP servers:
     - Custom executable scripts
   </Accordion>
 
-  <Accordion icon="globe" title="HTTP Servers">
-    **For web-based MCP servers** - Communicates via HTTP requests
+  <Accordion icon="globe" title="SSE Servers">
+    **Server-Sent Events** - Communicates via SSE (Server-Sent Events)
     
     ```json
     {
-      "type": "HTTP",
-      "baseUrl": "https://api.example.com/mcp",
-      "headers": {
-        "Authorization": "Bearer token"
-      }
+      "type": "SSE",
+      "url": "https://api.example.com/sse",
+      "bearerToken": "your-bearer-token"
     }
     ```
-    
-    **Use cases:**
-    - Remote MCP services
-    - Cloud-hosted MCP servers
-    - Existing HTTP APIs wrapped as MCP
+
+    <Info>You can leave bearerToken as blank if the server uses OAuth.</Info>
   </Accordion>
 
-  <Accordion icon="network-wired" title="WebSocket Servers">
-    **For real-time communication** - Uses WebSocket connections
+  <Accordion icon="globe" title="Streamable HTTP Servers">
+    **HTTP-based streaming** - Streamable HTTP is now the standard for remote MCP
     
     ```json
     {
-      "type": "WEBSOCKET",
-      "url": "wss://realtime.example.com/mcp",
-      "protocols": ["mcp"]
+      "type": "STREAMABLE_HTTP",
+      "url": "https://api.example.com/mcp",
+      "bearerToken": "your-bearer-token"
     }
     ```
-    
-    **Use cases:**
-    - Real-time data streams
-    - Live collaborative tools
-    - Event-driven MCP servers
+
+    <Info>You can leave bearerToken as blank if the server uses OAuth.</Info>
   </Accordion>
 </AccordionGroup>
 
@@ -96,11 +88,10 @@ MetaMCP supports different types of MCP servers:
 ```json Required Fields
 {
   "name": "unique-server-name",
-  "type": "STDIO|HTTP|WEBSOCKET",
+  "type": "STDIO|SSE|STREAMABLE_HTTP",
   "command": "command-to-run", // STDIO only
   "args": ["arg1", "arg2"],     // STDIO only
-  "baseUrl": "https://...",     // HTTP only
-  "url": "wss://..."           // WebSocket only
+  "url": "https://...",         // SSE/STREAMABLE_HTTP only
 }
 ```
 
@@ -110,12 +101,7 @@ MetaMCP supports different types of MCP servers:
   "env": {
     "KEY": "value"
   },
-  "timeout": 30000,
-  "maxRetries": 3,
-  "headers": {              // HTTP only
-    "Authorization": "Bearer token"
-  },
-  "protocols": ["mcp"]      // WebSocket only
+  "bearerToken": "auth-token"   // SSE/STREAMABLE_HTTP only
 }
 ```
 </CodeGroup>
@@ -126,13 +112,12 @@ Pass environment variables to STDIO servers:
 
 ```json
 {
-  "name": "WeatherAPI",
+  "name": "TimeServer",
   "type": "STDIO",
-  "command": "python",
-  "args": ["-m", "weather_mcp"],
+  "command": "uvx",
+  "args": ["mcp-server-time", "--local-timezone=America/New_York"],
   "env": {
-    "WEATHER_API_KEY": "your-api-key",
-    "WEATHER_UNITS": "metric"
+    "TZ": "America/New_York"
   }
 }
 ```
@@ -142,7 +127,7 @@ Pass environment variables to STDIO servers:
 For servers requiring authentication:
 
 <CodeGroup>
-```json API Key Authentication
+```json STDIO with API Keys
 {
   "env": {
     "API_KEY": "your-secret-key"
@@ -150,21 +135,9 @@ For servers requiring authentication:
 }
 ```
 
-```json OAuth Token
+```json Remote with Bearer Token
 {
-  "env": {
-    "OAUTH_TOKEN": "oauth-access-token",
-    "OAUTH_REFRESH_TOKEN": "refresh-token"
-  }
-}
-```
-
-```json HTTP Headers
-{
-  "headers": {
-    "Authorization": "Bearer token",
-    "X-API-Key": "api-key"
-  }
+  "bearerToken": "your-bearer-token"
 }
 ```
 </CodeGroup>
@@ -179,15 +152,6 @@ For servers requiring authentication:
 4. **Test** the configuration
 5. **Save** to make it available for namespaces
 
-### Server Status
-
-MetaMCP tracks the status of each server:
-
-- **🟢 Online**: Server is running and responsive
-- **🟡 Starting**: Server is being initialized
-- **🔴 Offline**: Server is not responding or failed to start
-- **⚠️ Error**: Server encountered an error
-
 ### Idle Session Management
 
 MetaMCP pre-allocates idle sessions for better performance:
@@ -198,59 +162,6 @@ MetaMCP pre-allocates idle sessions for better performance:
 - **Auto-scaling**: Sessions created on demand
 - **Cleanup**: Idle sessions recycled after timeout
 </Card>
-
-## Popular MCP Servers
-
-Here are some commonly used MCP servers you can add to MetaMCP:
-
-<CardGroup cols={2}>
-  <Card title="HackerNews" icon="news">
-    ```json
-    {
-      "name": "HackerNews",
-      "type": "STDIO",
-      "command": "uvx",
-      "args": ["mcp-hn"]
-    }
-    ```
-  </Card>
-
-  <Card title="File System" icon="folder">
-    ```json
-    {
-      "name": "FileSystem",
-      "type": "STDIO", 
-      "command": "uvx",
-      "args": ["mcp-server-filesystem"]
-    }
-    ```
-  </Card>
-
-  <Card title="Git Tools" icon="git">
-    ```json
-    {
-      "name": "Git",
-      "type": "STDIO",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git"]
-    }
-    ```
-  </Card>
-
-  <Card title="Weather API" icon="cloud">
-    ```json
-    {
-      "name": "Weather",
-      "type": "STDIO",
-      "command": "python",
-      "args": ["-m", "weather_mcp"],
-      "env": {
-        "API_KEY": "your-weather-api-key"
-      }
-    }
-    ```
-  </Card>
-</CardGroup>
 
 ## Custom Dockerfile for Dependencies
 
@@ -279,12 +190,12 @@ Custom dependencies increase the Docker image size and startup time. Consider us
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="warning" title="Server Won't Start">
+  <Accordion icon="triangle-alert" title="Server Won't Start">
     **Common causes:**
     - Missing dependencies (install via custom Dockerfile)
     - Incorrect command or arguments
     - Environment variables not set
-    - Network connectivity issues (for HTTP/WebSocket)
+    - Network connectivity issues (for SSE/Streamable HTTP)
     
     **Debug steps:**
     1. Check server logs in MetaMCP dashboard
@@ -303,7 +214,7 @@ Custom dependencies increase the Docker image size and startup time. Consider us
 
   <Accordion icon="shield" title="Authentication Issues">
     **Common problems:**
-    - Expired API keys or OAuth tokens
+    - Expired API keys or bearer tokens
     - Incorrect environment variable names
     - Missing required headers
     - Rate limiting from external APIs
@@ -319,11 +230,11 @@ Custom dependencies increase the Docker image size and startup time. Consider us
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Namespaces" icon="folder" href="/concepts/namespaces">
+  <Card title="Create Namespaces" icon="package" href="/concepts/namespaces">
     Group your MCP servers into organized namespaces
   </Card>
   
-  <Card title="Set Up Endpoints" icon="globe" href="/concepts/endpoints">
+  <Card title="Set Up Endpoints" icon="link" href="/concepts/endpoints">
     Create public endpoints to access your servers
   </Card>
   
