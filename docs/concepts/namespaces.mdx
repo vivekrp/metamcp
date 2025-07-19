@@ -1,413 +1,129 @@
 ---
 title: "Namespaces"
-description: "Group MCP servers and apply middleware at the namespace level"
+description: "Group MCP servers and manage tools with unified endpoints"
 ---
 
-A **MetaMCP Namespace** is a logical grouping of one or more MCP servers that allows you to organize, configure, and apply middleware to your servers as a cohesive unit.
+A **Namespace** in MetaMCP is a logical grouping of MCP servers that allows you to organize multiple servers into a single unified MCP endpoint.
 
 ## What are Namespaces?
 
-Namespaces serve as containers that:
+Namespaces allow you to:
 
-- **Group related MCP servers** (e.g., "Development Tools", "Content Creation", "Data Analysis")
-- **Enable/disable servers** at the namespace level
-- **Apply middleware** to transform requests and responses
+- **Group multiple MCP servers** into a unified collection
+- **Create a single MCP endpoint** that aggregates tools from all servers
+- **Enable/disable individual servers** within the namespace
 - **Control tool visibility** by enabling/disabling specific tools
-- **Manage permissions** and access control
+- **Support both private and public** namespace access
 
-<Card title="Example: Content Creation Namespace" icon="folder">
-A namespace might contain:
-- **HackerNews server** - for research and trending topics
-- **File System server** - for reading/writing content files  
-- **Git server** - for version control operations
-- **Image Generation server** - for creating visuals
+## How Namespaces Work
 
-All configured with middleware to filter tools and log activities.
-</Card>
+When you create a namespace:
 
-## Namespace Configuration
+1. **Select MCP servers** to include in the namespace
+2. **Tools are automatically discovered** from all active servers
+3. **Tools are prefixed** with server names (e.g., `ServerName__toolName`)
+4. **Create public endpoints** to expose the namespace externally
 
-### Basic Setup
+## Creating a Namespace
 
-<AccordionGroup>
-  <Accordion icon="plus" title="Creating a Namespace">
-    1. **Navigate** to Namespaces in the MetaMCP dashboard
-    2. **Click** "Create Namespace"
-    3. **Configure** basic details:
-       - **Name**: Unique identifier (e.g., "development-tools")
-       - **Display Name**: Human-readable name
-       - **Description**: Purpose and contents
-       - **Scope**: Private (your use) or Public (organization-wide)
-    4. **Save** the namespace
-  </Accordion>
+1. **Navigate** to Namespaces in the MetaMCP dashboard
+2. **Click** "Create Namespace"
+3. **Configure** basic details:
+   - **Name**: Unique identifier for your namespace
+   - **Description**: Optional description of the namespace purpose
+   - **Ownership**: Private (your use) or Public (organization-wide)
+4. **Select MCP servers** to include in the namespace
+5. **Save** the namespace
 
-  <Accordion icon="server" title="Adding MCP Servers">
-    After creating a namespace:
-    
-    1. **Select servers** from your configured MCP servers
-    2. **Enable/disable** each server in the namespace
-    3. **Configure server-specific** settings
-    4. **Test connectivity** to ensure servers work properly
-    
-    ```json
-    {
-      "servers": [
-        {
-          "serverId": "hackernews",
-          "enabled": true,
-          "priority": 1
-        },
-        {
-          "serverId": "filesystem", 
-          "enabled": true,
-          "priority": 2
-        }
-      ]
-    }
-    ```
-  </Accordion>
+### Ownership Types
 
-  <Accordion icon="wrench" title="Tool Management">
-    **Granular control** over which tools are available:
-    
-    - **Auto-discovery**: Automatically include all tools from enabled servers
-    - **Manual selection**: Choose specific tools to expose
-    - **Tool aliases**: Rename tools for clarity
-    - **Tool grouping**: Organize tools by category
-    
-    <Tip>
-      Use tool filtering to reduce context size for LLMs and improve performance.
-    </Tip>
-  </Accordion>
-</AccordionGroup>
+- **Private Namespace**: Only accessible by the creator
+- **Public Namespace**: Accessible by entire organization
 
-## Middleware Configuration
+**Note**: Public namespaces can only contain public MCP servers.
 
-Namespaces support pluggable middleware to transform MCP requests and responses:
+## Managing Servers and Tools
 
-### Built-in Middleware
+### Server Management
 
-<AccordionGroup>
-  <Accordion icon="filter" title="Filter Inactive Tools">
-    **Purpose**: Remove tools that aren't currently available or useful
-    
-    ```json
-    {
-      "middleware": [
-        {
-          "type": "filter-inactive-tools",
-          "config": {
-            "checkHealth": true,
-            "removeUnavailable": true,
-            "maxToolsPerServer": 50
-          }
-        }
-      ]
-    }
-    ```
-    
-    **Benefits**:
-    - Reduces context size for LLMs
-    - Improves tool selection accuracy
-    - Prevents errors from unavailable tools
-  </Accordion>
+- **View server status** in the namespace servers table
+- **Enable/disable servers** individually using the status toggle
+- **Add or remove servers** by editing the namespace
+- **Monitor server health** and connectivity
 
-  <Accordion icon="chart-line" title="Request Logging">
-    **Purpose**: Log all MCP requests and responses for debugging and analytics
-    
-    ```json
-    {
-      "middleware": [
-        {
-          "type": "request-logging",
-          "config": {
-            "logLevel": "info",
-            "includeHeaders": false,
-            "sanitizeSecrets": true
-          }
-        }
-      ]
-    }
-    ```
-  </Accordion>
+### Tool Management
 
-  <Accordion icon="shield" title="Rate Limiting">
-    **Purpose**: Prevent abuse and manage resource usage
-    
-    ```json
-    {
-      "middleware": [
-        {
-          "type": "rate-limiting",
-          "config": {
-            "requestsPerMinute": 60,
-            "burstLimit": 10,
-            "keyStrategy": "ip-address"
-          }
-        }
-      ]
-    }
-    ```
-  </Accordion>
-</AccordionGroup>
+- **Automatic discovery**: Tools are discovered from all active servers
+- **Tool prefixing**: Tools are prefixed with server names to avoid conflicts
+- **Status control**: Enable/disable individual tools per namespace
+- **Tool filtering**: Inactive tools are automatically filtered from listings
 
-### Custom Middleware
+### Tool Naming Convention
 
-You can create custom middleware for specific use cases:
+Tools follow the pattern: `{ServerName}__{originalToolName}`
 
-```typescript
-// Example: Tool validation middleware
-{
-  "type": "custom",
-  "name": "tool-validator",
-  "config": {
-    "validateInputs": true,
-    "requiredFields": ["query", "context"],
-    "maxInputLength": 10000
-  }
-}
-```
+Example: A `search` tool from "WebSearch" server becomes `WebSearch__search`
 
-## Namespace Examples
+## Public Access
 
-### Development Tools Namespace
+To expose a namespace externally:
 
-Perfect for software development workflows:
+1. **Create an endpoint** that points to your namespace
+2. **Configure authentication** (API key recommended)
+3. **Share the endpoint URL** with external users
 
-<CodeGroup>
-```json Configuration
+The endpoint provides:
+- **MCP access**: Standard MCP protocol support
+- **REST API**: HTTP endpoints for each tool
+- **OpenAPI documentation**: Auto-generated API documentation
+
+## Example
+
+A development namespace containing filesystem and git servers:
+
+```json
 {
   "name": "development-tools",
-  "displayName": "Development Tools", 
-  "description": "Essential tools for software development",
+  "description": "Essential development tools",
   "servers": [
     {
-      "serverId": "git",
-      "enabled": true,
-      "tools": ["git_commit", "git_status", "git_diff"]
-    },
-    {
-      "serverId": "filesystem",
-      "enabled": true, 
+      "name": "filesystem",
+      "status": "ACTIVE",
       "tools": ["read_file", "write_file", "list_directory"]
     },
     {
-      "serverId": "terminal", 
-      "enabled": true,
-      "tools": ["run_command", "get_environment"]
+      "name": "git-helper", 
+      "status": "ACTIVE",
+      "tools": ["git_status", "git_commit", "git_diff"]
     }
   ]
 }
 ```
 
-```json Middleware
-{
-  "middleware": [
-    {
-      "type": "filter-inactive-tools",
-      "config": {
-        "checkHealth": true
-      }
-    },
-    {
-      "type": "request-logging",
-      "config": {
-        "logLevel": "debug"
-      }
-    }
-  ]
-}
-```
-</CodeGroup>
-
-### Content Research Namespace
-
-Optimized for content creation and research:
-
-```json
-{
-  "name": "content-research",
-  "displayName": "Content Research",
-  "description": "Tools for content research and creation",
-  "servers": [
-    {
-      "serverId": "hackernews",
-      "enabled": true,
-      "tools": ["get_top_stories", "get_story_details"]
-    },
-    {
-      "serverId": "web-search",
-      "enabled": true,
-      "tools": ["search_web", "get_page_content"]
-    },
-    {
-      "serverId": "wikipedia",
-      "enabled": true,
-      "tools": ["search_wikipedia", "get_article"]
-    }
-  ],
-  "middleware": [
-    {
-      "type": "content-filter",
-      "config": {
-        "removeAds": true,
-        "extractMainContent": true
-      }
-    }
-  ]
-}
-```
-
-## Access Control
-
-### Scope Management
-
-<AccordionGroup>
-  <Accordion icon="lock" title="Private Namespaces">
-    **Accessible only by the creator**
-    
-    - Perfect for personal workflows
-    - Experimental configurations
-    - Sensitive tools and data
-    - Individual developer setups
-  </Accordion>
-
-  <Accordion icon="users" title="Public Namespaces">
-    **Accessible by entire organization**
-    
-    - Shared team tools
-    - Standardized workflows
-    - Company-wide integrations
-    - Approved tool collections
-  </Accordion>
-</AccordionGroup>
-
-### Permission Levels
-
-```json
-{
-  "permissions": {
-    "read": ["user:john", "team:developers"],
-    "write": ["user:john", "team:admins"], 
-    "execute": ["user:john", "team:developers"],
-    "admin": ["user:john"]
-  }
-}
-```
-
-## Performance Optimization
-
-### Tool Selection Strategy
-
-<Card title="Optimization Tips" icon="zap">
-- **Limit tools per namespace** to reduce context overhead
-- **Group related tools** to improve LLM understanding
-- **Use middleware filtering** to remove unused tools
-- **Cache frequently used** tool results
-- **Monitor performance** via built-in metrics
-</Card>
-
-### Server Prioritization
-
-Control the order servers are queried:
-
-```json
-{
-  "servers": [
-    {
-      "serverId": "primary-db",
-      "enabled": true,
-      "priority": 1,
-      "timeout": 5000
-    },
-    {
-      "serverId": "backup-db", 
-      "enabled": true,
-      "priority": 2,
-      "timeout": 10000
-    }
-  ]
-}
-```
-
-## Monitoring and Analytics
-
-### Namespace Metrics
-
-Track important metrics for your namespaces:
-
-- **Request volume** per namespace
-- **Tool usage** frequency
-- **Error rates** by server
-- **Response times** and performance
-- **User activity** patterns
-
-### Health Checks
-
-MetaMCP automatically monitors namespace health:
-
-- **Server connectivity** status
-- **Tool availability** checks  
-- **Middleware performance** metrics
-- **Resource usage** monitoring
-
-## Troubleshooting
-
-<AccordionGroup>
-  <Accordion icon="warning" title="Namespace Not Responding">
-    **Common causes:**
-    - All servers in namespace are offline
-    - Middleware blocking requests
-    - Network connectivity issues
-    - Resource limitations
-    
-    **Debug steps:**
-    1. Check individual server status
-    2. Review middleware logs
-    3. Test with minimal configuration
-    4. Monitor resource usage
-  </Accordion>
-
-  <Accordion icon="slow" title="Poor Performance">
-    **Optimization strategies:**
-    - Reduce number of enabled tools
-    - Optimize middleware chain
-    - Increase server timeout values
-    - Use caching middleware
-    - Load balance across multiple servers
-  </Accordion>
-
-  <Accordion icon="shield" title="Permission Issues">
-    **Common problems:**
-    - Incorrect scope settings
-    - Missing user permissions
-    - Namespace not published
-    - Authentication failures
-    
-    **Solutions:**
-    1. Verify scope configuration
-    2. Check user access levels
-    3. Review namespace permissions
-    4. Test with different users
-  </Accordion>
-</AccordionGroup>
+Available tools through the namespace:
+- `filesystem__read_file`
+- `filesystem__write_file` 
+- `filesystem__list_directory`
+- `git-helper__git_status`
+- `git-helper__git_commit`
+- `git-helper__git_diff`
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Endpoints" icon="globe" href="/concepts/endpoints">
+  <Card title="Create Endpoints" icon="link" href="/concepts/endpoints">
     Expose your namespace through public endpoints
   </Card>
   
-  <Card title="Configure Middleware" icon="filter" href="/concepts/middleware">
-    Learn about available middleware options
+  <Card title="MCP Servers" icon="server" href="/concepts/mcp-servers">
+    Learn about configuring MCP servers
   </Card>
   
   <Card title="Integration Setup" icon="plug" href="/integrations/cursor">
     Connect your namespace to MCP clients
   </Card>
   
-  <Card title="API Keys" icon="key" href="/configuration/api-keys">
-    Secure your namespace with API key authentication
+  <Card title="Inspector" icon="search-code" href="/concepts/inspector">
+    Test and debug your namespace tools
   </Card>
 </CardGroup> 
