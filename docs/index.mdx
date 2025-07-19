@@ -17,13 +17,13 @@ description: "MCP Aggregator, Orchestrator, Middleware, Gateway in one docker"
   <Card title="Group & Host MCP Servers" icon="folder-open">
     Group MCP servers into namespaces, host them as meta-MCPs, and assign public endpoints (SSE or Streamable HTTP) with authentication.
   </Card>
-  <Card title="Cherry-pick Tools" icon="hand-point-up">
+  <Card title="Cherry-pick Tools" icon="pointer">
     Pick only the tools you need when remixing MCP servers. Apply pluggable middleware for observability and security.
   </Card>
-  <Card title="Enhanced Inspector" icon="magnifying-glass-chart">
+  <Card title="Enhanced Inspector" icon="search-code">
     Use as enhanced MCP inspector with saved server configs, and inspect your MetaMCP endpoints.
   </Card>
-  <Card title="Context Engineering Engine for MCP" icon="magnifying-glass">
+  <Card title="Context Engineering Engine for MCP" icon="search">
     Use as Elasticsearch for MCP tool selection (coming soon).
   </Card>
 </CardGroup>
@@ -78,13 +78,13 @@ Understanding these key concepts will help you get the most out of MetaMCP:
 Connect MetaMCP to your favorite tools and platforms:
 
 <CardGroup cols={3}>
-  <Card title="Cursor" icon="laptop-code" href="/integrations/cursor">
+  <Card title="Cursor" icon="mouse-pointer-2" href="/integrations/cursor">
     Configure Cursor to use MetaMCP endpoints via mcp.json
   </Card>
-  <Card title="Claude Desktop" icon="desktop" href="/integrations/claude-desktop">
+  <Card title="Claude Desktop" icon="monitor-dot" href="/integrations/claude-desktop">
     Connect Claude Desktop using mcp-proxy for STDIO compatibility
   </Card>
-  <Card title="Other Clients" icon="plug" href="/integrations/troubleshooting">
+  <Card title="Other Clients" icon="pyramid" href="/integrations/troubleshooting">
     Integration guides for various MCP clients
   </Card>
 </CardGroup>
@@ -100,11 +100,11 @@ Connect MetaMCP to your favorite tools and platforms:
     - Multi-tenancy with public/private scopes
   </Accordion>
 
-  <Accordion icon="network-wired" title="Multiple Transport Options">
+  <Accordion icon="network" title="Multiple Transport Options">
     - **SSE (Server-Sent Events)** for MCP backward compatibility and real-time connections
     - **Streamable HTTP** for Streamable HTTP-based MCP communication (now standard remote MCP connection)
     - **OpenAPI endpoints** compatible with clients like Open WebUI
-    - **STDIO compatibility** via proxy for legacy clients
+    - **STDIO compatibility** via proxy for local
   </Accordion>
 
   <Accordion icon="globe" title="Internationalization">
@@ -125,7 +125,7 @@ Connect MetaMCP to your favorite tools and platforms:
 ## Getting Help
 
 <CardGroup cols={2}>
-  <Card title="Development Guide" icon="code" href="/development/contributing">
+  <Card title="Contributing to MetaMCP" icon="code" href="/development/contributing">
     Set up a local development environment and contribute to MetaMCP.
   </Card>
   <Card title="Discord Community" icon="discord" href="https://discord.gg/mNsyat7mFX">

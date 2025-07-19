@@ -10,6 +10,9 @@
     "light": "/favicon.png",
     "dark": "/favicon.png"
   },
+  "icons":{
+    "library": "lucide"
+  },
   "colors": {
     "primary": "#3b82f6",
     "light": "#3b82f6",
