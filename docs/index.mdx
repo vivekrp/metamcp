@@ -101,8 +101,8 @@ Connect MetaMCP to your favorite tools and platforms:
   </Accordion>
 
   <Accordion icon="network-wired" title="Multiple Transport Options">
-    - **SSE (Server-Sent Events)** for real-time connections
-    - **Streamable HTTP** for HTTP-based MCP communication
+    - **SSE (Server-Sent Events)** for MCP backward compatibility and real-time connections
+    - **Streamable HTTP** for Streamable HTTP-based MCP communication (now standard remote MCP connection)
     - **OpenAPI endpoints** compatible with clients like Open WebUI
     - **STDIO compatibility** via proxy for legacy clients
   </Accordion>
@@ -116,15 +116,16 @@ Connect MetaMCP to your favorite tools and platforms:
   <Accordion icon="chart-line" title="Performance & Scalability">
     - Pre-allocated idle sessions for reduced cold start time
     - Configurable session management
-    - Designed for 2GB-4GB memory instances
+    - Designed for at least 2GB-4GB memory instances
     - Docker-based deployment with nginx support
+    - Cluster scaling and separation of MCP manager and worker will release in the future.
   </Accordion>
 </AccordionGroup>
 
 ## Getting Help
 
 <CardGroup cols={2}>
-  <Card title="Development Guide" icon="code" href="/development">
+  <Card title="Development Guide" icon="code" href="/development/contributing">
     Set up a local development environment and contribute to MetaMCP.
   </Card>
   <Card title="Discord Community" icon="discord" href="https://discord.gg/mNsyat7mFX">
