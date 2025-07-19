@@ -152,6 +152,117 @@ For servers requiring authentication:
 4. **Test** the configuration
 5. **Save** to make it available for namespaces
 
+### Bulk Import/Export
+
+MetaMCP supports bulk import and export of MCP server configurations for easy migration and backup.
+
+#### Exporting Servers
+
+Export all your configured MCP servers to a JSON file:
+
+1. **Navigate** to MCP Servers in the dashboard
+2. **Click** "Export JSON" button
+3. **Choose** to either download the file or copy to clipboard
+
+<Card title="Export Format" icon="code">
+```json
+{
+  "mcpServers": {
+    "HackerNews": {
+      "type": "STDIO",
+      "command": "uvx",
+      "args": ["mcp-hn"],
+      "description": "Access HackerNews stories and comments"
+    },
+    "TimeServer": {
+      "type": "STDIO", 
+      "command": "uvx",
+      "args": ["mcp-server-time"],
+      "env": {
+        "TZ": "America/New_York"
+      },
+      "description": "Time and timezone utilities"
+    },
+    "RemoteAPI": {
+      "type": "STREAMABLE_HTTP",
+      "url": "https://api.example.com/mcp",
+      "bearerToken": "your-bearer-token",
+      "description": "Remote MCP server via HTTP"
+    }
+  }
+}
+```
+</Card>
+
+#### Importing Servers
+
+Import multiple MCP servers from a JSON configuration:
+
+1. **Navigate** to MCP Servers in the dashboard
+2. **Click** "Import JSON" button
+3. **Paste** or type your JSON configuration
+4. **Click** "Import" to add the servers
+
+<CodeGroup>
+```json STDIO Server Format
+{
+  "mcpServers": {
+    "ServerName": {
+      "type": "STDIO",
+      "command": "uvx",
+      "args": ["package-name"],
+      "env": {
+        "API_KEY": "your-key"
+      },
+      "description": "Optional description"
+    }
+  }
+}
+```
+
+```json SSE Server Format  
+{
+  "mcpServers": {
+    "ServerName": {
+      "type": "SSE",
+      "url": "https://api.example.com/sse",
+      "bearerToken": "your-token",
+      "description": "Optional description"
+    }
+  }
+}
+```
+
+```json Streamable HTTP Format
+{
+  "mcpServers": {
+    "ServerName": {
+      "type": "STREAMABLE_HTTP", 
+      "url": "https://api.example.com/mcp",
+      "bearerToken": "your-token",
+      "description": "Optional description"
+    }
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+**Import Behavior:**
+- Servers with existing names will be **updated** with new configuration
+- New servers will be **created**
+- Invalid configurations will be **skipped** with error messages
+- The import process shows success/failure counts
+</Note>
+
+<Tip>
+Use bulk import/export for:
+- **Environment migration** (dev → staging → production)
+- **Team collaboration** (sharing server configurations)
+- **Backup and restore** (configuration backups)
+- **Quick setup** (deploying multiple servers at once)
+</Tip>
+
 ### Idle Session Management
 
 MetaMCP pre-allocates idle sessions for better performance:
