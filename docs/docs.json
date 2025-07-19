@@ -58,14 +58,6 @@
         ]
       },
       {
-        "group": "Configuration",
-        "pages": [
-          "configuration/authentication",
-          "configuration/oidc",
-          "configuration/api-keys"
-        ]
-      },
-      {
         "group": "Integrations",
         "pages": [
           "integrations/cursor",
