@@ -61,8 +61,7 @@
         "group": "Integrations",
         "pages": [
           "integrations/cursor",
-          "integrations/claude-desktop",
-          "integrations/troubleshooting"
+          "integrations/claude-desktop"
         ]
       },
       {
