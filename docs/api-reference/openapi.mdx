@@ -1,0 +1,760 @@
+# OpenAPI Specification
+
+Interactive API documentation and OpenAPI specification for MetaMCP.
+
+## Interactive Documentation
+
+Access the interactive Swagger UI documentation at:
+
+```
+https://your-domain.com/api/docs
+```
+
+## Download Specification
+
+Download the complete OpenAPI 3.0 specification:
+
+- **JSON Format**: `https://your-domain.com/api/openapi.json`
+- **YAML Format**: `https://your-domain.com/api/openapi.yaml`
+
+## API Overview
+
+The MetaMCP API follows OpenAPI 3.0 specification standards:
+
+```yaml
+openapi: 3.0.3
+info:
+  title: MetaMCP API
+  description: Model Context Protocol management and execution platform
+  version: 1.0.0
+  contact:
+    name: MetaMCP Support
+    url: https://docs.metamcp.com
+    email: support@metamcp.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://your-domain.com/api
+    description: Production server
+  - url: https://staging.metamcp.com/api
+    description: Staging server
+```
+
+## Authentication
+
+The API uses Bearer token authentication:
+
+```yaml
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key or session token
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+```
+
+## Schema Definitions
+
+### Core Entities
+
+#### Namespace
+
+```yaml
+components:
+  schemas:
+    Namespace:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the namespace
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable name for the namespace
+          example: "Development Tools"
+        description:
+          type: string
+          maxLength: 500
+          description: Optional description of the namespace
+          example: "Tools for development environment"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the namespace was created
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the namespace was last updated
+          example: "2024-01-15T10:30:00Z"
+        serverCount:
+          type: integer
+          description: Number of MCP servers in this namespace
+          example: 3
+        toolCount:
+          type: integer
+          description: Number of tools available in this namespace
+          example: 15
+```
+
+#### MCP Server
+
+```yaml
+    MCPServer:
+      type: object
+      required:
+        - id
+        - name
+        - command
+        - namespaceId
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the MCP server
+          example: "server-uuid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable name for the server
+          example: "Filesystem Server"
+        command:
+          type: string
+          description: Command to execute the MCP server
+          example: "npx @modelcontextprotocol/server-filesystem"
+        args:
+          type: array
+          items:
+            type: string
+          description: Command line arguments
+          example: ["/tmp", "--readonly"]
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: Environment variables
+          example:
+            TIMEOUT: "30000"
+            DEBUG: "true"
+        namespaceId:
+          type: string
+          format: uuid
+          description: ID of the namespace this server belongs to
+          example: "namespace-uuid"
+        status:
+          type: string
+          enum: ["running", "stopped", "starting", "stopping", "error"]
+          description: Current status of the server
+          example: "running"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the server was created
+          example: "2024-01-15T10:30:00Z"
+        lastHealthCheck:
+          type: string
+          format: date-time
+          description: Timestamp of the last health check
+          example: "2024-01-15T12:45:00Z"
+        toolCount:
+          type: integer
+          description: Number of tools provided by this server
+          example: 8
+```
+
+#### Tool
+
+```yaml
+    Tool:
+      type: object
+      required:
+        - id
+        - name
+        - mcpServerId
+        - namespaceId
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the tool
+          example: "tool-uuid"
+        name:
+          type: string
+          description: Name of the tool
+          example: "read_file"
+        description:
+          type: string
+          description: Description of what the tool does
+          example: "Read the contents of a file"
+        inputSchema:
+          type: object
+          description: JSON Schema defining the tool's input parameters
+          example:
+            type: object
+            properties:
+              path:
+                type: string
+                description: "Path to the file to read"
+            required: ["path"]
+        mcpServerId:
+          type: string
+          format: uuid
+          description: ID of the MCP server that provides this tool
+          example: "server-uuid"
+        namespaceId:
+          type: string
+          format: uuid
+          description: ID of the namespace this tool belongs to
+          example: "namespace-uuid"
+```
+
+#### API Key
+
+```yaml
+    APIKey:
+      type: object
+      required:
+        - id
+        - name
+        - permissions
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the API key
+          example: "key-uuid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable name for the API key
+          example: "Development Key"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions granted to this API key
+          example: ["mcp-servers:read", "tools:execute"]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiration timestamp (null if no expiration)
+          example: "2024-12-31T23:59:59Z"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the API key was created
+          example: "2024-01-15T10:30:00Z"
+        lastUsed:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the API key was last used
+          example: "2024-01-20T14:20:00Z"
+        ipRestrictions:
+          type: array
+          items:
+            type: string
+          description: IP addresses or CIDR blocks allowed to use this key
+          example: ["192.168.1.0/24", "10.0.0.100"]
+```
+
+### Request/Response Schemas
+
+#### Tool Execution Request
+
+```yaml
+    ToolExecutionRequest:
+      type: object
+      required:
+        - name
+        - arguments
+      properties:
+        name:
+          type: string
+          description: Name of the tool to execute
+          example: "read_file"
+        arguments:
+          type: object
+          description: Arguments to pass to the tool
+          example:
+            path: "/tmp/example.txt"
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 300
+          description: Execution timeout in seconds
+          example: 30
+```
+
+#### Tool Execution Response
+
+```yaml
+    ToolExecutionResponse:
+      type: object
+      required:
+        - toolName
+        - result
+        - executionTime
+        - timestamp
+      properties:
+        toolName:
+          type: string
+          description: Name of the executed tool
+          example: "read_file"
+        result:
+          type: object
+          description: Result returned by the tool
+          example:
+            content: "File contents here..."
+            encoding: "utf-8"
+            size: 1024
+        executionTime:
+          type: integer
+          description: Execution time in milliseconds
+          example: 150
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the tool was executed
+          example: "2024-01-15T12:45:00Z"
+```
+
+#### Error Response
+
+```yaml
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Tool not found"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "TOOL_NOT_FOUND"
+        details:
+          type: object
+          description: Additional error details
+          example:
+            field: "name"
+            value: "invalid_tool"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
+          example: "2024-01-15T12:45:00Z"
+```
+
+#### Pagination Response
+
+```yaml
+    PaginationResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+          description: Array of response data
+        pagination:
+          type: object
+          required:
+            - total
+            - limit
+            - offset
+            - hasMore
+          properties:
+            total:
+              type: integer
+              description: Total number of items
+              example: 100
+            limit:
+              type: integer
+              description: Number of items per page
+              example: 50
+            offset:
+              type: integer
+              description: Number of items skipped
+              example: 0
+            hasMore:
+              type: boolean
+              description: Whether there are more items
+              example: true
+```
+
+## Example Endpoints
+
+### Get Namespaces
+
+```yaml
+paths:
+  /namespaces:
+    get:
+      summary: List namespaces
+      description: Get all namespaces for the authenticated user
+      tags:
+        - Namespaces
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Number of items to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Number of items to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: search
+          in: query
+          description: Search term for namespace names
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginationResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Namespace'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+```
+
+### Execute Tool
+
+```yaml
+  /namespaces/{namespaceId}/tools/execute:
+    post:
+      summary: Execute a tool
+      description: Execute a tool with provided arguments
+      tags:
+        - Tools
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: namespaceId
+          in: path
+          description: ID of the namespace
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolExecutionRequest'
+      responses:
+        '200':
+          description: Tool executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolExecutionResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Tool not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+```
+
+## Using the OpenAPI Specification
+
+### Code Generation
+
+Generate client libraries using the OpenAPI specification:
+
+```bash
+# Generate JavaScript/TypeScript client
+npx @openapitools/openapi-generator-cli generate \
+  -i https://your-domain.com/api/openapi.json \
+  -g typescript-fetch \
+  -o ./metamcp-client
+
+# Generate Python client
+openapi-generator generate \
+  -i https://your-domain.com/api/openapi.json \
+  -g python \
+  -o ./metamcp-python-client
+
+# Generate Go client
+openapi-generator generate \
+  -i https://your-domain.com/api/openapi.json \
+  -g go \
+  -o ./metamcp-go-client
+```
+
+### API Testing
+
+Use the specification for API testing:
+
+```bash
+# Validate API responses against schema
+npm install -g swagger-cli
+swagger-cli validate https://your-domain.com/api/openapi.json
+
+# Run API tests with Newman
+newman run metamcp-postman-collection.json \
+  --environment production.json \
+  --reporters cli,json
+```
+
+### Documentation Generation
+
+Generate static documentation:
+
+```bash
+# Generate HTML documentation
+redoc-cli build https://your-domain.com/api/openapi.json \
+  --output metamcp-api-docs.html
+
+# Generate PDF documentation  
+widdershins https://your-domain.com/api/openapi.json \
+  --code --omit-header -o metamcp-api.md
+pandoc metamcp-api.md -o metamcp-api.pdf
+```
+
+## Client Examples
+
+### Generated TypeScript Client
+
+```typescript
+import { Configuration, DefaultApi } from './metamcp-client';
+
+const config = new Configuration({
+  basePath: 'https://your-domain.com/api',
+  apiKey: 'mcp_your-api-key'
+});
+
+const client = new DefaultApi(config);
+
+// List namespaces
+const namespaces = await client.getNamespaces({
+  limit: 10,
+  search: 'dev'
+});
+
+// Execute tool
+const result = await client.executeNamespaceToolsExecute({
+  namespaceId: 'namespace-uuid',
+  toolExecutionRequest: {
+    name: 'read_file',
+    arguments: {
+      path: '/tmp/example.txt'
+    }
+  }
+});
+```
+
+### Generated Python Client
+
+```python
+import metamcp_client
+from metamcp_client.rest import ApiException
+
+# Configure API client
+configuration = metamcp_client.Configuration(
+    host="https://your-domain.com/api",
+    api_key={'BearerAuth': 'mcp_your-api-key'}
+)
+
+with metamcp_client.ApiClient(configuration) as api_client:
+    api_instance = metamcp_client.DefaultApi(api_client)
+    
+    try:
+        # List namespaces
+        namespaces = api_instance.get_namespaces(limit=10, search='dev')
+        print(f"Found {len(namespaces.data)} namespaces")
+        
+        # Execute tool
+        execution_request = metamcp_client.ToolExecutionRequest(
+            name='read_file',
+            arguments={'path': '/tmp/example.txt'}
+        )
+        
+        result = api_instance.execute_namespace_tools_execute(
+            namespace_id='namespace-uuid',
+            tool_execution_request=execution_request
+        )
+        
+        print(f"Tool result: {result.result}")
+        
+    except ApiException as e:
+        print(f"Exception: {e}")
+```
+
+## Validation and Testing
+
+### Schema Validation
+
+All API requests and responses are validated against the OpenAPI schema:
+
+- **Request validation**: Ensures incoming requests match the expected format
+- **Response validation**: Guarantees responses conform to the documented schema
+- **Type safety**: Provides compile-time type checking in generated clients
+
+### API Testing Tools
+
+Recommended tools for testing the API:
+
+1. **Postman**: Import the OpenAPI spec directly
+2. **Insomnia**: Native OpenAPI support
+3. **curl**: Command-line testing
+4. **httpie**: User-friendly HTTP client
+5. **Swagger UI**: Interactive testing interface
+
+### Example Test Suite
+
+```yaml
+# postman-collection.json
+{
+  "info": {
+    "name": "MetaMCP API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has required fields', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('permissions');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api-keys/permissions",
+          "host": ["{{base_url}}"],
+          "path": ["api-keys", "permissions"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Versioning
+
+The MetaMCP API follows semantic versioning:
+
+- **Major version**: Breaking changes to the API
+- **Minor version**: New features, backward compatible
+- **Patch version**: Bug fixes, backward compatible
+
+Version information is included in:
+- OpenAPI specification (`info.version`)
+- API response headers (`X-API-Version`)
+- URL path versioning (future: `/v2/namespaces`)
+
+## Support
+
+For issues with the OpenAPI specification or API documentation:
+
+- **GitHub Issues**: https://github.com/metatool-ai/metamcp/issues
+- **Discord**: https://discord.gg/mNsyat7mFX
+- **Email**: api-support@metamcp.com 

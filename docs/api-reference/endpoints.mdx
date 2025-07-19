@@ -1,0 +1,778 @@
+# API Endpoints
+
+Complete reference for MetaMCP REST API endpoints.
+
+## Authentication
+
+All API endpoints require authentication using one of these methods:
+
+```bash
+# Method 1: Bearer token (session-based)
+curl -H "Authorization: Bearer your-session-token" \
+  https://your-domain.com/api/namespaces
+
+# Method 2: API Key
+curl -H "Authorization: Bearer mcp_your-api-key" \
+  https://your-domain.com/api/namespaces
+
+# Method 3: X-API-Key header
+curl -H "X-API-Key: mcp_your-api-key" \
+  https://your-domain.com/api/namespaces
+```
+
+## Base URL
+
+```
+https://your-domain.com/api
+```
+
+## Namespaces
+
+### List Namespaces
+
+Get all namespaces for the authenticated user.
+
+```http
+GET /namespaces
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Number of items to return (default: 50, max: 100) |
+| `offset` | integer | Number of items to skip (default: 0) |
+| `search` | string | Search term for namespace names |
+
+**Example Request:**
+
+```bash
+curl -H "Authorization: Bearer your-api-key" \
+  "https://your-domain.com/api/namespaces?limit=10&search=dev"
+```
+
+**Example Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Development Tools",
+      "description": "Tools for development environment",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-15T10:30:00Z",
+      "serverCount": 3,
+      "toolCount": 15
+    }
+  ],
+  "pagination": {
+    "total": 25,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+### Get Namespace
+
+Get a specific namespace by ID.
+
+```http
+GET /namespaces/{id}
+```
+
+**Example Request:**
+
+```bash
+curl -H "Authorization: Bearer your-api-key" \
+  https://your-domain.com/api/namespaces/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Example Response:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Development Tools",
+  "description": "Tools for development environment",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:30:00Z",
+  "mcpServers": [
+    {
+      "id": "server-uuid",
+      "name": "Filesystem Server",
+      "status": "running"
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool-uuid",
+      "name": "read_file",
+      "description": "Read file contents"
+    }
+  ]
+}
+```
+
+### Create Namespace
+
+Create a new namespace.
+
+```http
+POST /namespaces
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "description": "string (optional)"
+}
+```
+
+**Example Request:**
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Namespace",
+    "description": "A new namespace for my tools"
+  }' \
+  https://your-domain.com/api/namespaces
+```
+
+### Update Namespace
+
+Update an existing namespace.
+
+```http
+PUT /namespaces/{id}
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string (optional)",
+  "description": "string (optional)"
+}
+```
+
+### Delete Namespace
+
+Delete a namespace and all its associated servers and tools.
+
+```http
+DELETE /namespaces/{id}
+```
+
+**Example Request:**
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bearer your-api-key" \
+  https://your-domain.com/api/namespaces/550e8400-e29b-41d4-a716-446655440000
+```
+
+## MCP Servers
+
+### List MCP Servers
+
+Get all MCP servers for a namespace.
+
+```http
+GET /namespaces/{namespaceId}/mcp-servers
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `status` | string | Filter by status: `running`, `stopped`, `error` |
+| `limit` | integer | Number of items to return |
+| `offset` | integer | Number of items to skip |
+
+**Example Request:**
+
+```bash
+curl -H "Authorization: Bearer your-api-key" \
+  "https://your-domain.com/api/namespaces/namespace-uuid/mcp-servers?status=running"
+```
+
+**Example Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "server-uuid",
+      "name": "Filesystem Server",
+      "command": "npx @modelcontextprotocol/server-filesystem",
+      "args": ["/tmp"],
+      "env": {},
+      "status": "running",
+      "namespaceId": "namespace-uuid",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "lastHealthCheck": "2024-01-15T12:45:00Z",
+      "toolCount": 8
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "limit": 50,
+    "offset": 0,
+    "hasMore": false
+  }
+}
+```
+
+### Get MCP Server
+
+Get a specific MCP server.
+
+```http
+GET /mcp-servers/{id}
+```
+
+### Create MCP Server
+
+Create a new MCP server in a namespace.
+
+```http
+POST /namespaces/{namespaceId}/mcp-servers
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "command": "string",
+  "args": ["string"] (optional),
+  "env": {
+    "KEY": "value"
+  } (optional)
+}
+```
+
+**Example Request:**
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Database Server",
+    "command": "npx @modelcontextprotocol/server-database",
+    "args": ["--connection-string", "postgresql://..."],
+    "env": {
+      "DB_TIMEOUT": "30000"
+    }
+  }' \
+  https://your-domain.com/api/namespaces/namespace-uuid/mcp-servers
+```
+
+### Update MCP Server
+
+Update an existing MCP server.
+
+```http
+PUT /mcp-servers/{id}
+```
+
+### Delete MCP Server
+
+Delete an MCP server.
+
+```http
+DELETE /mcp-servers/{id}
+```
+
+### Start MCP Server
+
+Start a stopped MCP server.
+
+```http
+POST /mcp-servers/{id}/start
+```
+
+### Stop MCP Server
+
+Stop a running MCP server.
+
+```http
+POST /mcp-servers/{id}/stop
+```
+
+### Restart MCP Server
+
+Restart an MCP server.
+
+```http
+POST /mcp-servers/{id}/restart
+```
+
+## Tools
+
+### List Tools
+
+Get all tools available in a namespace.
+
+```http
+GET /namespaces/{namespaceId}/tools
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `search` | string | Search term for tool names/descriptions |
+| `server` | string | Filter by MCP server ID |
+| `limit` | integer | Number of items to return |
+| `offset` | integer | Number of items to skip |
+
+**Example Request:**
+
+```bash
+curl -H "Authorization: Bearer your-api-key" \
+  "https://your-domain.com/api/namespaces/namespace-uuid/tools?search=file"
+```
+
+**Example Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "tool-uuid",
+      "name": "read_file",
+      "description": "Read the contents of a file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to the file to read"
+          }
+        },
+        "required": ["path"]
+      },
+      "mcpServerId": "server-uuid",
+      "namespaceId": "namespace-uuid"
+    }
+  ],
+  "pagination": {
+    "total": 8,
+    "limit": 50,
+    "offset": 0,
+    "hasMore": false
+  }
+}
+```
+
+### Get Tool
+
+Get a specific tool by ID.
+
+```http
+GET /tools/{id}
+```
+
+### Execute Tool
+
+Execute a tool with provided arguments.
+
+```http
+POST /namespaces/{namespaceId}/tools/execute
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "arguments": {
+    "key": "value"
+  }
+}
+```
+
+**Example Request:**
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "read_file",
+    "arguments": {
+      "path": "/tmp/example.txt"
+    }
+  }' \
+  https://your-domain.com/api/namespaces/namespace-uuid/tools/execute
+```
+
+**Example Response:**
+
+```json
+{
+  "toolName": "read_file",
+  "result": {
+    "content": "File contents here...",
+    "encoding": "utf-8",
+    "size": 1024
+  },
+  "executionTime": 150,
+  "timestamp": "2024-01-15T12:45:00Z"
+}
+```
+
+## API Keys
+
+### List API Keys
+
+Get all API keys for the authenticated user.
+
+```http
+GET /api-keys
+```
+
+**Example Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "key-uuid",
+      "name": "Development Key",
+      "permissions": ["mcp-servers:read", "tools:execute"],
+      "expiresAt": "2024-12-31T23:59:59Z",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "lastUsed": "2024-01-20T14:20:00Z"
+    }
+  ]
+}
+```
+
+### Create API Key
+
+Create a new API key.
+
+```http
+POST /api-keys
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "permissions": ["string"],
+  "expiresAt": "2024-12-31T23:59:59Z" (optional),
+  "ipRestrictions": ["192.168.1.0/24"] (optional)
+}
+```
+
+### Update API Key
+
+Update an existing API key.
+
+```http
+PUT /api-keys/{id}
+```
+
+### Delete API Key
+
+Delete an API key.
+
+```http
+DELETE /api-keys/{id}
+```
+
+### Get API Key Permissions
+
+Get current user's API key permissions.
+
+```http
+GET /api-keys/permissions
+```
+
+**Example Response:**
+
+```json
+{
+  "permissions": [
+    "mcp-servers:read",
+    "mcp-servers:write",
+    "namespaces:read",
+    "tools:execute"
+  ],
+  "scopes": {
+    "namespaces": ["namespace-uuid-1", "namespace-uuid-2"]
+  }
+}
+```
+
+## Logs
+
+### Get Execution Logs
+
+Get tool execution logs.
+
+```http
+GET /logs
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `namespace` | string | Filter by namespace ID |
+| `tool` | string | Filter by tool name |
+| `status` | string | Filter by status: `success`, `error` |
+| `start` | string | Start date (ISO 8601) |
+| `end` | string | End date (ISO 8601) |
+| `limit` | integer | Number of items to return |
+| `offset` | integer | Number of items to skip |
+
+**Example Request:**
+
+```bash
+curl -H "Authorization: Bearer your-api-key" \
+  "https://your-domain.com/api/logs?namespace=namespace-uuid&status=error&limit=10"
+```
+
+**Example Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "log-uuid",
+      "toolName": "read_file",
+      "arguments": {
+        "path": "/nonexistent.txt"
+      },
+      "result": null,
+      "error": "File not found",
+      "status": "error",
+      "executionTime": 50,
+      "namespaceId": "namespace-uuid",
+      "userId": "user-uuid",
+      "timestamp": "2024-01-15T12:45:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 100,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+### Get Log Entry
+
+Get a specific log entry.
+
+```http
+GET /logs/{id}
+```
+
+## Health and Status
+
+### Health Check
+
+Check server health.
+
+```http
+GET /health
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "version": "1.0.0",
+  "uptime": 86400
+}
+```
+
+### Detailed Health Check
+
+Get detailed health information.
+
+```http
+GET /health/detailed
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "version": "1.0.0",
+  "uptime": 86400,
+  "components": {
+    "database": {
+      "status": "healthy",
+      "responseTime": 5
+    },
+    "redis": {
+      "status": "healthy",
+      "responseTime": 2
+    },
+    "mcpServers": {
+      "total": 10,
+      "running": 8,
+      "stopped": 1,
+      "error": 1
+    }
+  }
+}
+```
+
+## Error Responses
+
+All endpoints follow a consistent error response format:
+
+```json
+{
+  "error": "Error message",
+  "code": "ERROR_CODE",
+  "details": {
+    "field": "Additional error details"
+  },
+  "timestamp": "2024-01-15T12:45:00Z"
+}
+```
+
+### HTTP Status Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 429 | Too Many Requests |
+| 500 | Internal Server Error |
+
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INVALID_INPUT` | Request body validation failed |
+| `UNAUTHORIZED` | Authentication failed |
+| `FORBIDDEN` | Insufficient permissions |
+| `NOT_FOUND` | Resource not found |
+| `RATE_LIMITED` | Rate limit exceeded |
+| `SERVER_ERROR` | Internal server error |
+| `MCP_SERVER_ERROR` | MCP server execution failed |
+| `TOOL_NOT_FOUND` | Requested tool not available |
+
+## Rate Limiting
+
+API requests are rate limited based on your API key:
+
+- **Default**: 1000 requests per hour
+- **Burst**: Up to 10 requests per second
+
+Rate limit information is included in response headers:
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1640995200
+```
+
+## Pagination
+
+List endpoints support pagination:
+
+**Request Parameters:**
+- `limit`: Number of items (default: 50, max: 100)
+- `offset`: Number of items to skip (default: 0)
+
+**Response Format:**
+```json
+{
+  "data": [...],
+  "pagination": {
+    "total": 100,
+    "limit": 50,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+## WebHooks
+
+### Create Webhook
+
+Create a webhook to receive events.
+
+```http
+POST /webhooks
+```
+
+**Request Body:**
+
+```json
+{
+  "url": "https://your-app.com/webhook",
+  "events": ["tool.executed", "server.status_changed"],
+  "secret": "optional-webhook-secret"
+}
+```
+
+### List Webhooks
+
+```http
+GET /webhooks
+```
+
+### Delete Webhook
+
+```http
+DELETE /webhooks/{id}
+```
+
+### Webhook Events
+
+Available webhook events:
+
+- `tool.executed` - Tool execution completed
+- `tool.failed` - Tool execution failed
+- `server.started` - MCP server started
+- `server.stopped` - MCP server stopped
+- `server.error` - MCP server error
+- `namespace.created` - Namespace created
+- `namespace.deleted` - Namespace deleted
+
+### Webhook Payload
+
+```json
+{
+  "event": "tool.executed",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "toolName": "read_file",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "status": "success",
+    "executionTime": 150
+  }
+}
+``` 

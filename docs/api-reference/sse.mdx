@@ -1,0 +1,709 @@
+# Server-Sent Events (SSE)
+
+Real-time event streaming API for MetaMCP using Server-Sent Events.
+
+## Overview
+
+MetaMCP provides real-time updates through Server-Sent Events (SSE), allowing clients to receive live updates about:
+
+- Tool executions
+- MCP server status changes
+- System health updates
+- Error notifications
+- User activity
+
+## Endpoint
+
+```
+GET /api/sse
+```
+
+## Authentication
+
+SSE endpoints require authentication:
+
+```bash
+# Using API Key
+curl -H "Authorization: Bearer mcp_your-api-key" \
+  -H "Accept: text/event-stream" \
+  https://your-domain.com/api/sse
+
+# Using session token
+curl -H "Authorization: Bearer your-session-token" \
+  -H "Accept: text/event-stream" \
+  https://your-domain.com/api/sse
+```
+
+## Basic Usage
+
+### JavaScript/Browser
+
+```javascript
+// Basic SSE connection
+const eventSource = new EventSource('/api/sse', {
+  headers: {
+    'Authorization': 'Bearer mcp_your-api-key'
+  }
+});
+
+eventSource.onopen = function(event) {
+  console.log('SSE connection opened');
+};
+
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log('Received:', data);
+};
+
+eventSource.onerror = function(event) {
+  console.error('SSE error:', event);
+};
+
+// Close connection
+eventSource.close();
+```
+
+### Node.js
+
+```javascript
+import EventSource from 'eventsource';
+
+const eventSource = new EventSource('https://your-domain.com/api/sse', {
+  headers: {
+    'Authorization': 'Bearer mcp_your-api-key'
+  }
+});
+
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log('Event received:', data);
+};
+```
+
+### Python
+
+```python
+import sseclient
+import requests
+
+headers = {
+    'Authorization': 'Bearer mcp_your-api-key',
+    'Accept': 'text/event-stream'
+}
+
+response = requests.get(
+    'https://your-domain.com/api/sse',
+    headers=headers,
+    stream=True
+)
+
+client = sseclient.SSEClient(response)
+
+for event in client.events():
+    if event.data:
+        data = json.loads(event.data)
+        print(f"Event: {event.event}, Data: {data}")
+```
+
+### cURL
+
+```bash
+# Stream events with cURL
+curl -N -H "Authorization: Bearer mcp_your-api-key" \
+  -H "Accept: text/event-stream" \
+  https://your-domain.com/api/sse
+```
+
+## Event Types
+
+### Tool Execution Events
+
+#### tool.started
+
+Fired when a tool execution begins.
+
+```json
+{
+  "type": "tool.started",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "executionId": "exec-uuid",
+    "toolName": "read_file",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "arguments": {
+      "path": "/tmp/example.txt"
+    }
+  }
+}
+```
+
+#### tool.completed
+
+Fired when a tool execution completes successfully.
+
+```json
+{
+  "type": "tool.completed",
+  "timestamp": "2024-01-15T12:45:05Z",
+  "data": {
+    "executionId": "exec-uuid",
+    "toolName": "read_file",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "result": {
+      "content": "File contents...",
+      "encoding": "utf-8"
+    },
+    "executionTime": 5000
+  }
+}
+```
+
+#### tool.failed
+
+Fired when a tool execution fails.
+
+```json
+{
+  "type": "tool.failed",
+  "timestamp": "2024-01-15T12:45:03Z",
+  "data": {
+    "executionId": "exec-uuid",
+    "toolName": "read_file",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "error": {
+      "message": "File not found",
+      "code": "ENOENT"
+    },
+    "executionTime": 3000
+  }
+}
+```
+
+### MCP Server Events
+
+#### server.started
+
+Fired when an MCP server starts.
+
+```json
+{
+  "type": "server.started",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "serverId": "server-uuid",
+    "name": "Filesystem Server",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "pid": 12345
+  }
+}
+```
+
+#### server.stopped
+
+Fired when an MCP server stops.
+
+```json
+{
+  "type": "server.stopped",
+  "timestamp": "2024-01-15T12:50:00Z",
+  "data": {
+    "serverId": "server-uuid",
+    "name": "Filesystem Server",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "reason": "manual_stop"
+  }
+}
+```
+
+#### server.error
+
+Fired when an MCP server encounters an error.
+
+```json
+{
+  "type": "server.error",
+  "timestamp": "2024-01-15T12:47:00Z",
+  "data": {
+    "serverId": "server-uuid",
+    "name": "Filesystem Server",
+    "namespaceId": "namespace-uuid",
+    "userId": "user-uuid",
+    "error": {
+      "message": "Connection timeout",
+      "code": "TIMEOUT"
+    }
+  }
+}
+```
+
+#### server.health_check
+
+Fired periodically with server health status.
+
+```json
+{
+  "type": "server.health_check",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "serverId": "server-uuid",
+    "status": "healthy",
+    "responseTime": 150,
+    "memoryUsage": 45.2,
+    "cpuUsage": 12.5
+  }
+}
+```
+
+### System Events
+
+#### system.health
+
+General system health updates.
+
+```json
+{
+  "type": "system.health",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "status": "healthy",
+    "components": {
+      "database": "healthy",
+      "redis": "healthy",
+      "mcpServers": {
+        "total": 10,
+        "running": 8,
+        "stopped": 1,
+        "error": 1
+      }
+    }
+  }
+}
+```
+
+#### system.metrics
+
+System performance metrics.
+
+```json
+{
+  "type": "system.metrics",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "activeConnections": 25,
+    "requestsPerMinute": 120,
+    "averageResponseTime": 250,
+    "memoryUsage": 65.2,
+    "cpuUsage": 23.1
+  }
+}
+```
+
+### User Events
+
+#### user.activity
+
+User activity notifications.
+
+```json
+{
+  "type": "user.activity",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "userId": "user-uuid",
+    "action": "namespace.created",
+    "resource": {
+      "type": "namespace",
+      "id": "namespace-uuid",
+      "name": "My New Namespace"
+    }
+  }
+}
+```
+
+### Heartbeat Events
+
+#### heartbeat
+
+Periodic heartbeat to keep connection alive.
+
+```json
+{
+  "type": "heartbeat",
+  "timestamp": "2024-01-15T12:45:00Z",
+  "data": {
+    "server": "healthy",
+    "uptime": 86400
+  }
+}
+```
+
+## Filtering Events
+
+### By Event Type
+
+Subscribe to specific event types using query parameters:
+
+```bash
+# Only tool execution events
+curl -N -H "Authorization: Bearer mcp_your-api-key" \
+  -H "Accept: text/event-stream" \
+  "https://your-domain.com/api/sse?events=tool.started,tool.completed,tool.failed"
+
+# Only server events
+curl -N -H "Authorization: Bearer mcp_your-api-key" \
+  -H "Accept: text/event-stream" \
+  "https://your-domain.com/api/sse?events=server.*"
+```
+
+### By Namespace
+
+Filter events for specific namespaces:
+
+```bash
+curl -N -H "Authorization: Bearer mcp_your-api-key" \
+  -H "Accept: text/event-stream" \
+  "https://your-domain.com/api/sse?namespace=namespace-uuid"
+```
+
+### By User
+
+Admin users can filter by specific users:
+
+```bash
+curl -N -H "Authorization: Bearer admin-api-key" \
+  -H "Accept: text/event-stream" \
+  "https://your-domain.com/api/sse?user=user-uuid"
+```
+
+## JavaScript Client Example
+
+```javascript
+class MetaMCPEventStream {
+  constructor(apiKey, options = {}) {
+    this.apiKey = apiKey;
+    this.options = options;
+    this.eventSource = null;
+    this.listeners = new Map();
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
+
+  connect() {
+    const url = this.buildUrl();
+    
+    this.eventSource = new EventSource(url, {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`
+      }
+    });
+
+    this.eventSource.onopen = () => {
+      console.log('SSE connection established');
+      this.reconnectAttempts = 0;
+    };
+
+    this.eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.handleEvent(data);
+      } catch (error) {
+        console.error('Failed to parse SSE event:', error);
+      }
+    };
+
+    this.eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      this.handleReconnect();
+    };
+  }
+
+  buildUrl() {
+    const baseUrl = '/api/sse';
+    const params = new URLSearchParams();
+    
+    if (this.options.events) {
+      params.append('events', this.options.events.join(','));
+    }
+    
+    if (this.options.namespace) {
+      params.append('namespace', this.options.namespace);
+    }
+    
+    return params.toString() ? `${baseUrl}?${params}` : baseUrl;
+  }
+
+  handleEvent(event) {
+    const listeners = this.listeners.get(event.type) || [];
+    listeners.forEach(callback => {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error('Event listener error:', error);
+      }
+    });
+
+    // Call global listeners
+    const globalListeners = this.listeners.get('*') || [];
+    globalListeners.forEach(callback => {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error('Global event listener error:', error);
+      }
+    });
+  }
+
+  handleReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+      
+      console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      
+      setTimeout(() => {
+        this.connect();
+      }, delay);
+    } else {
+      console.error('Max reconnection attempts reached');
+    }
+  }
+
+  on(eventType, callback) {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, []);
+    }
+    this.listeners.get(eventType).push(callback);
+  }
+
+  off(eventType, callback) {
+    const listeners = this.listeners.get(eventType);
+    if (listeners) {
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
+    }
+  }
+
+  disconnect() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+  }
+}
+
+// Usage
+const eventStream = new MetaMCPEventStream('mcp_your-api-key', {
+  events: ['tool.completed', 'tool.failed'],
+  namespace: 'namespace-uuid'
+});
+
+// Listen for specific events
+eventStream.on('tool.completed', (event) => {
+  console.log('Tool completed:', event.data.toolName);
+});
+
+eventStream.on('tool.failed', (event) => {
+  console.error('Tool failed:', event.data.error);
+});
+
+// Listen for all events
+eventStream.on('*', (event) => {
+  console.log('Event received:', event.type);
+});
+
+// Connect
+eventStream.connect();
+
+// Disconnect when done
+// eventStream.disconnect();
+```
+
+## React Hook Example
+
+```javascript
+import { useState, useEffect, useRef } from 'react';
+
+function useMetaMCPEvents(apiKey, options = {}) {
+  const [events, setEvents] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState(null);
+  const eventSourceRef = useRef(null);
+
+  useEffect(() => {
+    if (!apiKey) return;
+
+    const url = buildUrl(options);
+    
+    eventSourceRef.current = new EventSource(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    eventSourceRef.current.onopen = () => {
+      setIsConnected(true);
+      setError(null);
+    };
+
+    eventSourceRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setEvents(prev => [...prev.slice(-99), data]); // Keep last 100 events
+      } catch (err) {
+        console.error('Failed to parse SSE event:', err);
+      }
+    };
+
+    eventSourceRef.current.onerror = (err) => {
+      setIsConnected(false);
+      setError(err);
+    };
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, [apiKey, JSON.stringify(options)]);
+
+  const clearEvents = () => setEvents([]);
+
+  return {
+    events,
+    isConnected,
+    error,
+    clearEvents
+  };
+}
+
+function buildUrl(options) {
+  const baseUrl = '/api/sse';
+  const params = new URLSearchParams();
+  
+  if (options.events) {
+    params.append('events', options.events.join(','));
+  }
+  
+  if (options.namespace) {
+    params.append('namespace', options.namespace);
+  }
+  
+  return params.toString() ? `${baseUrl}?${params}` : baseUrl;
+}
+
+// Usage in component
+function LiveDashboard() {
+  const { events, isConnected, error } = useMetaMCPEvents('mcp_your-api-key', {
+    events: ['tool.completed', 'tool.failed', 'server.started']
+  });
+
+  return (
+    <div>
+      <div>Status: {isConnected ? 'Connected' : 'Disconnected'}</div>
+      {error && <div>Error: {error.message}</div>}
+      
+      <h3>Recent Events</h3>
+      <ul>
+        {events.slice(-10).map((event, index) => (
+          <li key={index}>
+            {event.timestamp}: {event.type} - {JSON.stringify(event.data)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+### Connection Errors
+
+Handle connection failures gracefully:
+
+```javascript
+eventSource.onerror = function(event) {
+  console.error('SSE connection error');
+  
+  // Implement exponential backoff reconnection
+  setTimeout(() => {
+    eventSource = new EventSource('/api/sse', {
+      headers: { 'Authorization': 'Bearer mcp_your-api-key' }
+    });
+  }, 5000);
+};
+```
+
+### Authentication Errors
+
+Monitor for authentication failures:
+
+```javascript
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  
+  if (data.type === 'error' && data.data.code === 'UNAUTHORIZED') {
+    console.error('Authentication failed, please refresh token');
+    eventSource.close();
+    // Redirect to login or refresh token
+  }
+};
+```
+
+## Performance Considerations
+
+### Connection Management
+
+- **Connection Pooling**: Reuse connections when possible
+- **Heartbeat Monitoring**: Monitor heartbeat events to detect stale connections
+- **Resource Cleanup**: Always close connections when done
+
+### Event Filtering
+
+- **Client-side Filtering**: Use server-side filtering to reduce bandwidth
+- **Event Buffering**: Implement client-side buffering for high-frequency events
+- **Selective Subscription**: Only subscribe to needed events
+
+### Memory Management
+
+```javascript
+// Limit event history to prevent memory leaks
+const MAX_EVENTS = 100;
+
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  
+  eventHistory.push(data);
+  
+  if (eventHistory.length > MAX_EVENTS) {
+    eventHistory.shift(); // Remove oldest event
+  }
+};
+```
+
+## Security
+
+### Authentication
+
+All SSE endpoints require valid authentication tokens.
+
+### Rate Limiting
+
+SSE connections are subject to rate limits:
+- Maximum 5 concurrent connections per API key
+- Connection duration limited to 24 hours
+- Automatic disconnection after 1 hour of inactivity
+
+### Data Filtering
+
+Events are automatically filtered based on user permissions:
+- Users only see events from their own namespaces
+- API keys respect permission scopes
+- Admin users can see system-wide events 

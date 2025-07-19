@@ -1,0 +1,413 @@
+---
+title: "Namespaces"
+description: "Group MCP servers and apply middleware at the namespace level"
+---
+
+A **MetaMCP Namespace** is a logical grouping of one or more MCP servers that allows you to organize, configure, and apply middleware to your servers as a cohesive unit.
+
+## What are Namespaces?
+
+Namespaces serve as containers that:
+
+- **Group related MCP servers** (e.g., "Development Tools", "Content Creation", "Data Analysis")
+- **Enable/disable servers** at the namespace level
+- **Apply middleware** to transform requests and responses
+- **Control tool visibility** by enabling/disabling specific tools
+- **Manage permissions** and access control
+
+<Card title="Example: Content Creation Namespace" icon="folder">
+A namespace might contain:
+- **HackerNews server** - for research and trending topics
+- **File System server** - for reading/writing content files  
+- **Git server** - for version control operations
+- **Image Generation server** - for creating visuals
+
+All configured with middleware to filter tools and log activities.
+</Card>
+
+## Namespace Configuration
+
+### Basic Setup
+
+<AccordionGroup>
+  <Accordion icon="plus" title="Creating a Namespace">
+    1. **Navigate** to Namespaces in the MetaMCP dashboard
+    2. **Click** "Create Namespace"
+    3. **Configure** basic details:
+       - **Name**: Unique identifier (e.g., "development-tools")
+       - **Display Name**: Human-readable name
+       - **Description**: Purpose and contents
+       - **Scope**: Private (your use) or Public (organization-wide)
+    4. **Save** the namespace
+  </Accordion>
+
+  <Accordion icon="server" title="Adding MCP Servers">
+    After creating a namespace:
+    
+    1. **Select servers** from your configured MCP servers
+    2. **Enable/disable** each server in the namespace
+    3. **Configure server-specific** settings
+    4. **Test connectivity** to ensure servers work properly
+    
+    ```json
+    {
+      "servers": [
+        {
+          "serverId": "hackernews",
+          "enabled": true,
+          "priority": 1
+        },
+        {
+          "serverId": "filesystem", 
+          "enabled": true,
+          "priority": 2
+        }
+      ]
+    }
+    ```
+  </Accordion>
+
+  <Accordion icon="wrench" title="Tool Management">
+    **Granular control** over which tools are available:
+    
+    - **Auto-discovery**: Automatically include all tools from enabled servers
+    - **Manual selection**: Choose specific tools to expose
+    - **Tool aliases**: Rename tools for clarity
+    - **Tool grouping**: Organize tools by category
+    
+    <Tip>
+      Use tool filtering to reduce context size for LLMs and improve performance.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Middleware Configuration
+
+Namespaces support pluggable middleware to transform MCP requests and responses:
+
+### Built-in Middleware
+
+<AccordionGroup>
+  <Accordion icon="filter" title="Filter Inactive Tools">
+    **Purpose**: Remove tools that aren't currently available or useful
+    
+    ```json
+    {
+      "middleware": [
+        {
+          "type": "filter-inactive-tools",
+          "config": {
+            "checkHealth": true,
+            "removeUnavailable": true,
+            "maxToolsPerServer": 50
+          }
+        }
+      ]
+    }
+    ```
+    
+    **Benefits**:
+    - Reduces context size for LLMs
+    - Improves tool selection accuracy
+    - Prevents errors from unavailable tools
+  </Accordion>
+
+  <Accordion icon="chart-line" title="Request Logging">
+    **Purpose**: Log all MCP requests and responses for debugging and analytics
+    
+    ```json
+    {
+      "middleware": [
+        {
+          "type": "request-logging",
+          "config": {
+            "logLevel": "info",
+            "includeHeaders": false,
+            "sanitizeSecrets": true
+          }
+        }
+      ]
+    }
+    ```
+  </Accordion>
+
+  <Accordion icon="shield" title="Rate Limiting">
+    **Purpose**: Prevent abuse and manage resource usage
+    
+    ```json
+    {
+      "middleware": [
+        {
+          "type": "rate-limiting",
+          "config": {
+            "requestsPerMinute": 60,
+            "burstLimit": 10,
+            "keyStrategy": "ip-address"
+          }
+        }
+      ]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Custom Middleware
+
+You can create custom middleware for specific use cases:
+
+```typescript
+// Example: Tool validation middleware
+{
+  "type": "custom",
+  "name": "tool-validator",
+  "config": {
+    "validateInputs": true,
+    "requiredFields": ["query", "context"],
+    "maxInputLength": 10000
+  }
+}
+```
+
+## Namespace Examples
+
+### Development Tools Namespace
+
+Perfect for software development workflows:
+
+<CodeGroup>
+```json Configuration
+{
+  "name": "development-tools",
+  "displayName": "Development Tools", 
+  "description": "Essential tools for software development",
+  "servers": [
+    {
+      "serverId": "git",
+      "enabled": true,
+      "tools": ["git_commit", "git_status", "git_diff"]
+    },
+    {
+      "serverId": "filesystem",
+      "enabled": true, 
+      "tools": ["read_file", "write_file", "list_directory"]
+    },
+    {
+      "serverId": "terminal", 
+      "enabled": true,
+      "tools": ["run_command", "get_environment"]
+    }
+  ]
+}
+```
+
+```json Middleware
+{
+  "middleware": [
+    {
+      "type": "filter-inactive-tools",
+      "config": {
+        "checkHealth": true
+      }
+    },
+    {
+      "type": "request-logging",
+      "config": {
+        "logLevel": "debug"
+      }
+    }
+  ]
+}
+```
+</CodeGroup>
+
+### Content Research Namespace
+
+Optimized for content creation and research:
+
+```json
+{
+  "name": "content-research",
+  "displayName": "Content Research",
+  "description": "Tools for content research and creation",
+  "servers": [
+    {
+      "serverId": "hackernews",
+      "enabled": true,
+      "tools": ["get_top_stories", "get_story_details"]
+    },
+    {
+      "serverId": "web-search",
+      "enabled": true,
+      "tools": ["search_web", "get_page_content"]
+    },
+    {
+      "serverId": "wikipedia",
+      "enabled": true,
+      "tools": ["search_wikipedia", "get_article"]
+    }
+  ],
+  "middleware": [
+    {
+      "type": "content-filter",
+      "config": {
+        "removeAds": true,
+        "extractMainContent": true
+      }
+    }
+  ]
+}
+```
+
+## Access Control
+
+### Scope Management
+
+<AccordionGroup>
+  <Accordion icon="lock" title="Private Namespaces">
+    **Accessible only by the creator**
+    
+    - Perfect for personal workflows
+    - Experimental configurations
+    - Sensitive tools and data
+    - Individual developer setups
+  </Accordion>
+
+  <Accordion icon="users" title="Public Namespaces">
+    **Accessible by entire organization**
+    
+    - Shared team tools
+    - Standardized workflows
+    - Company-wide integrations
+    - Approved tool collections
+  </Accordion>
+</AccordionGroup>
+
+### Permission Levels
+
+```json
+{
+  "permissions": {
+    "read": ["user:john", "team:developers"],
+    "write": ["user:john", "team:admins"], 
+    "execute": ["user:john", "team:developers"],
+    "admin": ["user:john"]
+  }
+}
+```
+
+## Performance Optimization
+
+### Tool Selection Strategy
+
+<Card title="Optimization Tips" icon="zap">
+- **Limit tools per namespace** to reduce context overhead
+- **Group related tools** to improve LLM understanding
+- **Use middleware filtering** to remove unused tools
+- **Cache frequently used** tool results
+- **Monitor performance** via built-in metrics
+</Card>
+
+### Server Prioritization
+
+Control the order servers are queried:
+
+```json
+{
+  "servers": [
+    {
+      "serverId": "primary-db",
+      "enabled": true,
+      "priority": 1,
+      "timeout": 5000
+    },
+    {
+      "serverId": "backup-db", 
+      "enabled": true,
+      "priority": 2,
+      "timeout": 10000
+    }
+  ]
+}
+```
+
+## Monitoring and Analytics
+
+### Namespace Metrics
+
+Track important metrics for your namespaces:
+
+- **Request volume** per namespace
+- **Tool usage** frequency
+- **Error rates** by server
+- **Response times** and performance
+- **User activity** patterns
+
+### Health Checks
+
+MetaMCP automatically monitors namespace health:
+
+- **Server connectivity** status
+- **Tool availability** checks  
+- **Middleware performance** metrics
+- **Resource usage** monitoring
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="warning" title="Namespace Not Responding">
+    **Common causes:**
+    - All servers in namespace are offline
+    - Middleware blocking requests
+    - Network connectivity issues
+    - Resource limitations
+    
+    **Debug steps:**
+    1. Check individual server status
+    2. Review middleware logs
+    3. Test with minimal configuration
+    4. Monitor resource usage
+  </Accordion>
+
+  <Accordion icon="slow" title="Poor Performance">
+    **Optimization strategies:**
+    - Reduce number of enabled tools
+    - Optimize middleware chain
+    - Increase server timeout values
+    - Use caching middleware
+    - Load balance across multiple servers
+  </Accordion>
+
+  <Accordion icon="shield" title="Permission Issues">
+    **Common problems:**
+    - Incorrect scope settings
+    - Missing user permissions
+    - Namespace not published
+    - Authentication failures
+    
+    **Solutions:**
+    1. Verify scope configuration
+    2. Check user access levels
+    3. Review namespace permissions
+    4. Test with different users
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Endpoints" icon="globe" href="/concepts/endpoints">
+    Expose your namespace through public endpoints
+  </Card>
+  
+  <Card title="Configure Middleware" icon="filter" href="/concepts/middleware">
+    Learn about available middleware options
+  </Card>
+  
+  <Card title="Integration Setup" icon="plug" href="/integrations/cursor">
+    Connect your namespace to MCP clients
+  </Card>
+  
+  <Card title="API Keys" icon="key" href="/configuration/api-keys">
+    Secure your namespace with API key authentication
+  </Card>
+</CardGroup> 

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "MetaMCP",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/metatool-ai/metamcp"
+      },
+      {
+        "label": "Discord",
+        "href": "https://discord.gg/mNsyat7mFX"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Try Demo",
+      "href": "https://demo.metamcp.com"
+    }
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "quickstart",
+          "development"
+        ]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "concepts/mcp-servers",
+          "concepts/namespaces",
+          "concepts/endpoints",
+          "concepts/middleware",
+          "concepts/inspector"
+        ]
+      },
+      {
+        "group": "Deployment",
+        "pages": [
+          "deployment/docker",
+          "deployment/local",
+          "deployment/nginx"
+        ]
+      },
+      {
+        "group": "Configuration",
+        "pages": [
+          "configuration/authentication",
+          "configuration/oidc",
+          "configuration/api-keys"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
+          "integrations/cursor",
+          "integrations/claude-desktop",
+          "integrations/troubleshooting"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/contributing",
+          "development/i18n",
+          "development/architecture"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/introduction",
+          "api-reference/endpoints",
+          "api-reference/sse",
+          "api-reference/streamable-http",
+          "api-reference/openapi"
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/metatool-ai/metamcp",
+      "discord": "https://discord.gg/mNsyat7mFX"
+    }
+  }
+}

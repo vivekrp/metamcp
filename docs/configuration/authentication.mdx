@@ -1,0 +1,365 @@
+# Authentication Configuration
+
+Configure authentication for MetaMCP using BetterAuth with support for multiple providers.
+
+## Overview
+
+MetaMCP uses [BetterAuth](https://www.better-auth.com/) for authentication, providing:
+
+- Email/password authentication
+- OAuth providers (GitHub, Google, etc.)
+- Session management
+- API key authentication
+- Role-based access control
+
+## Basic Setup
+
+### Environment Variables
+
+Required authentication variables:
+
+```env
+# Core Authentication
+BETTER_AUTH_SECRET=your-32-character-secret-key-here
+BETTER_AUTH_URL=https://your-domain.com
+
+# Database (required for sessions)
+DATABASE_URL=postgresql://user:pass@localhost:5432/metamcp
+
+# Optional: Custom session settings
+SESSION_EXPIRES_IN=7d
+COOKIE_NAME=metamcp-session
+```
+
+### Generate Secret Key
+
+Generate a secure secret key:
+
+```bash
+# Option 1: Using OpenSSL
+openssl rand -base64 32
+
+# Option 2: Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Option 3: Using Python
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+## OAuth Providers
+
+### GitHub OAuth
+
+1. **Create GitHub App**:
+   - Go to https://github.com/settings/applications/new
+   - Set Authorization callback URL: `https://your-domain.com/api/auth/callback/github`
+
+2. **Configure environment**:
+```env
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+```
+
+### Google OAuth
+
+1. **Create Google OAuth App**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable Google+ API
+   - Create OAuth 2.0 credentials
+   - Set redirect URI: `https://your-domain.com/api/auth/callback/google`
+
+2. **Configure environment**:
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### Discord OAuth
+
+1. **Create Discord App**:
+   - Go to https://discord.com/developers/applications
+   - Create new application
+   - Set redirect URI: `https://your-domain.com/api/auth/callback/discord`
+
+2. **Configure environment**:
+```env
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+```
+
+## Advanced Configuration
+
+### Custom Auth Configuration
+
+Edit `apps/backend/src/auth.ts`:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./db";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+  }),
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: true,
+  },
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "user",
+      },
+    },
+  },
+});
+```
+
+### Role-Based Access Control
+
+Configure user roles:
+
+```typescript
+// Define roles
+export const ROLES = {
+  ADMIN: "admin",
+  USER: "user",
+  VIEWER: "viewer",
+} as const;
+
+// Middleware for role checking
+export const requireRole = (requiredRole: string) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const session = await auth.api.getSession({ headers: req.headers });
+    
+    if (!session || !session.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    if (session.user.role !== requiredRole && session.user.role !== ROLES.ADMIN) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    
+    req.user = session.user;
+    next();
+  };
+};
+```
+
+### Email Verification
+
+Configure email verification:
+
+```env
+# SMTP Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=noreply@your-domain.com
+```
+
+## API Key Authentication
+
+### Generating API Keys
+
+API keys provide programmatic access to MetaMCP:
+
+```typescript
+// Generate API key
+const apiKey = await createAPIKey({
+  name: "My Integration",
+  permissions: ["read", "write"],
+  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+});
+```
+
+### Using API Keys
+
+Include API key in requests:
+
+```bash
+# Using Authorization header
+curl -H "Authorization: Bearer your-api-key" \
+  https://your-domain.com/api/mcp-servers
+
+# Using X-API-Key header
+curl -H "X-API-Key: your-api-key" \
+  https://your-domain.com/api/mcp-servers
+```
+
+### API Key Permissions
+
+Configure granular permissions:
+
+```typescript
+export const API_PERMISSIONS = {
+  // MCP Server management
+  "mcp-servers:read": "Read MCP servers",
+  "mcp-servers:write": "Create/update MCP servers",
+  "mcp-servers:delete": "Delete MCP servers",
+  
+  // Namespace management
+  "namespaces:read": "Read namespaces",
+  "namespaces:write": "Create/update namespaces",
+  "namespaces:delete": "Delete namespaces",
+  
+  // Tool execution
+  "tools:execute": "Execute tools",
+  "tools:read": "Read tool definitions",
+  
+  // Logs access
+  "logs:read": "Read execution logs",
+} as const;
+```
+
+## Session Management
+
+### Session Configuration
+
+```typescript
+export const sessionConfig = {
+  // Session duration
+  expiresIn: 60 * 60 * 24 * 7, // 7 days
+  
+  // Update session on activity
+  updateAge: 60 * 60 * 24, // Update every day
+  
+  // Cookie settings
+  cookie: {
+    name: "metamcp-session",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  },
+  
+  // Enable refresh tokens
+  useSecureCookies: true,
+};
+```
+
+### Custom Session Storage
+
+Use Redis for session storage:
+
+```typescript
+import { redisAdapter } from "better-auth/adapters/redis";
+import Redis from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL);
+
+export const auth = betterAuth({
+  session: {
+    adapter: redisAdapter(redis),
+  },
+  // ... other config
+});
+```
+
+## Security Best Practices
+
+### Environment Security
+
+```env
+# Use strong secrets
+BETTER_AUTH_SECRET=generate-32-character-random-string
+
+# Enable secure cookies in production
+NODE_ENV=production
+
+# Use HTTPS in production
+BETTER_AUTH_URL=https://your-domain.com
+```
+
+### CORS Configuration
+
+```typescript
+// Configure CORS for auth endpoints
+app.use("/api/auth", cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+```
+
+### Rate Limiting
+
+```typescript
+import rateLimit from "express-rate-limit";
+
+// Auth rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: "Too many auth attempts",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/auth/sign-in", authLimiter);
+app.use("/api/auth/sign-up", authLimiter);
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Session not persisting**:
+```bash
+# Check cookie settings
+# Verify BETTER_AUTH_URL matches your domain
+# Ensure secure: false for development HTTP
+```
+
+2. **OAuth callback errors**:
+```bash
+# Verify redirect URIs match exactly
+# Check OAuth app configuration
+# Ensure proper environment variables
+```
+
+3. **Database connection issues**:
+```bash
+# Verify DATABASE_URL
+# Check database migrations
+cd apps/backend && pnpm db:migrate
+```
+
+### Debug Mode
+
+Enable debug logging:
+
+```env
+DEBUG=better-auth:*
+LOG_LEVEL=debug
+```
+
+### Testing Authentication
+
+```bash
+# Test login endpoint
+curl -X POST https://your-domain.com/api/auth/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "password"}'
+
+# Test session verification
+curl -H "Cookie: metamcp-session=your-session-token" \
+  https://your-domain.com/api/auth/session
+``` 

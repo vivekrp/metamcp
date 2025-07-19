@@ -1,0 +1,453 @@
+---
+title: "Inspector"
+description: "Debug and inspect MCP servers and MetaMCP endpoints with the built-in inspector"
+---
+
+The **MetaMCP Inspector** is a powerful debugging tool that allows you to test, explore, and troubleshoot MCP servers and MetaMCP endpoints in real-time. Unlike the official MCP inspector, MetaMCP's inspector automatically saves server configurations and provides enhanced features for debugging complex setups.
+
+## What is the Inspector?
+
+The Inspector provides:
+
+- **Real-time testing** of MCP servers and endpoints
+- **Saved configurations** for quick access and debugging
+- **Tool exploration** with interactive parameter testing
+- **Request/response monitoring** with detailed logging
+- **Error diagnosis** with helpful troubleshooting information
+- **Performance metrics** for optimization insights
+
+<Card title="Inspector Features" icon="magnifying-glass">
+Similar to the official MCP inspector, but with **saved server configs** - MetaMCP automatically creates configurations so you can debug MetaMCP endpoints immediately without manual setup.
+</Card>
+
+## Accessing the Inspector
+
+### Web Interface
+
+1. **Navigate** to the MetaMCP dashboard
+2. **Click** "MCP Inspector" in the sidebar
+3. **Select** a server or endpoint to inspect
+4. **Start testing** tools and exploring capabilities
+
+### Direct URL Access
+
+```bash
+# Access inspector directly
+http://localhost:12008/inspector
+
+# Inspect specific endpoint
+http://localhost:12008/inspector?endpoint=my-endpoint
+
+# Inspect specific server
+http://localhost:12008/inspector?server=hackernews
+```
+
+## Inspector Interface
+
+### Server Selection
+
+<AccordionGroup>
+  <Accordion icon="server" title="MCP Servers">
+    **Test individual MCP servers:**
+    
+    - View all configured servers
+    - See current status (online/offline/error)
+    - Test server connectivity
+    - Explore available tools, resources, and prompts
+    - Execute tools with custom parameters
+  </Accordion>
+
+  <Accordion icon="globe" title="MetaMCP Endpoints">
+    **Test complete endpoints:**
+    
+    - Preview aggregated tool lists
+    - Test namespace middleware effects
+    - Verify authentication configuration
+    - Monitor request/response flow
+    - Check performance metrics
+  </Accordion>
+
+  <Accordion icon="folder" title="Namespaces">
+    **Debug namespace configurations:**
+    
+    - View enabled/disabled servers
+    - Test middleware chain execution
+    - Verify tool filtering effects
+    - Monitor namespace health
+  </Accordion>
+</AccordionGroup>
+
+### Tool Testing
+
+The inspector provides an interactive interface for testing MCP tools:
+
+#### Tool List View
+
+```json
+{
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get current weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City name or coordinates"
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  ]
+}
+```
+
+#### Interactive Testing
+
+1. **Select a tool** from the list
+2. **Fill in parameters** using the generated form
+3. **Execute the tool** and see real-time results
+4. **View request/response** details
+5. **Copy configurations** for integration
+
+## Debugging Features
+
+### Request/Response Monitoring
+
+<AccordionGroup>
+  <Accordion icon="eye" title="Real-time Monitoring">
+    **Watch requests and responses in real-time:**
+    
+    - Raw JSON request/response data
+    - Formatted and syntax-highlighted display
+    - Request timing and performance metrics
+    - Error details with stack traces
+    - Middleware execution sequence
+  </Accordion>
+
+  <Accordion icon="chart-line" title="Performance Metrics">
+    **Monitor performance characteristics:**
+    
+    ```json
+    {
+      "metrics": {
+        "responseTime": "245ms",
+        "serverProcessingTime": "189ms", 
+        "middlewareOverhead": "56ms",
+        "cacheHitRate": "73%",
+        "errorRate": "2.1%"
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion icon="bug" title="Error Diagnosis">
+    **Detailed error information:**
+    
+    - Error type and message
+    - Stack trace (when available)
+    - Server logs and output
+    - Middleware execution failures
+    - Suggested fixes and troubleshooting steps
+  </Accordion>
+</AccordionGroup>
+
+### Configuration Validation
+
+The inspector helps validate your configurations:
+
+#### Server Health Checks
+
+```json
+{
+  "server": "hackernews",
+  "status": "online",
+  "checks": {
+    "connectivity": "✅ Connected",
+    "tools": "✅ 5 tools available",
+    "resources": "✅ 2 resources available", 
+    "prompts": "✅ 1 prompt available",
+    "latency": "⚠️ 245ms (slow)"
+  }
+}
+```
+
+#### Namespace Validation
+
+```json
+{
+  "namespace": "development-tools",
+  "status": "healthy",
+  "servers": {
+    "git": "✅ Online (8 tools)",
+    "filesystem": "✅ Online (12 tools)",
+    "terminal": "❌ Offline"
+  },
+  "middleware": {
+    "filter-inactive-tools": "✅ Active",
+    "request-logging": "✅ Active"
+  }
+}
+```
+
+## Saved Configurations
+
+### Automatic Configuration Saving
+
+MetaMCP automatically saves configurations for:
+
+- **All MCP servers** you've configured
+- **Active namespaces** and their settings
+- **Created endpoints** with authentication details
+- **Recent test sessions** for quick replay
+
+### Configuration Management
+
+<CodeGroup>
+```json Export Configuration
+{
+  "export": {
+    "servers": [...],
+    "namespaces": [...], 
+    "endpoints": [...],
+    "middleware": [...]
+  }
+}
+```
+
+```json Import Configuration
+{
+  "import": {
+    "source": "file|url|clipboard",
+    "merge": true,
+    "overwrite": false
+  }
+}
+```
+</CodeGroup>
+
+### Quick Access
+
+- **Recent configurations** for fast debugging
+- **Favorite setups** for common testing scenarios
+- **Shared configurations** across team members
+- **Template configurations** for new projects
+
+## Testing Scenarios
+
+### Development Workflow
+
+<AccordionGroup>
+  <Accordion icon="code" title="New Server Testing">
+    **When adding a new MCP server:**
+    
+    1. Add server configuration in MetaMCP
+    2. Open inspector and select the server
+    3. Verify connectivity and tool discovery
+    4. Test individual tools with sample data
+    5. Check for errors or performance issues
+    6. Add to namespace once validated
+  </Accordion>
+
+  <Accordion icon="filter" title="Middleware Debugging">
+    **When configuring middleware:**
+    
+    1. Create namespace without middleware
+    2. Test baseline functionality
+    3. Add middleware one by one
+    4. Verify each middleware effect
+    5. Check performance impact
+    6. Optimize configuration based on results
+  </Accordion>
+
+  <Accordion icon="globe" title="Endpoint Validation">
+    **Before deploying endpoints:**
+    
+    1. Test endpoint connectivity
+    2. Verify authentication works
+    3. Check all transport types (SSE, HTTP, OpenAPI)
+    4. Test with actual client configurations
+    5. Validate rate limiting and CORS
+    6. Monitor performance under load
+  </Accordion>
+</AccordionGroup>
+
+### Production Monitoring
+
+Use the inspector for ongoing production monitoring:
+
+```json
+{
+  "monitoring": {
+    "healthChecks": "every 30 seconds",
+    "performanceMetrics": "real-time",
+    "errorTracking": "automatic",
+    "alerting": "configurable thresholds"
+  }
+}
+```
+
+## Integration Testing
+
+### Client Compatibility
+
+Test how your MetaMCP endpoints work with different clients:
+
+<CardGroup cols={2}>
+  <Card title="Cursor Integration" icon="cursor">
+    Generate and test `mcp.json` configurations for Cursor IDE
+  </Card>
+  
+  <Card title="Claude Desktop" icon="desktop">
+    Test mcp-proxy configurations for Claude Desktop compatibility
+  </Card>
+  
+  <Card title="Custom Clients" icon="code">
+    Validate OpenAPI endpoints for custom integrations
+  </Card>
+  
+  <Card title="Web Applications" icon="browser">
+    Test CORS and authentication for browser-based clients
+  </Card>
+</CardGroup>
+
+### Load Testing
+
+The inspector includes basic load testing capabilities:
+
+```json
+{
+  "loadTest": {
+    "concurrent": 10,
+    "duration": "60s",
+    "toolPattern": "random",
+    "authentication": "api-key",
+    "metrics": {
+      "requestsPerSecond": 45,
+      "averageResponseTime": "234ms",
+      "errorRate": "0.2%"
+    }
+  }
+}
+```
+
+## Advanced Features
+
+### Custom Scripts
+
+Run custom test scripts against your endpoints:
+
+```javascript
+// Example test script
+async function testWorkflow() {
+  const tools = await inspector.listTools();
+  
+  for (const tool of tools) {
+    try {
+      const result = await inspector.callTool(tool.name, {
+        // test parameters
+      });
+      console.log(`✅ ${tool.name}: Success`);
+    } catch (error) {
+      console.log(`❌ ${tool.name}: ${error.message}`);
+    }
+  }
+}
+```
+
+### Collaboration Features
+
+Share inspector sessions with team members:
+
+- **Session URLs** for sharing specific test configurations
+- **Test reports** for documenting issues and fixes
+- **Configuration snapshots** for reproducing problems
+- **Team dashboards** for monitoring shared endpoints
+
+## Troubleshooting with Inspector
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion icon="warning" title="Server Connection Issues">
+    **Diagnosis steps:**
+    
+    1. Check server status in inspector
+    2. View connection logs and errors
+    3. Test with minimal configuration
+    4. Verify environment variables
+    5. Check network connectivity
+    
+    **Inspector shows:**
+    - Connection timeout details
+    - Command execution logs
+    - Environment variable values
+    - Process status and errors
+  </Accordion>
+
+  <Accordion icon="filter" title="Middleware Problems">
+    **Debug middleware issues:**
+    
+    1. View middleware execution sequence
+    2. Check individual middleware logs
+    3. Test with middleware disabled
+    4. Compare before/after middleware effects
+    5. Monitor performance impact
+    
+    **Inspector provides:**
+    - Middleware execution timeline
+    - Configuration validation
+    - Performance breakdown
+    - Error isolation tools
+  </Accordion>
+
+  <Accordion icon="shield" title="Authentication Failures">
+    **Test authentication configuration:**
+    
+    1. Verify API key format and validity
+    2. Test different authentication methods
+    3. Check CORS configuration
+    4. Validate token scopes and permissions
+    5. Monitor authentication logs
+    
+    **Inspector helps with:**
+    - Authentication flow testing
+    - Token validation
+    - Permission checking
+    - CORS preflight testing
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Card title="Inspector Best Practices" icon="checklist">
+- 🔍 **Test early and often** - Use inspector during development
+- 📋 **Save configurations** - Keep working configurations for quick testing
+- 📊 **Monitor performance** - Watch metrics during testing
+- 🐛 **Debug systematically** - Test components individually before combining
+- 📝 **Document issues** - Use inspector reports for bug tracking
+- 🔄 **Regular health checks** - Monitor production endpoints
+- 👥 **Share findings** - Use collaboration features for team debugging
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MCP Servers" icon="server" href="/concepts/mcp-servers">
+    Learn how to configure and debug MCP servers
+  </Card>
+  
+  <Card title="Troubleshooting Guide" icon="wrench" href="/integrations/troubleshooting">
+    Common issues and solutions for MetaMCP
+  </Card>
+  
+  <Card title="Integration Testing" icon="plug" href="/integrations/cursor">
+    Test your configurations with actual MCP clients
+  </Card>
+  
+  <Card title="Performance Monitoring" icon="chart-line" href="/configuration/monitoring">
+    Set up production monitoring and alerting
+  </Card>
+</CardGroup> 

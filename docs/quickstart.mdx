@@ -1,0 +1,210 @@
+---
+title: "Quick Start"
+description: "Get MetaMCP running in minutes and configure your first MCP servers"
+---
+
+Get MetaMCP up and running in just a few minutes and configure your first MCP server aggregation.
+
+## Prerequisites
+
+Before starting, ensure you have:
+- Docker and Docker Compose installed
+- Git for cloning the repository
+- Basic understanding of MCP (Model Context Protocol)
+
+## Step 1: Installation
+
+<AccordionGroup>
+  <Accordion icon="github" title="Clone the Repository">
+    Clone MetaMCP from GitHub and navigate to the project directory:
+    
+    ```bash
+    git clone https://github.com/metatool-ai/metamcp.git
+    cd metamcp
+    ```
+  </Accordion>
+
+  <Accordion icon="cog" title="Configure Environment">
+    Copy the example environment file and customize as needed:
+    
+    ```bash
+    cp example.env .env
+    ```
+    
+    <Note>
+      If you modify `APP_URL` in the `.env` file, make sure you only access MetaMCP from that URL due to CORS policy enforcement.
+    </Note>
+  </Accordion>
+
+  <Accordion icon="docker" title="Start with Docker Compose">
+    Launch MetaMCP using Docker Compose:
+    
+    ```bash
+    docker compose up -d
+    ```
+    
+    This will start:
+    - MetaMCP frontend (Next.js)
+    - MetaMCP backend (Express.js + tRPC)
+    - PostgreSQL database
+    
+    <Tip>
+      The first startup may take a few minutes as Docker images are downloaded and built.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Step 2: Access MetaMCP
+
+Once the containers are running:
+
+1. **Open your browser** and go to `http://localhost:12008` (or your configured `APP_URL`)
+2. **Create an account** or log in
+3. **Explore the dashboard** - you'll see sections for MCP Servers, Namespaces, and Endpoints
+
+<Card title="First Login" icon="user">
+  The first user to register becomes the admin with full access to create public resources.
+</Card>
+
+## Step 3: Configure Your First MCP Server
+
+<AccordionGroup>
+  <Accordion icon="server" title="Add a MCP Server">
+    1. Navigate to **MCP Servers** in the sidebar
+    2. Click **"Add Server"**
+    3. Configure a simple server (example: HackerNews):
+    
+    ```json
+    {
+      "name": "HackerNews",
+      "type": "STDIO",
+      "command": "uvx",
+      "args": ["mcp-hn"]
+    }
+    ```
+    
+    4. Save the configuration
+  </Accordion>
+
+  <Accordion icon="folder" title="Create a Namespace">
+    1. Go to **Namespaces** in the sidebar
+    2. Click **"Create Namespace"**
+    3. Give it a name like "News & Information"
+    4. Add your HackerNews server to this namespace
+    5. Enable the server in the namespace
+  </Accordion>
+
+  <Accordion icon="globe" title="Create an Endpoint">
+    1. Navigate to **Endpoints**
+    2. Click **"Create Endpoint"**
+    3. Configure:
+       - **Name**: `news-endpoint`
+       - **Namespace**: Select your "News & Information" namespace
+       - **Transport**: Choose SSE or Streamable HTTP
+       - **Authentication**: API Key (recommended)
+    4. Save and note the endpoint URL
+  </Accordion>
+</AccordionGroup>
+
+## Step 4: Generate API Key
+
+<AccordionGroup>
+  <Accordion icon="key" title="Create API Key">
+    1. Go to **API Keys** in the sidebar
+    2. Click **"Generate Key"**
+    3. Provide a description (e.g., "My first MetaMCP key")
+    4. Choose scope (Private or Public)
+    5. **Copy and save the key securely** - it starts with `sk_mt_`
+  </Accordion>
+</AccordionGroup>
+
+## Step 5: Test Your Endpoint
+
+Now test your MetaMCP endpoint:
+
+<CodeGroup>
+```bash cURL Test
+curl -H "Authorization: Bearer sk_mt_your_key_here" \
+  http://localhost:12008/metamcp/news-endpoint/mcp
+```
+
+```json Example mcp.json for Cursor
+{
+  "mcpServers": {
+    "MetaMCP-News": {
+      "url": "http://localhost:12008/metamcp/news-endpoint/sse"
+    }
+  }
+}
+```
+</CodeGroup>
+
+<Card title="Success!" icon="check">
+  If everything is working, you should see MCP protocol responses with tools from your HackerNews server.
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Add More Servers" icon="plus" href="/concepts/mcp-servers">
+    Learn how to configure different types of MCP servers (STDIO, HTTP, etc.)
+  </Card>
+  
+  <Card title="Configure Middleware" icon="filter" href="/concepts/middleware">
+    Apply middleware to filter tools and transform requests/responses
+  </Card>
+  
+  <Card title="Connect to Cursor" icon="cursor" href="/integrations/cursor">
+    Configure Cursor IDE to use your MetaMCP endpoints
+  </Card>
+  
+  <Card title="Connect to Claude Desktop" icon="desktop" href="/integrations/claude-desktop">
+    Set up Claude Desktop with MetaMCP using mcp-proxy
+  </Card>
+</CardGroup>
+
+## Alternative: Local Development
+
+If you prefer to run without Docker:
+
+<AccordionGroup>
+  <Accordion icon="terminal" title="Development Setup">
+    ```bash
+    # Install dependencies
+    pnpm install
+    
+    # Start PostgreSQL (still recommended via Docker)
+    docker run -d \
+      --name metamcp-postgres \
+      -e POSTGRES_PASSWORD=password \
+      -e POSTGRES_DB=metamcp \
+      -p 5432:5432 \
+      postgres:15
+    
+    # Start development server
+    pnpm dev
+    ```
+    
+    This will start the frontend on `http://localhost:3000` and backend on `http://localhost:3001`.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="warning" title="Common Issues">
+    **Port conflicts**: If port 12008 is busy, modify `APP_PORT` in your `.env` file.
+    
+    **CORS errors**: Ensure you're accessing MetaMCP from the URL specified in `APP_URL`.
+    
+    **Database connection**: Check that PostgreSQL container is running with `docker ps`.
+    
+    **Memory issues**: MetaMCP requires at least 2GB RAM for optimal performance.
+  </Accordion>
+
+  <Accordion icon="question" title="Need Help?">
+    - Check our [Integration Troubleshooting guide](/integrations/troubleshooting)
+    - Join our [Discord community](https://discord.gg/mNsyat7mFX)
+    - Browse [GitHub Issues](https://github.com/metatool-ai/metamcp/issues)
+  </Accordion>
+</AccordionGroup>

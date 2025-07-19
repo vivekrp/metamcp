@@ -1,0 +1,437 @@
+# OpenID Connect (OIDC) Configuration
+
+Configure MetaMCP to work with OIDC providers for enterprise authentication.
+
+## Overview
+
+MetaMCP supports OpenID Connect (OIDC) for enterprise authentication, allowing integration with:
+
+- Azure Active Directory
+- AWS Cognito
+- Auth0
+- Okta
+- Keycloak
+- Custom OIDC providers
+
+## Basic OIDC Setup
+
+### Environment Variables
+
+Configure OIDC provider:
+
+```env
+# OIDC Configuration
+OIDC_ISSUER=https://your-provider.com
+OIDC_CLIENT_ID=your-client-id
+OIDC_CLIENT_SECRET=your-client-secret
+OIDC_REDIRECT_URI=https://your-domain.com/api/auth/callback/oidc
+
+# Optional: Custom scopes
+OIDC_SCOPES=openid profile email groups
+
+# Optional: Custom claims mapping
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_EMAIL_CLAIM=email
+OIDC_NAME_CLAIM=name
+OIDC_GROUPS_CLAIM=groups
+```
+
+### BetterAuth Configuration
+
+Add OIDC to your auth configuration:
+
+```typescript
+import { betterAuth } from "better-auth";
+
+export const auth = betterAuth({
+  socialProviders: {
+    oidc: {
+      clientId: process.env.OIDC_CLIENT_ID!,
+      clientSecret: process.env.OIDC_CLIENT_SECRET!,
+      issuer: process.env.OIDC_ISSUER!,
+      scope: process.env.OIDC_SCOPES || "openid profile email",
+      
+      // Custom user mapping
+      profile: (profile) => ({
+        id: profile.sub,
+        email: profile[process.env.OIDC_EMAIL_CLAIM || "email"],
+        name: profile[process.env.OIDC_NAME_CLAIM || "name"],
+        image: profile.picture,
+        username: profile[process.env.OIDC_USERNAME_CLAIM || "preferred_username"],
+        groups: profile[process.env.OIDC_GROUPS_CLAIM || "groups"] || [],
+      }),
+    },
+  },
+  
+  // Enable OIDC login
+  callbacks: {
+    async signIn(user, account) {
+      // Custom login logic
+      if (account.provider === "oidc") {
+        // Check if user is allowed
+        const allowedDomains = process.env.ALLOWED_EMAIL_DOMAINS?.split(",") || [];
+        if (allowedDomains.length > 0) {
+          const emailDomain = user.email?.split("@")[1];
+          if (!allowedDomains.includes(emailDomain)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+  },
+});
+```
+
+## Provider-Specific Configurations
+
+### Azure Active Directory
+
+```env
+# Azure AD Configuration
+OIDC_ISSUER=https://login.microsoftonline.com/{tenant-id}/v2.0
+OIDC_CLIENT_ID=your-azure-app-id
+OIDC_CLIENT_SECRET=your-azure-client-secret
+OIDC_SCOPES=openid profile email User.Read
+
+# Azure-specific claims
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_GROUPS_CLAIM=groups
+```
+
+#### Azure App Registration
+
+1. **Register Application**:
+   - Go to Azure Portal → App registrations
+   - Create new registration
+   - Set redirect URI: `https://your-domain.com/api/auth/callback/oidc`
+
+2. **Configure API Permissions**:
+   - Add Microsoft Graph permissions
+   - Grant `User.Read` permission
+   - Admin consent if required
+
+3. **Create Client Secret**:
+   - Go to Certificates & secrets
+   - Create new client secret
+   - Copy the secret value
+
+### AWS Cognito
+
+```env
+# Cognito Configuration
+OIDC_ISSUER=https://cognito-idp.{region}.amazonaws.com/{user-pool-id}
+OIDC_CLIENT_ID=your-cognito-app-client-id
+OIDC_CLIENT_SECRET=your-cognito-app-client-secret
+OIDC_SCOPES=openid profile email aws.cognito.signin.user.admin
+
+# Cognito-specific claims
+OIDC_USERNAME_CLAIM=cognito:username
+OIDC_GROUPS_CLAIM=cognito:groups
+```
+
+#### Cognito User Pool Setup
+
+1. **Create User Pool**:
+   - Configure sign-in options
+   - Set up required attributes
+   - Configure app client
+
+2. **App Client Settings**:
+   - Enable OAuth flows
+   - Set callback URL: `https://your-domain.com/api/auth/callback/oidc`
+   - Configure scopes
+
+### Auth0
+
+```env
+# Auth0 Configuration
+OIDC_ISSUER=https://your-domain.auth0.com
+OIDC_CLIENT_ID=your-auth0-client-id
+OIDC_CLIENT_SECRET=your-auth0-client-secret
+OIDC_SCOPES=openid profile email
+
+# Auth0-specific claims
+OIDC_USERNAME_CLAIM=nickname
+OIDC_GROUPS_CLAIM=https://your-domain.com/groups
+```
+
+### Okta
+
+```env
+# Okta Configuration
+OIDC_ISSUER=https://your-domain.okta.com/oauth2/default
+OIDC_CLIENT_ID=your-okta-client-id
+OIDC_CLIENT_SECRET=your-okta-client-secret
+OIDC_SCOPES=openid profile email groups
+
+# Okta-specific claims
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_GROUPS_CLAIM=groups
+```
+
+### Keycloak
+
+```env
+# Keycloak Configuration
+OIDC_ISSUER=https://your-keycloak.com/auth/realms/your-realm
+OIDC_CLIENT_ID=metamcp
+OIDC_CLIENT_SECRET=your-client-secret
+OIDC_SCOPES=openid profile email roles
+
+# Keycloak-specific claims
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_GROUPS_CLAIM=groups
+OIDC_ROLES_CLAIM=realm_access.roles
+```
+
+## Advanced Configuration
+
+### Custom Claims Mapping
+
+Map OIDC claims to MetaMCP user attributes:
+
+```typescript
+export const oidcClaimsMapping = {
+  // Map OIDC claims to user fields
+  mapClaims: (claims: any) => ({
+    id: claims.sub,
+    email: claims.email || claims.mail,
+    name: claims.name || `${claims.given_name} ${claims.family_name}`,
+    username: claims.preferred_username || claims.upn || claims.email,
+    
+    // Custom attributes
+    department: claims.department,
+    title: claims.title,
+    manager: claims.manager,
+    
+    // Role mapping
+    role: mapRoleFromGroups(claims.groups || []),
+    
+    // Permissions from groups
+    permissions: mapPermissionsFromGroups(claims.groups || []),
+  }),
+};
+
+function mapRoleFromGroups(groups: string[]): string {
+  if (groups.includes("metamcp-admin")) return "admin";
+  if (groups.includes("metamcp-user")) return "user";
+  return "viewer";
+}
+
+function mapPermissionsFromGroups(groups: string[]): string[] {
+  const permissions: string[] = [];
+  
+  if (groups.includes("metamcp-admin")) {
+    permissions.push("admin:all");
+  }
+  
+  if (groups.includes("metamcp-mcp-manager")) {
+    permissions.push("mcp-servers:write", "mcp-servers:delete");
+  }
+  
+  if (groups.includes("metamcp-namespace-manager")) {
+    permissions.push("namespaces:write", "namespaces:delete");
+  }
+  
+  return permissions;
+}
+```
+
+### Group-Based Access Control
+
+Configure access control based on OIDC groups:
+
+```typescript
+// Middleware for group-based access
+export const requireGroup = (requiredGroups: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const session = await auth.api.getSession({ headers: req.headers });
+    
+    if (!session?.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const userGroups = session.user.groups || [];
+    const hasRequiredGroup = requiredGroups.some(group => 
+      userGroups.includes(group)
+    );
+    
+    if (!hasRequiredGroup) {
+      return res.status(403).json({ 
+        error: "Insufficient permissions",
+        required: requiredGroups,
+        user_groups: userGroups 
+      });
+    }
+    
+    next();
+  };
+};
+
+// Usage
+app.get("/api/admin/*", requireGroup(["metamcp-admin"]));
+app.post("/api/mcp-servers", requireGroup(["metamcp-admin", "metamcp-mcp-manager"]));
+```
+
+### Domain Restrictions
+
+Restrict access to specific email domains:
+
+```env
+# Allowed email domains (comma-separated)
+ALLOWED_EMAIL_DOMAINS=company.com,subsidiary.com
+
+# Block specific domains
+BLOCKED_EMAIL_DOMAINS=competitor.com,spam.com
+```
+
+```typescript
+// Domain validation middleware
+export const validateEmailDomain = async (user: any) => {
+  const allowedDomains = process.env.ALLOWED_EMAIL_DOMAINS?.split(",") || [];
+  const blockedDomains = process.env.BLOCKED_EMAIL_DOMAINS?.split(",") || [];
+  
+  if (!user.email) {
+    throw new Error("Email is required");
+  }
+  
+  const emailDomain = user.email.split("@")[1];
+  
+  // Check blocked domains
+  if (blockedDomains.includes(emailDomain)) {
+    throw new Error(`Domain ${emailDomain} is not allowed`);
+  }
+  
+  // Check allowed domains (if configured)
+  if (allowedDomains.length > 0 && !allowedDomains.includes(emailDomain)) {
+    throw new Error(`Domain ${emailDomain} is not in allowed list`);
+  }
+  
+  return true;
+};
+```
+
+## Single Sign-On (SSO)
+
+### Automatic Login
+
+Configure automatic redirect to OIDC provider:
+
+```typescript
+// Auto-redirect to SSO
+export const autoRedirectSSO = (req: Request, res: Response, next: NextFunction) => {
+  const { auto_sso } = req.query;
+  const userAgent = req.headers["user-agent"] || "";
+  
+  // Skip auto-redirect for API calls
+  if (req.path.startsWith("/api") || userAgent.includes("curl")) {
+    return next();
+  }
+  
+  // Auto-redirect if enabled
+  if (auto_sso === "true" || process.env.FORCE_SSO === "true") {
+    return res.redirect("/api/auth/signin/oidc");
+  }
+  
+  next();
+};
+```
+
+### SSO Logout
+
+Handle proper logout with OIDC provider:
+
+```typescript
+export const ssoLogout = async (req: Request, res: Response) => {
+  const session = await auth.api.getSession({ headers: req.headers });
+  
+  // Local logout
+  await auth.api.signOut({ headers: req.headers });
+  
+  // OIDC provider logout
+  if (session?.user?.provider === "oidc") {
+    const logoutUrl = new URL(`${process.env.OIDC_ISSUER}/logout`);
+    logoutUrl.searchParams.set("post_logout_redirect_uri", 
+      `${process.env.BETTER_AUTH_URL}/login`);
+    
+    return res.redirect(logoutUrl.toString());
+  }
+  
+  res.redirect("/login");
+};
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Invalid Issuer**:
+```bash
+# Verify OIDC discovery endpoint
+curl https://your-provider.com/.well-known/openid-configuration
+```
+
+2. **Token Validation Errors**:
+```bash
+# Check token signature and claims
+# Verify client ID and secret
+# Ensure proper scopes are requested
+```
+
+3. **Group Claims Missing**:
+```bash
+# Configure provider to include groups in tokens
+# Update OIDC_GROUPS_CLAIM to match provider
+# Check scope includes groups
+```
+
+### Debug Configuration
+
+Enable detailed OIDC logging:
+
+```env
+DEBUG=better-auth:oidc,better-auth:session
+LOG_LEVEL=debug
+OIDC_DEBUG=true
+```
+
+### Testing OIDC Flow
+
+```bash
+# Test discovery endpoint
+curl https://your-provider.com/.well-known/openid-configuration
+
+# Test authorization endpoint
+curl "https://your-provider.com/auth?client_id=your-client&response_type=code&scope=openid%20profile%20email&redirect_uri=https://your-domain.com/callback"
+
+# Validate JWT token
+curl -H "Authorization: Bearer your-jwt-token" \
+  https://your-domain.com/api/auth/session
+```
+
+## Migration from OAuth
+
+If migrating from OAuth to OIDC:
+
+1. **Update provider configuration**
+2. **Map existing users to OIDC claims**
+3. **Update group/role mappings**
+4. **Test authentication flow**
+5. **Update documentation for users**
+
+```typescript
+// Migration helper
+export const migrateOAuthToOIDC = async (oauthUser: any) => {
+  const oidcUser = {
+    id: oauthUser.id,
+    email: oauthUser.email,
+    name: oauthUser.name,
+    // Map additional OIDC claims
+    groups: await getGroupsFromProvider(oauthUser.email),
+    role: await mapUserRole(oauthUser.email),
+  };
+  
+  return oidcUser;
+};
+``` 

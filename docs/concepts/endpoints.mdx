@@ -1,0 +1,501 @@
+---
+title: "Endpoints"
+description: "Create public endpoints for your namespaces with different transport options"
+---
+
+A **MetaMCP Endpoint** is a public interface that exposes one or more namespaces as a unified MCP server. Endpoints handle authentication, transport protocols, and provide the actual URLs that MCP clients connect to.
+
+## What are Endpoints?
+
+Endpoints serve as the public-facing interface for your MetaMCP configuration:
+
+- **Expose namespaces** as accessible MCP servers
+- **Handle authentication** (API keys, OAuth, etc.)
+- **Support multiple transports** (SSE, Streamable HTTP, OpenAPI)
+- **Aggregate multiple namespaces** into a single endpoint
+- **Provide monitoring** and usage analytics
+
+<Card title="Example Endpoint URL" icon="globe">
+```
+https://your-metamcp.com/metamcp/my-endpoint/sse
+```
+
+This URL can be used directly in any MCP client that supports SSE transport.
+</Card>
+
+## Transport Options
+
+MetaMCP endpoints support multiple transport protocols to ensure compatibility with different MCP clients:
+
+<AccordionGroup>
+  <Accordion icon="broadcast-tower" title="SSE (Server-Sent Events)">
+    **Real-time streaming protocol** - Best for interactive applications
+    
+    ```bash
+    # Endpoint URL format
+    /metamcp/{endpoint-name}/sse
+    
+    # Example usage in Cursor mcp.json
+    {
+      "mcpServers": {
+        "MetaMCP": {
+          "url": "http://localhost:12008/metamcp/my-endpoint/sse"
+        }
+      }
+    }
+    ```
+    
+    **Benefits:**
+    - Real-time communication
+    - Native browser support
+    - Automatic reconnection
+    - Low latency
+    
+    **Best for:** Interactive IDE integrations, real-time tools
+  </Accordion>
+
+  <Accordion icon="http" title="Streamable HTTP">
+    **HTTP-based MCP communication** - Compatible with most HTTP clients
+    
+    ```bash
+    # Endpoint URL format  
+    /metamcp/{endpoint-name}/mcp
+    
+    # Example cURL usage
+    curl -H "Authorization: Bearer sk_mt_your_key" \
+      http://localhost:12008/metamcp/my-endpoint/mcp
+    ```
+    
+    **Benefits:**
+    - Wide client compatibility
+    - Easy debugging with standard HTTP tools
+    - Proxy-friendly
+    - Cached responses
+    
+    **Best for:** STDIO clients via mcp-proxy, HTTP-based integrations
+  </Accordion>
+
+  <Accordion icon="code" title="OpenAPI">
+    **REST API interface** - For non-MCP clients
+    
+    ```bash
+    # Endpoint URL format
+    /metamcp/{endpoint-name}/openapi
+    
+    # Tool execution endpoint
+    POST /metamcp/{endpoint-name}/openapi/tools/{tool-name}/call
+    ```
+    
+    **Benefits:**
+    - Standard REST API
+    - OpenAPI/Swagger documentation
+    - Easy integration with any HTTP client
+    - No MCP knowledge required
+    
+    **Best for:** Web applications, Open WebUI, custom integrations
+  </Accordion>
+</AccordionGroup>
+
+## Creating Endpoints
+
+### Basic Configuration
+
+<AccordionGroup>
+  <Accordion icon="plus" title="Create New Endpoint">
+    1. **Navigate** to Endpoints in the MetaMCP dashboard
+    2. **Click** "Create Endpoint"
+    3. **Configure** basic settings:
+       - **Name**: Unique identifier (e.g., "development-tools")
+       - **Display Name**: Human-readable name
+       - **Description**: Purpose and usage
+    4. **Assign namespace(s)** to the endpoint
+    5. **Configure authentication** and access controls
+    6. **Save** and get your endpoint URLs
+  </Accordion>
+
+  <Accordion icon="folder" title="Namespace Assignment">
+    **Single Namespace:**
+    ```json
+    {
+      "namespaces": [
+        {
+          "namespaceId": "development-tools",
+          "priority": 1
+        }
+      ]
+    }
+    ```
+    
+    **Multiple Namespaces (Advanced):**
+    ```json
+    {
+      "namespaces": [
+        {
+          "namespaceId": "core-tools",
+          "priority": 1,
+          "prefix": "core"
+        },
+        {
+          "namespaceId": "experimental",
+          "priority": 2,
+          "prefix": "exp"
+        }
+      ]
+    }
+    ```
+  </Accordion>
+
+  <Accordion icon="shield" title="Authentication Configuration">
+    **API Key Authentication (Recommended):**
+    ```json
+    {
+      "authentication": {
+        "type": "api-key",
+        "required": true,
+        "scopes": ["read", "execute"]
+      }
+    }
+    ```
+    
+    **Public Access (No Auth):**
+    ```json
+    {
+      "authentication": {
+        "type": "none"
+      }
+    }
+    ```
+    
+    **OAuth/OIDC:**
+    ```json
+    {
+      "authentication": {
+        "type": "oauth",
+        "provider": "oidc",
+        "scopes": ["mcp:execute"]
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Authentication Methods
+
+### API Key Authentication
+
+The most common and secure method for endpoint access:
+
+<CodeGroup>
+```bash Authorization Header (Recommended)
+curl -H "Authorization: Bearer sk_mt_your_key_here" \
+  http://localhost:12008/metamcp/my-endpoint/mcp
+```
+
+```bash Query Parameter (Streamable HTTP only)
+curl "http://localhost:12008/metamcp/my-endpoint/mcp?api_key=sk_mt_your_key"
+```
+
+```json mcp.json Configuration
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12008/metamcp/my-endpoint/sse",
+      "headers": {
+        "Authorization": "Bearer sk_mt_your_key_here"
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+<Warning>
+Query parameter authentication doesn't work with SSE endpoints due to browser limitations. Always use the Authorization header for SSE.
+</Warning>
+
+### Session-based Authentication
+
+For frontend applications using Better Auth:
+
+```javascript
+// Automatic session handling in frontend
+const response = await fetch('/metamcp/my-endpoint/mcp', {
+  credentials: 'include'  // Includes session cookies
+});
+```
+
+## Endpoint Examples
+
+### Development Tools Endpoint
+
+Perfect for software development workflows:
+
+```json
+{
+  "name": "dev-tools",
+  "displayName": "Development Tools",
+  "description": "Essential development tools and utilities",
+  "namespaces": [
+    {
+      "namespaceId": "development-tools",
+      "priority": 1
+    }
+  ],
+  "authentication": {
+    "type": "api-key",
+    "required": true
+  },
+  "transports": ["sse", "streamablehttp", "openapi"],
+  "rateLimit": {
+    "requestsPerMinute": 120,
+    "burstLimit": 20
+  }
+}
+```
+
+**Usage URLs:**
+- SSE: `/metamcp/dev-tools/sse`
+- HTTP: `/metamcp/dev-tools/mcp`
+- OpenAPI: `/metamcp/dev-tools/openapi`
+
+### Public Research Endpoint
+
+For content research with no authentication required:
+
+```json
+{
+  "name": "public-research",
+  "displayName": "Public Research Tools",
+  "description": "Open access research and information tools",
+  "namespaces": [
+    {
+      "namespaceId": "research-tools",
+      "priority": 1
+    }
+  ],
+  "authentication": {
+    "type": "none"
+  },
+  "transports": ["openapi"],
+  "rateLimit": {
+    "requestsPerMinute": 30,
+    "burstLimit": 5
+  }
+}
+```
+
+## Advanced Configuration
+
+### Rate Limiting
+
+Control access to prevent abuse:
+
+```json
+{
+  "rateLimit": {
+    "requestsPerMinute": 60,
+    "burstLimit": 10,
+    "keyStrategy": "api-key",  // or "ip-address"
+    "errorMessage": "Rate limit exceeded. Please try again later."
+  }
+}
+```
+
+### CORS Configuration
+
+For web browser access:
+
+```json
+{
+  "cors": {
+    "allowOrigins": ["https://myapp.com", "http://localhost:3000"],
+    "allowMethods": ["GET", "POST"],
+    "allowHeaders": ["Authorization", "Content-Type"],
+    "credentials": true
+  }
+}
+```
+
+### Custom Headers
+
+Add custom headers to all responses:
+
+```json
+{
+  "responseHeaders": {
+    "X-Powered-By": "MetaMCP",
+    "X-Version": "1.0.0",
+    "Cache-Control": "no-cache"
+  }
+}
+```
+
+## Integration Examples
+
+### Cursor IDE Integration
+
+<CodeGroup>
+```json mcp.json (Simple)
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12008/metamcp/dev-tools/sse"
+    }
+  }
+}
+```
+
+```json mcp.json (With Auth)
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "url": "http://localhost:12008/metamcp/dev-tools/sse",
+      "headers": {
+        "Authorization": "Bearer sk_mt_your_key_here"
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Claude Desktop Integration
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/dev-tools/mcp"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "sk_mt_your_key_here"
+      }
+    }
+  }
+}
+```
+
+### Open WebUI Integration
+
+```javascript
+// OpenAPI endpoint integration
+const response = await fetch('/metamcp/dev-tools/openapi/tools', {
+  headers: {
+    'Authorization': 'Bearer sk_mt_your_key_here',
+    'Content-Type': 'application/json'
+  }
+});
+
+const tools = await response.json();
+```
+
+## Monitoring and Analytics
+
+### Endpoint Metrics
+
+Track important metrics for your endpoints:
+
+- **Request volume** and patterns
+- **Response times** and performance
+- **Error rates** by transport type
+- **Authentication** success/failure rates
+- **Rate limiting** triggers
+
+### Health Monitoring
+
+MetaMCP provides health checks for endpoints:
+
+```bash
+# Health check endpoint
+GET /metamcp/{endpoint-name}/health
+
+# Response
+{
+  "status": "healthy",
+  "namespaces": {
+    "development-tools": "online"
+  },
+  "transports": {
+    "sse": "available",
+    "streamablehttp": "available", 
+    "openapi": "available"
+  }
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="warning" title="Endpoint Not Responding">
+    **Common causes:**
+    - Namespace servers are offline
+    - Authentication configuration issues
+    - Network connectivity problems
+    - Rate limiting active
+    
+    **Debug steps:**
+    1. Check namespace health
+    2. Test authentication separately
+    3. Verify network connectivity
+    4. Review rate limit settings
+    5. Check server logs
+  </Accordion>
+
+  <Accordion icon="lock" title="Authentication Failures">
+    **Common problems:**
+    - Invalid or expired API keys
+    - Incorrect authorization header format
+    - Missing required scopes
+    - CORS configuration issues
+    
+    **Solutions:**
+    1. Regenerate API keys
+    2. Use correct header format: `Authorization: Bearer sk_mt_...`
+    3. Check API key permissions
+    4. Configure CORS for browser requests
+  </Accordion>
+
+  <Accordion icon="slow" title="Poor Performance">
+    **Optimization strategies:**
+    - Use SSE for real-time applications
+    - Implement caching for frequently requested data
+    - Optimize namespace configurations
+    - Use multiple endpoints for different use cases
+    - Monitor and adjust rate limits
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Card title="Security Checklist" icon="shield">
+- ✅ **Use API key authentication** for production endpoints
+- ✅ **Implement rate limiting** to prevent abuse
+- ✅ **Configure CORS** appropriately for web access
+- ✅ **Use HTTPS** in production environments
+- ✅ **Rotate API keys** regularly
+- ✅ **Monitor endpoint usage** for unusual patterns
+- ✅ **Restrict endpoint access** to necessary IP ranges when possible
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/configuration/api-keys">
+    Learn how to generate and manage API keys for secure access
+  </Card>
+  
+  <Card title="Integration Guides" icon="plug" href="/integrations/cursor">
+    Connect your endpoints to various MCP clients
+  </Card>
+  
+  <Card title="Authentication" icon="shield" href="/configuration/authentication">
+    Configure advanced authentication options
+  </Card>
+  
+  <Card title="Deployment" icon="docker" href="/deployment/docker">
+    Deploy MetaMCP with your endpoints to production
+  </Card>
+</CardGroup> 
