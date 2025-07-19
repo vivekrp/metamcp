@@ -72,16 +72,6 @@
           "development/i18n",
           "development/architecture"
         ]
-      },
-      {
-        "group": "API Reference",
-        "pages": [
-          "api-reference/introduction",
-          "api-reference/endpoints",
-          "api-reference/sse",
-          "api-reference/streamable-http",
-          "api-reference/openapi"
-        ]
       }
     ]
   },
