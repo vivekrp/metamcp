@@ -24,7 +24,7 @@ Before starting, ensure you have:
     ```
   </Accordion>
 
-  <Accordion icon="cog" title="Configure Environment">
+  <Accordion icon="gear" title="Configure Environment">
     Copy the example environment file and customize as needed:
     
     ```bash
@@ -34,6 +34,7 @@ Before starting, ensure you have:
     <Note>
       If you modify `APP_URL` in the `.env` file, make sure you only access MetaMCP from that URL due to CORS policy enforcement.
     </Note>
+    <Warning>In production environment, make sure you modify POSTGRES_PASSWORD and BETTER_AUTH_SECRET. Also use HTTPS. A typical way to generate secrets is `openssl rand -hex 32 | base64`</Warning>
   </Accordion>
 
   <Accordion icon="docker" title="Start with Docker Compose">
@@ -44,12 +45,11 @@ Before starting, ensure you have:
     ```
     
     This will start:
-    - MetaMCP frontend (Next.js)
-    - MetaMCP backend (Express.js + tRPC)
+    - MetaMCP fullstack docker image
     - PostgreSQL database
     
     <Tip>
-      The first startup may take a few minutes as Docker images are downloaded and built.
+      The first startup may take a few minutes as Docker images are pulled and downloaded.
     </Tip>
   </Accordion>
 </AccordionGroup>
