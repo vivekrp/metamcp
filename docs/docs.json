@@ -3,8 +3,8 @@
   "theme": "mint",
   "name": "MetaMCP",
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/favicon.png",
+    "dark": "/favicon.png"
   },
   "favicon": {
     "light": "/favicon.png",
