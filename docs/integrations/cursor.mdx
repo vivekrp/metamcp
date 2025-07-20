@@ -5,6 +5,8 @@ description: "Configure Cursor IDE to use MetaMCP endpoints via mcp.json"
 
 **Cursor** is a popular AI-powered code editor that supports MCP (Model Context Protocol) integration. This guide shows you how to connect Cursor to your MetaMCP endpoints for enhanced coding capabilities.
 
+Also refer to Cursor's doc on MCP https://docs.cursor.com/context/mcp
+
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -25,7 +27,7 @@ Create or edit your `mcp.json` file in Cursor's configuration directory:
 {
   "mcpServers": {
     "MetaMCP": {
-      "url": "http://localhost:12008/metamcp/your-endpoint-name/sse"
+      "url": "http://localhost:12008/metamcp/your-endpoint-name/mcp"
     }
   }
 }
@@ -35,7 +37,7 @@ Create or edit your `mcp.json` file in Cursor's configuration directory:
 {
   "mcpServers": {
     "MetaMCP": {
-      "url": "http://localhost:12008/metamcp/your-endpoint-name/sse",
+      "url": "http://localhost:12008/metamcp/your-endpoint-name/mcp",
       "headers": {
         "Authorization": "Bearer sk_mt_your_api_key_here"
       }
@@ -48,13 +50,13 @@ Create or edit your `mcp.json` file in Cursor's configuration directory:
 {
   "mcpServers": {
     "MetaMCP-Dev": {
-      "url": "http://localhost:12008/metamcp/dev-tools/sse",
+      "url": "http://localhost:12008/metamcp/dev-tools/mcp",
       "headers": {
         "Authorization": "Bearer sk_mt_dev_key"
       }
     },
     "MetaMCP-Research": {
-      "url": "http://localhost:12008/metamcp/research-tools/sse",
+      "url": "http://localhost:12008/metamcp/research-tools/mcp",
       "headers": {
         "Authorization": "Bearer sk_mt_research_key"
       }
@@ -64,65 +66,35 @@ Create or edit your `mcp.json` file in Cursor's configuration directory:
 ```
 </CodeGroup>
 
-### Configuration File Location
-
-The `mcp.json` file should be placed in Cursor's configuration directory:
-
-<CodeGroup>
-```bash macOS
-~/Library/Application Support/Cursor/User/mcp.json
-```
-
-```bash Windows
-%APPDATA%\Cursor\User\mcp.json
-```
-
-```bash Linux
-~/.config/Cursor/User/mcp.json
-```
-</CodeGroup>
-
 ## Configuration Options
 
 ### Transport Types
 
-MetaMCP supports different transport protocols. **SSE is recommended** for Cursor:
+MetaMCP supports different transport protocols. **Streamable HTTP is recommended** for Cursor:
 
 <AccordionGroup>
-  <Accordion icon="broadcast-tower" title="SSE (Recommended)">
-    **Server-Sent Events** provide real-time communication:
-    
+  <Accordion title="Streamable HTTP (Recommended)">
     ```json
     {
       "mcpServers": {
         "MetaMCP": {
-          "url": "http://localhost:12008/metamcp/dev-tools/sse"
+          "url": "http://localhost:12008/metamcp/your-endpoint-name/mcp"
         }
       }
     }
     ```
-    
-    **Benefits:**
-    - Real-time updates
-    - Automatic reconnection
-    - Native browser support
-    - Low latency
   </Accordion>
 
-  <Accordion icon="http" title="Streamable HTTP (Alternative)">
-    **HTTP-based communication** for compatibility:
-    
+  <Accordion title="SSE (Alternative)">
     ```json
     {
       "mcpServers": {
         "MetaMCP": {
-          "url": "http://localhost:12008/metamcp/dev-tools/mcp"
+          "url": "http://localhost:12008/metamcp/your-endpoint-name/sse"
         }
       }
     }
     ```
-    
-    **Note:** May have higher latency than SSE
   </Accordion>
 </AccordionGroup>
 
@@ -136,7 +108,7 @@ MetaMCP supports different transport protocols. **SSE is recommended** for Curso
     {
       "mcpServers": {
         "MetaMCP": {
-          "url": "http://localhost:12008/metamcp/dev-tools/sse",
+          "url": "http://localhost:12008/metamcp/your-endpoint-name/mcp",
           "headers": {
             "Authorization": "Bearer sk_mt_your_key_here"
           }
@@ -144,13 +116,9 @@ MetaMCP supports different transport protocols. **SSE is recommended** for Curso
       }
     }
     ```
-    
-    <Warning>
-      Never commit API keys to version control. Use environment variables or secure configuration methods.
-    </Warning>
   </Accordion>
 
-  <Accordion icon="unlock" title="No Authentication">
+  <Accordion icon="shield-minus" title="No Authentication">
     **For public endpoints** without authentication:
     
     ```json
@@ -164,336 +132,3 @@ MetaMCP supports different transport protocols. **SSE is recommended** for Curso
     ```
   </Accordion>
 </AccordionGroup>
-
-## Advanced Configuration
-
-### Custom Headers
-
-Add custom headers for enhanced functionality:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "url": "http://localhost:12008/metamcp/dev-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_your_key",
-        "X-Client": "Cursor",
-        "X-Version": "1.0.0",
-        "User-Agent": "Cursor/MetaMCP-Integration"
-      }
-    }
-  }
-}
-```
-
-### Environment-Specific Configuration
-
-Use different configurations for different environments:
-
-<CodeGroup>
-```json Development
-{
-  "mcpServers": {
-    "MetaMCP-Local": {
-      "url": "http://localhost:12008/metamcp/dev-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_dev_key"
-      }
-    }
-  }
-}
-```
-
-```json Production
-{
-  "mcpServers": {
-    "MetaMCP-Prod": {
-      "url": "https://metamcp.yourcompany.com/metamcp/dev-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_prod_key"
-      }
-    }
-  }
-}
-```
-</CodeGroup>
-
-### Timeout and Retry Configuration
-
-Configure connection timeouts and retry behavior:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP": {
-      "url": "http://localhost:12008/metamcp/dev-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_your_key"
-      },
-      "timeout": 30000,
-      "retries": 3,
-      "retryDelay": 1000
-    }
-  }
-}
-```
-
-## Common Configurations
-
-### Development Tools Setup
-
-Perfect for software development workflows:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP-Dev": {
-      "url": "http://localhost:12008/metamcp/development-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_dev_key"
-      }
-    }
-  }
-}
-```
-
-**Typical tools available:**
-- File system operations
-- Git commands
-- Terminal access
-- Code analysis tools
-- Documentation lookup
-
-### Content Creation Setup
-
-Optimized for content and documentation work:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP-Content": {
-      "url": "http://localhost:12008/metamcp/content-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_content_key"
-      }
-    }
-  }
-}
-```
-
-**Typical tools available:**
-- Web search and scraping
-- HackerNews integration
-- Wikipedia lookup
-- Image generation
-- Text processing tools
-
-### Research and Analysis Setup
-
-For data analysis and research tasks:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP-Research": {
-      "url": "http://localhost:12008/metamcp/research-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_research_key"
-      }
-    }
-  }
-}
-```
-
-**Typical tools available:**
-- Database queries
-- API data fetching
-- Statistical analysis
-- Chart generation
-- Report creation
-
-## Testing Your Configuration
-
-### Verify Connection
-
-1. **Save your mcp.json** file in the correct location
-2. **Restart Cursor** to load the new configuration
-3. **Open the MCP panel** in Cursor (usually in the side panel)
-4. **Check connection status** - should show "Connected"
-5. **Browse available tools** to verify functionality
-
-### Test Tool Execution
-
-1. **Select a tool** from the MCP panel
-2. **Provide required parameters**
-3. **Execute the tool** and verify results
-4. **Check for errors** in the Cursor console
-
-### Debug Connection Issues
-
-If you encounter connection problems:
-
-<AccordionGroup>
-  <Accordion icon="warning" title="Connection Failed">
-    **Check these common issues:**
-    
-    1. **URL correctness**: Verify endpoint URL and name
-    2. **MetaMCP running**: Ensure MetaMCP is accessible
-    3. **API key validity**: Check if API key is correct and active
-    4. **Network connectivity**: Test URL in browser
-    5. **Firewall settings**: Ensure ports are open
-  </Accordion>
-
-  <Accordion icon="shield" title="Authentication Errors">
-    **Authentication troubleshooting:**
-    
-    1. **API key format**: Should start with `sk_mt_`
-    2. **Header format**: Use `Authorization: Bearer {key}`
-    3. **Key permissions**: Verify key has required scopes
-    4. **Key expiration**: Check if API key is still valid
-  </Accordion>
-
-  <Accordion icon="slow" title="Performance Issues">
-    **Optimization strategies:**
-    
-    1. **Use SSE transport**: Better performance than HTTP
-    2. **Local deployment**: Reduce network latency
-    3. **Optimize namespace**: Reduce number of tools
-    4. **Check MetaMCP logs**: Look for performance bottlenecks
-  </Accordion>
-</AccordionGroup>
-
-## Production Deployment
-
-### Secure Configuration
-
-For production use, follow security best practices:
-
-```json
-{
-  "mcpServers": {
-    "MetaMCP-Prod": {
-      "url": "https://metamcp.yourcompany.com/metamcp/prod-tools/sse",
-      "headers": {
-        "Authorization": "Bearer sk_mt_prod_key_with_limited_scope"
-      }
-    }
-  }
-}
-```
-
-**Security checklist:**
-- ✅ Use HTTPS in production
-- ✅ Rotate API keys regularly
-- ✅ Use least-privilege API keys
-- ✅ Monitor API key usage
-- ✅ Implement rate limiting
-- ✅ Use environment-specific keys
-
-### Team Configuration
-
-For team environments, consider:
-
-<CodeGroup>
-```json Shared Configuration Template
-{
-  "mcpServers": {
-    "MetaMCP-Team": {
-      "url": "https://metamcp.company.com/metamcp/team-tools/sse",
-      "headers": {
-        "Authorization": "Bearer ${METAMCP_API_KEY}",
-        "X-Team": "${TEAM_NAME}",
-        "X-User": "${USER_ID}"
-      }
-    }
-  }
-}
-```
-
-```bash Environment Variables
-# Set in your shell profile or CI/CD
-export METAMCP_API_KEY=sk_mt_your_team_key
-export TEAM_NAME=engineering
-export USER_ID=john.doe
-```
-</CodeGroup>
-
-## Troubleshooting
-
-### Common Issues
-
-<AccordionGroup>
-  <Accordion icon="file" title="Configuration File Issues">
-    **File location problems:**
-    
-    - Verify `mcp.json` is in correct directory
-    - Check file permissions (should be readable)
-    - Ensure valid JSON syntax
-    - Restart Cursor after changes
-  </Accordion>
-
-  <Accordion icon="network" title="Network Connectivity">
-    **Connection troubleshooting:**
-    
-    ```bash
-    # Test MetaMCP endpoint directly
-    curl -H "Authorization: Bearer sk_mt_your_key" \
-      http://localhost:12008/metamcp/dev-tools/sse
-    
-    # Check if endpoint is accessible
-    curl -I http://localhost:12008/health
-    ```
-  </Accordion>
-
-  <Accordion icon="bug" title="Tool Execution Errors">
-    **When tools fail to execute:**
-    
-    1. Check tool parameters are correct
-    2. Verify tool is enabled in namespace
-    3. Check MetaMCP server logs
-    4. Test tool in MetaMCP inspector
-    5. Verify middleware isn't blocking requests
-  </Accordion>
-</AccordionGroup>
-
-### Debug Mode
-
-Enable debug logging in Cursor:
-
-1. **Open Cursor settings**
-2. **Search for "MCP"**
-3. **Enable debug logging**
-4. **Check console** for detailed error messages
-
-## Best Practices
-
-<Card title="Cursor Integration Best Practices" icon="checklist">
-- 🔧 **Test locally first**: Verify configuration with local MetaMCP
-- 🔐 **Secure API keys**: Never commit keys to version control
-- 📊 **Monitor usage**: Track API key usage and performance
-- 🔄 **Use version control**: Track mcp.json changes (without keys)
-- 🧪 **Test thoroughly**: Verify all tools work as expected
-- 📝 **Document setup**: Help team members with configuration
-- 🎯 **Optimize endpoints**: Use specific namespaces for different tasks
-</Card>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Claude Desktop" icon="desktop" href="/integrations/claude-desktop">
-    Learn how to configure Claude Desktop with MetaMCP
-  </Card>
-  
-  <Card title="Troubleshooting" icon="wrench" href="/integrations/troubleshooting">
-    Common integration issues and solutions
-  </Card>
-  
-  <Card title="API Keys" icon="key" href="/configuration/api-keys">
-    Learn how to generate and manage API keys
-  </Card>
-  
-  <Card title="Inspector" icon="magnifying-glass" href="/concepts/inspector">
-    Use the inspector to test your configuration
-  </Card>
-</CardGroup> 
