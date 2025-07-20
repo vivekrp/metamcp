@@ -1,526 +1,172 @@
-# Claude Desktop Integration
+---
+title: "Claude Desktop Integration"
+description: "Configure Claude Desktop to connect to MetaMCP endpoints using mcp-proxy"
+---
 
-Integrate MetaMCP with Claude Desktop for seamless AI-powered tool execution.
+**Claude Desktop** integration allows you to access MetaMCP tools directly through Claude's interface. Since Claude Desktop only supports stdio servers, you'll need a local proxy to connect to MetaMCP's remote endpoints.
 
-## Overview
+## Prerequisites
 
-Claude Desktop integration allows you to:
+Before starting, ensure you have:
 
-- Access MetaMCP tools directly from Claude Desktop
-- Execute tools through MetaMCP's unified interface
-- Leverage namespace-based tool organization
-- Monitor tool usage and logging
+- **Claude Desktop** installed and running
+- **MetaMCP** running locally or deployed
+- **Active endpoint** configured in MetaMCP
+- **API key** generated (if authentication is enabled)
 
-## Quick Setup
+## Basic Configuration
 
-### 1. Install Claude Desktop
+### Using mcp-proxy (Recommended)
 
-Download Claude Desktop from [Anthropic's website](https://claude.ai/download).
+Since MetaMCP endpoints are remote only (SSE, Streamable HTTP), Claude Desktop needs a local proxy to connect. Based on testing, `mcp-proxy` is the recommended solution for API key authentication.
 
-### 2. Configure MetaMCP Connection
-
-Edit Claude Desktop's configuration file:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
-**Linux**: `~/.config/claude/claude_desktop_config.json`
-
-```json
+<CodeGroup>
+```json Streamable HTTP (Recommended)
 {
   "mcpServers": {
-    "metamcp": {
-      "command": "npx",
+    "MetaMCP": {
+      "command": "uvx",
       "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint",
-        "https://your-metamcp-domain.com/api/mcp-proxy",
-        "--api-key",
-        "your-api-key-here"
-      ]
-    }
-  }
-}
-```
-
-### 3. Alternative: Direct Namespace Connection
-
-Connect to specific namespaces:
-
-```json
-{
-  "mcpServers": {
-    "metamcp-filesystem": {
-      "command": "npx", 
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint",
-        "https://your-metamcp-domain.com/api/namespaces/filesystem-namespace-uuid",
-        "--api-key",
-        "your-api-key-here"
-      ]
-    },
-    "metamcp-database": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp", 
-        "--endpoint",
-        "https://your-metamcp-domain.com/api/namespaces/database-namespace-uuid",
-        "--api-key", 
-        "your-api-key-here"
-      ]
-    }
-  }
-}
-```
-
-## Configuration Options
-
-### Basic Configuration
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--timeout", "30000",
-        "--retries", "3"
-      ]
-    }
-  }
-}
-```
-
-### Environment Variables
-
-Use environment variables for sensitive data:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy"
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "http://localhost:12008/metamcp/your-endpoint-name/mcp"
       ],
       "env": {
-        "METAMCP_API_KEY": "your-api-key",
-        "METAMCP_TIMEOUT": "30000"
+        "API_ACCESS_TOKEN": "sk_mt_your_api_key_here"
       }
     }
   }
 }
 ```
 
-### Multiple Environments
-
-Configure different environments:
-
-```json
+```json SSE (Alternative)
 {
   "mcpServers": {
-    "metamcp-prod": {
-      "command": "npx",
+    "MetaMCP": {
+      "command": "uvx",
       "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://prod.metamcp.com/api/mcp-proxy",
-        "--api-key", "prod-api-key"
-      ]
-    },
-    "metamcp-staging": {
-      "command": "npx", 
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://staging.metamcp.com/api/mcp-proxy",
-        "--api-key", "staging-api-key"
-      ]
-    }
-  }
-}
-```
-
-## Advanced Configuration
-
-### Custom Tool Filtering
-
-Filter tools by pattern:
-
-```json
-{
-  "mcpServers": {
-    "metamcp-filtered": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--include-tools", "filesystem_*,database_query",
-        "--exclude-tools", "*_admin,dangerous_*"
-      ]
-    }
-  }
-}
-```
-
-### Namespace-Specific Configuration
-
-Connect to specific namespaces with custom settings:
-
-```json
-{
-  "mcpServers": {
-    "development-tools": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/namespaces/dev-tools-uuid",
-        "--api-key", "dev-api-key",
-        "--prefix", "dev_"
-      ]
-    },
-    "production-tools": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/namespaces/prod-tools-uuid",
-        "--api-key", "prod-api-key",
-        "--prefix", "prod_",
-        "--readonly"
-      ]
-    }
-  }
-}
-```
-
-### Proxy Configuration
-
-Configure proxy settings:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key"
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/your-endpoint-name/sse"
       ],
       "env": {
-        "HTTP_PROXY": "http://proxy.company.com:8080",
-        "HTTPS_PROXY": "http://proxy.company.com:8080",
-        "NO_PROXY": "localhost,127.0.0.1"
+        "API_ACCESS_TOKEN": "sk_mt_your_api_key_here"
       }
     }
   }
 }
 ```
 
-## Usage Examples
-
-### File Operations
-
-```
-User: Can you read the contents of /home/user/config.json?
-
-Claude: I'll read the file for you using the filesystem tools.
-
-[Executes filesystem_read_file tool through MetaMCP]
-
-The file contains the following configuration:
-{
-  "api_url": "https://api.example.com",
-  "timeout": 5000,
-  "retries": 3
-}
-```
-
-### Database Queries
-
-```
-User: Show me the top 10 users by registration date from the database.
-
-Claude: I'll query the database for the most recent users.
-
-[Executes database_query tool through MetaMCP]
-
-Here are the top 10 users by registration date:
-1. john.doe@example.com - 2024-01-15
-2. jane.smith@example.com - 2024-01-14
-...
-```
-
-### Web Scraping
-
-```
-User: Get the current stock price for AAPL from Yahoo Finance.
-
-Claude: I'll fetch the current stock price for Apple.
-
-[Executes web_scrape tool through MetaMCP]
-
-Apple (AAPL) current price: $185.92 (+2.15%)
-Last updated: 2024-01-15 16:00:00 EST
-```
-
-## Security Considerations
-
-### API Key Management
-
-1. **Use dedicated API keys for Claude Desktop**
-2. **Limit permissions to required tools only**
-3. **Set appropriate expiration dates**
-4. **Monitor usage regularly**
-
-```bash
-# Create limited API key for Claude Desktop
-curl -X POST https://your-domain.com/api/api-keys \
-  -H "Authorization: Bearer your-session-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Claude Desktop",
-    "permissions": [
-      "tools:execute",
-      "namespaces:read"
-    ],
-    "expiresAt": "2024-12-31T23:59:59Z"
-  }'
-```
-
-### Network Security
-
-1. **Use HTTPS endpoints**
-2. **Configure IP restrictions if possible**
-3. **Use VPN for internal deployments**
-
-### Tool Access Control
-
-```json
+```json Multiple Endpoints
 {
   "mcpServers": {
-    "metamcp-safe": {
-      "command": "npx",
+    "MetaMCP-Dev": {
+      "command": "uvx",
       "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "limited-api-key",
-        "--include-tools", "filesystem_read_*,web_search",
-        "--exclude-tools", "*_delete,*_admin,system_*"
-      ]
-    }
-  }
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Connection Refused**:
-```bash
-# Check MetaMCP server status
-curl https://your-domain.com/api/health
-
-# Verify API key
-curl -H "Authorization: Bearer your-api-key" \
-  https://your-domain.com/api/namespaces
-```
-
-2. **Tool Not Found**:
-```bash
-# List available tools
-curl -H "Authorization: Bearer your-api-key" \
-  https://your-domain.com/api/tools
-
-# Check namespace configuration
-curl -H "Authorization: Bearer your-api-key" \
-  https://your-domain.com/api/namespaces/namespace-uuid/tools
-```
-
-3. **Permission Denied**:
-```bash
-# Check API key permissions
-curl -H "Authorization: Bearer your-api-key" \
-  https://your-domain.com/api/api-keys/permissions
-```
-
-### Debug Mode
-
-Enable debug logging in Claude Desktop configuration:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--debug"
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "http://localhost:12008/metamcp/dev-tools/mcp"
       ],
       "env": {
-        "DEBUG": "metamcp:*"
+        "API_ACCESS_TOKEN": "sk_mt_dev_key"
+      }
+    },
+    "MetaMCP-Research": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "http://localhost:12008/metamcp/research-tools/sse"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "sk_mt_research_key"
       }
     }
   }
 }
 ```
+</CodeGroup>
 
-### Log Files
+## Configuration File Location
 
-Check Claude Desktop logs:
+Edit Claude Desktop's configuration file at:
 
-**macOS**: `~/Library/Logs/Claude/`  
-**Windows**: `%LOCALAPPDATA%\Claude\logs\`  
-**Linux**: `~/.local/share/claude/logs/`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/claude/claude_desktop_config.json`
 
-### Network Debugging
+## Authentication Methods
 
-Test connectivity:
-
-```bash
-# Test basic connectivity
-curl -v https://your-domain.com/api/health
-
-# Test MCP proxy endpoint
-curl -v -H "Authorization: Bearer your-api-key" \
-  https://your-domain.com/api/mcp-proxy/tools
-
-# Test WebSocket connection (if using SSE)
-curl -v -H "Authorization: Bearer your-api-key" \
-  -H "Accept: text/event-stream" \
-  https://your-domain.com/api/sse/logs
-```
-
-## Performance Optimization
-
-### Connection Pooling
-
-Configure connection limits:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--max-connections", "10",
-        "--connection-timeout", "5000"
-      ]
-    }
-  }
-}
-```
-
-### Caching
-
-Enable tool result caching:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--cache-results",
-        "--cache-ttl", "300"
-      ]
-    }
-  }
-}
-```
-
-### Tool Preloading
-
-Preload frequently used tools:
-
-```json
-{
-  "mcpServers": {
-    "metamcp": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/mcp-proxy",
-        "--api-key", "your-api-key",
-        "--preload-tools", "filesystem_read_file,web_search,database_query"
-      ]
-    }
-  }
-}
-```
-
-## Best Practices
-
-### Configuration Management
-
-1. **Use version control for configurations**
-2. **Separate development and production configs**
-3. **Document tool purposes and limitations**
-4. **Regular security audits**
-
-### Tool Organization
-
-1. **Group related tools in namespaces**
-2. **Use descriptive tool names**
-3. **Implement proper error handling**
-4. **Monitor tool usage patterns**
-
-### Example Workflow
-
-```json
-{
-  "mcpServers": {
-    // Development tools
-    "dev-tools": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://dev.metamcp.com/api/namespaces/dev-uuid",
-        "--api-key", "dev-api-key",
-        "--prefix", "dev_"
-      ]
-    },
+<AccordionGroup>
+  <Accordion icon="key" title="API Key Authentication">
+    **Most common method** using environment variable:
     
-    // Read-only production monitoring
-    "prod-monitoring": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://prod.metamcp.com/api/namespaces/monitoring-uuid",
-        "--api-key", "readonly-api-key",
-        "--readonly",
-        "--include-tools", "metrics_*,logs_*"
-      ]
-    },
+    ```json
+    {
+      "mcpServers": {
+        "MetaMCP": {
+          "command": "uvx",
+          "args": [
+            "mcp-proxy",
+            "--transport",
+            "streamablehttp",
+            "http://localhost:12008/metamcp/your-endpoint-name/mcp"
+          ],
+          "env": {
+            "API_ACCESS_TOKEN": "sk_mt_your_key_here"
+          }
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion icon="shield-minus" title="No Authentication">
+    **For public endpoints** without authentication:
     
-    // External APIs
-    "external-apis": {
-      "command": "npx",
+    ```json
+    {
+      "mcpServers": {
+        "MetaMCP": {
+          "command": "uvx",
+          "args": [
+            "mcp-proxy",
+            "http://localhost:12008/metamcp/public-tools/sse"
+          ]
+        }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Remote/Production Setup
+
+For remote MetaMCP instances, simply replace the localhost URL:
+
+```json
+{
+  "mcpServers": {
+    "MetaMCP-Production": {
+      "command": "uvx",
       "args": [
-        "@modelcontextprotocol/server-metamcp",
-        "--endpoint", "https://your-domain.com/api/namespaces/apis-uuid",
-        "--api-key", "api-key",
-        "--rate-limit", "100"
-      ]
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "https://your-metamcp-domain.com/metamcp/your-endpoint-name/mcp"
+      ],
+      "env": {
+        "API_ACCESS_TOKEN": "sk_mt_production_key"
+      }
     }
   }
 }
 ```
 
-This configuration provides:
-- Isolated development environment
-- Safe production monitoring access
-- Rate-limited external API access
-- Clear tool categorization 
+## Important Notes
+
+- **Replace** `your-endpoint-name` with your actual endpoint name
+- **Replace** `sk_mt_your_api_key_here` with your MetaMCP API key
+- **mcp-proxy** handles the protocol conversion between stdio and HTTP/SSE
+- **Environment variables** are the secure way to pass API keys
+- For detailed troubleshooting, see [issue #76](https://github.com/metatool-ai/metamcp/issues/76) 
