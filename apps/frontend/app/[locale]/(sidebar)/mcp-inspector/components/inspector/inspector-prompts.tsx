@@ -33,26 +33,8 @@ interface Prompt {
   }>;
 }
 
-interface PromptMessage {
-  role: "user" | "assistant" | "system";
-  content: {
-    type: "text" | "image" | "audio" | "resource";
-    text?: string;
-    data?: string;
-    mimeType?: string;
-    resource?: {
-      uri: string;
-      mimeType?: string;
-      text?: string;
-      blob?: string;
-    };
-  };
-}
 
-interface PromptGetResponse {
-  description?: string;
-  messages: PromptMessage[];
-}
+type PromptResult = z.output<typeof GetPromptResultSchema>;
 
 interface InspectorPromptsProps {
   makeRequest: <T extends z.ZodType>(
@@ -72,7 +54,7 @@ export function InspectorPrompts({
   const [loading, setLoading] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [promptArgs, setPromptArgs] = useState<Record<string, string>>({});
-  const [promptResult, setPromptResult] = useState<PromptGetResponse | null>(
+  const [promptResult, setPromptResult] = useState<PromptResult | null>(
     null,
   );
   const [getting, setGetting] = useState(false);
@@ -176,7 +158,7 @@ export function InspectorPrompts({
     }));
   };
 
-  const renderMessage = (message: PromptMessage, index: number) => {
+  const renderMessage = (message: any, index: number) => {
     const getRoleColor = (role: string) => {
       switch (role) {
         case "user":
@@ -190,6 +172,8 @@ export function InspectorPrompts({
       }
     };
 
+    const contentType = message.content.type;
+
     return (
       <div
         key={index}
@@ -197,14 +181,16 @@ export function InspectorPrompts({
       >
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-medium uppercase">{message.role}</span>
-          <span className="text-xs opacity-75">({message.content.type})</span>
+          <span className="text-xs opacity-75">({contentType})</span>
         </div>
-        {message.content.type === "text" && message.content.text && (
+        
+        {contentType === "text" && message.content.text && (
           <div className="text-sm whitespace-pre-wrap">
             {message.content.text}
           </div>
         )}
-        {message.content.type === "image" && (
+        
+        {contentType === "image" && (
           <div className="text-xs text-muted-foreground">
             [{t("inspector:promptsComponent.imageData")} -{" "}
             {message.content.mimeType ||
@@ -219,7 +205,8 @@ export function InspectorPrompts({
             )}
           </div>
         )}
-        {message.content.type === "audio" && (
+        
+        {contentType === "audio" && (
           <div className="text-xs text-muted-foreground">
             [{t("inspector:promptsComponent.audioData")} -{" "}
             {message.content.mimeType ||
@@ -236,7 +223,8 @@ export function InspectorPrompts({
             )}
           </div>
         )}
-        {message.content.type === "resource" && (
+        
+        {contentType === "resource" && message.content.resource && (
           <div className="text-xs text-muted-foreground">
             [{t("inspector:promptsComponent.resource")} -{" "}
             {message.content.resource?.mimeType ||
@@ -260,6 +248,38 @@ export function InspectorPrompts({
                   ]
                 </div>
               )}
+            </div>
+          </div>
+        )}
+        
+        {contentType === "resource_link" && (
+          <div className="text-xs text-muted-foreground">
+            [{t("inspector:promptsComponent.resource")} Link]
+            <div className="mt-2 p-2 bg-gray-100 rounded border">
+              <div className="font-mono text-xs break-all">
+                URI: {message.content.uri}
+              </div>
+              {message.content.name && (
+                <div className="mt-1 text-sm font-medium">
+                  {message.content.name}
+                </div>
+              )}
+              {message.content.description && (
+                <div className="mt-1 text-sm">
+                  {message.content.description}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Fallback for unknown content types */}
+        {!["text", "image", "audio", "resource", "resource_link"].includes(contentType) && (
+          <div className="text-xs text-muted-foreground">
+            <div className="mt-1 p-2 bg-gray-100 rounded border">
+              <div className="font-mono text-xs">
+                {JSON.stringify(message.content, null, 2)}
+              </div>
             </div>
           </div>
         )}
