@@ -40,6 +40,7 @@ export async function getMcpServers(
         args: mcpServersTable.args,
         env: mcpServersTable.env,
         url: mcpServersTable.url,
+        cwd: mcpServersTable.cwd,
         created_at: mcpServersTable.created_at,
         bearerToken: mcpServersTable.bearerToken,
         status: namespaceServerMappingsTable.status,
@@ -80,6 +81,7 @@ export async function getMcpServers(
         url: server.url,
         created_at:
           server.created_at?.toISOString() || new Date().toISOString(),
+        cwd: server.cwd || "",
         status: server.status.toLowerCase(),
         stderr: "inherit" as IOType,
         oauth_tokens: oauthTokens,

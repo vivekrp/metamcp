@@ -10,6 +10,7 @@ export class McpServersSerializer {
       command: dbServer.command,
       args: dbServer.args,
       env: dbServer.env,
+      cwd: dbServer.cwd,
       url: dbServer.url,
       created_at: dbServer.created_at.toISOString(),
       bearerToken: dbServer.bearerToken,
