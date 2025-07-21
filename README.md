@@ -2,9 +2,12 @@
 
 <div align="center">
 
-<p align="center">
+<div align="center">
   <a href="https://discord.gg/mNsyat7mFX" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/Discord-MetaMCP-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" style="max-width: 100%;">
+  </a>
+  <a href="https://docs.metamcp.com" style="text-decoration: none;">
+    <img src="https://img.shields.io/badge/Documentation-docs.metamcp.com-blue?style=flat-square&logo=book" alt="Documentation" style="max-width: 100%;">
   </a>
   <a href="https://opensource.org/licenses/MIT" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License" style="max-width: 100%;">
@@ -12,7 +15,7 @@
   <a href="https://github.com/metatool-ai/metamcp/pkgs/container/metamcp" style="text-decoration: none;">
     <img src="https://img.shields.io/badge/GHCR-available-green.svg?style=flat-square&logo=github" alt="GHCR" style="max-width: 100%;">
   </a>
-</p>
+</div>
 
 </div>
 
@@ -22,10 +25,9 @@
 
 ---
 
+For more details, consider visiting our documentation site: https://docs.metamcp.com
+
 English | [中文](./README_cn.md)
-
-
-
 
 ## 📋 Table of Contents
 
@@ -40,12 +42,22 @@ English | [中文](./README_cn.md)
   - [🐳 Run with Docker Compose (Recommended)](#-run-with-docker-compose-recommended)
   - [💻 Local Development](#-local-development)
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
+- [🔗 Connect to MetaMCP](#-connect-to-metamcp)
+  - [📝 E.g., Cursor via mcp.json](#-eg-cursor-via-mcpjson)
+  - [🖥️ Connecting Claude Desktop and Other STDIO-only Clients](#️-connecting-claude-desktop-and-other-stdio-only-clients)
+  - [🔧 API Key Auth Troubleshooting](#-api-key-auth-troubleshooting)
 - [❄️ Cold Start Problem and Custom Dockerfile](#️-cold-start-problem-and-custom-dockerfile)
 - [🔐 Authentication](#-authentication)
 - [🔗 OpenID Connect (OIDC) Provider Support](#-openid-connect-oidc-provider-support)
+  - [🛠️ Configuration](#️-configuration)
+  - [🏢 Supported Providers](#-supported-providers)
+  - [🔒 Security Features](#-security-features)
+  - [📱 Usage](#-usage)
+- [🌐 Custom Deployment and SSE conf for Nginx](#-custom-deployment-and-sse-conf-for-nginx)
 - [🏗️ Architecture](#️-architecture)
   - [📊 Sequence Diagram](#-sequence-diagram)
 - [🗺️ Roadmap](#️-roadmap)
+- [🌐 i18n](#-i18n)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 - [🙏 Credits](#-credits)
@@ -134,9 +146,9 @@ pnpm dev
 
 If you have questions, feel free to leave **GitHub issues** or **PRs**.
 
-## Connect to MetaMCP
+## 🔗 Connect to MetaMCP
 
-### E.g., Cursor via mcp.json
+### 📝 E.g., Cursor via mcp.json
 
 Example `mcp.json`
 
@@ -150,7 +162,7 @@ Example `mcp.json`
 }
 ```
 
-### Connecting Claude Desktop and Other STDIO-only Clients
+### 🖥️ Connecting Claude Desktop and Other STDIO-only Clients
 
 Since MetaMCP endpoints are remote only (SSE, Streamable HTTP, OpenAPI), clients that only support stdio servers (like Claude Desktop) need a local proxy to connect.
 
@@ -204,7 +216,7 @@ Using SSE
 
 For more details and alternative approaches, see [issue #76](https://github.com/metatool-ai/metamcp/issues/76#issuecomment-3046707532).
 
-### API Key Auth Troubleshooting
+### 🔧 API Key Auth Troubleshooting
 
 - `?api_key=` param api key auth doesn't work for SSE. It only works for Streamable HTTP and OpenAPI.
 - Best practice is to use the API key in `Authorization: Bearer <API_KEY>` header.
@@ -268,7 +280,9 @@ Once configured, users will see a **"Sign in with OIDC"** button on the login pa
 
 For more detailed configuration examples and troubleshooting, see **[CONTRIBUTING.md](CONTRIBUTING.md#openid-connect-oidc-provider-setup)**.
 
-## SSE conf for Nginx
+## 🌐 Custom Deployment and SSE conf for Nginx
+
+If you want to deploy it to a online service or a VPS, a instance of at least 2GB-4GB of memory is required. And the larger size, the better performance.
 
 Since MCP leverages SSE for long connection, if you are using reverse proxy like nginx, please refer to an example setup [nginx.conf.example](nginx.conf.example)
 
