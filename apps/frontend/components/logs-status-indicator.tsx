@@ -1,13 +1,19 @@
 "use client";
 
-// import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { useLogsStore } from "@/lib/stores/logs-store";
 
 export function LogsStatusIndicator() {
   const { totalCount, isAutoRefreshing } = useLogsStore();
+  const [isClient, setIsClient] = useState(false);
   // const [recentErrorCount, setRecentErrorCount] = useState(0);
+
+  // Set isClient to true after component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Count recent errors (last 5 minutes) - REMOVED
   // useEffect(() => {
@@ -22,7 +28,7 @@ export function LogsStatusIndicator() {
   if (totalCount === 0) {
     return (
       <div className="flex items-center gap-1">
-        {isAutoRefreshing && (
+        {isClient && isAutoRefreshing && (
           <div
             className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
             title="Live updates active"
@@ -43,7 +49,7 @@ export function LogsStatusIndicator() {
           {recentErrorCount}
         </Badge>
       )} */}
-      {isAutoRefreshing && (
+      {isClient && isAutoRefreshing && (
         <div
           className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
           title="Live updates active"
