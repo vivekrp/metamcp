@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
@@ -21,52 +19,45 @@ export const executeToolWithMiddleware = async (
       `Tool execution request for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
     );
 
-    // Create a temporary session for this tool call
-    const sessionId = randomUUID();
-
-    try {
-      // Initialize session connections
-      const mcpServerInstance = await metaMcpServerPool.getServer(
-        sessionId,
-        namespaceUuid,
-      );
-      if (!mcpServerInstance) {
-        throw new Error("Failed to get MetaMCP server instance from pool");
-      }
-
-      // Create middleware-enabled handlers
-      const { handlerContext, callToolWithMiddleware } =
-        createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
-
-      // Use middleware-enabled call tool handler
-      const callToolRequest: CallToolRequest = {
-        method: "tools/call",
-        params: {
-          name: toolName,
-          arguments: toolArguments,
-        },
-      };
-
-      const result = await callToolWithMiddleware(
-        callToolRequest,
-        handlerContext,
-      );
-
-      // Check if the result indicates an error (from middleware)
-      if (result.isError) {
-        return res.status(403).json({
-          error: "Tool access denied",
-          message: result.content?.[0]?.text || "Tool is inactive",
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // Return the result directly (simplified format)
-      res.json(result);
-    } finally {
-      // Cleanup the temporary session
-      await metaMcpServerPool.cleanupSession(sessionId);
+    // Get or create persistent OpenAPI session for this namespace
+    const mcpServerInstance =
+      await metaMcpServerPool.getOpenApiServer(namespaceUuid);
+    if (!mcpServerInstance) {
+      throw new Error("Failed to get MetaMCP server instance from pool");
     }
+
+    // Use deterministic session ID for OpenAPI endpoints
+    const sessionId = `openapi_${namespaceUuid}`;
+
+    // Create middleware-enabled handlers
+    const { handlerContext, callToolWithMiddleware } =
+      createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
+
+    // Use middleware-enabled call tool handler
+    const callToolRequest: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: toolName,
+        arguments: toolArguments,
+      },
+    };
+
+    const result = await callToolWithMiddleware(
+      callToolRequest,
+      handlerContext,
+    );
+
+    // Check if the result indicates an error (from middleware)
+    if (result.isError) {
+      return res.status(403).json({
+        error: "Tool access denied",
+        message: result.content?.[0]?.text || "Tool is inactive",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Return the result directly (simplified format)
+    res.json(result);
   } catch (error) {
     console.error(`Error executing tool ${toolName}:`, error);
 

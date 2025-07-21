@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { ListToolsRequest } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
@@ -88,44 +86,37 @@ openApiRouter.get(
         `OpenAPI schema request for ${endpointName} -> namespace ${namespaceUuid}`,
       );
 
-      // Create a temporary session to get tools
-      const sessionId = randomUUID();
-
-      try {
-        // Initialize session connections
-        const mcpServerInstance = await metaMcpServerPool.getServer(
-          sessionId,
-          namespaceUuid,
-        );
-        if (!mcpServerInstance) {
-          throw new Error("Failed to get MetaMCP server instance from pool");
-        }
-
-        // Create middleware-enabled handlers
-        const { handlerContext, listToolsWithMiddleware } =
-          createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
-
-        // Use middleware-enabled list tools handler
-        const listToolsRequest: ListToolsRequest = {
-          method: "tools/list",
-          params: {},
-        };
-
-        const result = await listToolsWithMiddleware(
-          listToolsRequest,
-          handlerContext,
-        );
-
-        const openApiSchema = await generateOpenApiSchema(
-          result.tools || [],
-          endpointName,
-        );
-
-        res.json(openApiSchema);
-      } finally {
-        // Cleanup the temporary session
-        await metaMcpServerPool.cleanupSession(sessionId);
+      // Get or create persistent OpenAPI session for this namespace
+      const mcpServerInstance =
+        await metaMcpServerPool.getOpenApiServer(namespaceUuid);
+      if (!mcpServerInstance) {
+        throw new Error("Failed to get MetaMCP server instance from pool");
       }
+
+      // Use deterministic session ID for OpenAPI endpoints
+      const sessionId = `openapi_${namespaceUuid}`;
+
+      // Create middleware-enabled handlers
+      const { handlerContext, listToolsWithMiddleware } =
+        createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
+
+      // Use middleware-enabled list tools handler
+      const listToolsRequest: ListToolsRequest = {
+        method: "tools/list",
+        params: {},
+      };
+
+      const result = await listToolsWithMiddleware(
+        listToolsRequest,
+        handlerContext,
+      );
+
+      const openApiSchema = await generateOpenApiSchema(
+        result.tools || [],
+        endpointName,
+      );
+
+      res.json(openApiSchema);
     } catch (error) {
       console.error("Error generating OpenAPI schema:", error);
       res.status(500).json({
