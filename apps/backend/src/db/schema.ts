@@ -41,6 +41,7 @@ export const mcpServersTable = pgTable(
       .$type<{ [key: string]: string }>()
       .notNull()
       .default(sql`'{}'::jsonb`),
+    cwd: text("cwd"),
     url: text("url"),
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()

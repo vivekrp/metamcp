@@ -9,6 +9,8 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ServerParameters } from "@repo/zod-types";
 
 import { metamcpLogStore } from "./log-store";
+import path from "path";
+import fs from "fs";
 
 const sleep = (time: number) =>
   new Promise<void>((resolve) => setTimeout(() => resolve(), time));
@@ -31,6 +33,45 @@ export const transformDockerUrl = (url: string): string => {
   return url;
 };
 
+/**
+ * Auto-detects the working directory for filesystem MCP servers
+ * by extracting the first directory argument from the server arguments
+ */
+export const autoDetectFilesystemCwd = (serverParams: ServerParameters): string | undefined => {
+  // Only auto-detect for filesystem MCP servers
+  if (!serverParams.command?.includes('filesystem') && 
+      !serverParams.name?.toLowerCase().includes('filesystem')) {
+    return undefined;
+  }
+
+  // If cwd is already specified, don't override it
+  if (serverParams.cwd) {
+    return serverParams.cwd;
+  }
+
+  // Look for directory arguments in the server arguments
+  const args = serverParams.args || [];
+  for (const arg of args) {
+    // Skip flags (arguments starting with -)
+    if (arg.startsWith('-')) {
+      continue;
+    }
+
+    // Check if this argument is a valid directory path
+    try {
+      const resolvedPath = path.resolve(arg);
+      if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory()) {
+        return resolvedPath;
+      }
+    } catch (error) {
+      // Continue to next argument if this one is invalid
+      continue;
+    }
+  }
+
+  return undefined;
+};
+
 export const createMetaMcpClient = (
   serverParams: ServerParameters,
 ): { client: Client | undefined; transport: Transport | undefined } => {
@@ -39,11 +80,24 @@ export const createMetaMcpClient = (
   // Create the appropriate transport based on server type
   // Default to "STDIO" if type is undefined
   if (!serverParams.type || serverParams.type === "STDIO") {
+    // Auto-detect working directory for filesystem MCP servers
+    const detectedCwd = autoDetectFilesystemCwd(serverParams);
+    
+    // Log auto-detected working directory for debugging
+    if (detectedCwd && !serverParams.cwd) {
+      metamcpLogStore.addLog(
+        serverParams.name,
+        "info",
+        `Auto-detected working directory: ${detectedCwd}`,
+      );
+    }
+    
     const stdioParams: StdioServerParameters = {
       command: serverParams.command || "",
       args: serverParams.args || undefined,
       env: serverParams.env || undefined,
       stderr: "pipe",
+      cwd: serverParams.cwd || detectedCwd || undefined,
     };
     transport = new StdioClientTransport(stdioParams);
 

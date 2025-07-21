@@ -21,6 +21,7 @@ export const createServerFormSchema = z
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     env: z.string().optional(),
+    cwd: z.string().optional(),
     user_id: z.string().nullable().optional(),
   })
   .refine(
@@ -82,6 +83,7 @@ export const EditServerFormSchema = z
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     env: z.string().optional(),
+    cwd: z.string().optional(),
     user_id: z.string().nullable().optional(),
   })
   .refine(
@@ -143,6 +145,7 @@ export const CreateMcpServerRequestSchema = z
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
     env: z.record(z.string()).optional(),
+    cwd: z.string().optional(),
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     user_id: z.string().nullable().optional(),
@@ -180,6 +183,7 @@ export const McpServerSchema = z.object({
   command: z.string().nullable(),
   args: z.array(z.string()),
   env: z.record(z.string()),
+  cwd: z.string().nullable(),
   url: z.string().nullable(),
   created_at: z.string(),
   bearerToken: z.string().nullable(),
@@ -303,6 +307,7 @@ export const UpdateMcpServerRequestSchema = z
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
     env: z.record(z.string()).optional(),
+    cwd: z.string().optional(),
     url: z.string().optional(),
     bearerToken: z.string().optional(),
     user_id: z.string().nullable().optional(),
@@ -372,6 +377,7 @@ export const McpServerCreateInputSchema = z.object({
   command: z.string().nullable().optional(),
   args: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
+  cwd: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   bearerToken: z.string().nullable().optional(),
   user_id: z.string().nullable().optional(),
@@ -395,6 +401,7 @@ export const McpServerUpdateInputSchema = z.object({
   command: z.string().nullable().optional(),
   args: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
+  cwd: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   bearerToken: z.string().nullable().optional(),
   user_id: z.string().nullable().optional(),
@@ -412,6 +419,7 @@ export const DatabaseMcpServerSchema = z.object({
   command: z.string().nullable(),
   args: z.array(z.string()),
   env: z.record(z.string()),
+  cwd: z.string().nullable(),
   url: z.string().nullable(),
   created_at: z.date(),
   bearerToken: z.string().nullable(),
