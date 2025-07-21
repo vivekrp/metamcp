@@ -1,4 +1,5 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
+
 import { OpenApiSchema } from "./types";
 
 // Convert MCP tools to OpenAPI schema
@@ -123,4 +124,4 @@ export const generateOpenApiSchema = async (
       },
     },
   };
-}; 
+};

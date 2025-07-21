@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+
 import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
@@ -92,4 +93,4 @@ export const executeToolWithMiddleware = async (
       timestamp: new Date().toISOString(),
     });
   }
-}; 
+};
