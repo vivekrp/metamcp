@@ -82,10 +82,6 @@ openApiRouter.get(
     const { namespaceUuid, endpointName } = req as ApiKeyAuthenticatedRequest;
 
     try {
-      console.log(
-        `OpenAPI schema request for ${endpointName} -> namespace ${namespaceUuid}`,
-      );
-
       // Get or create persistent OpenAPI session for this namespace
       const mcpServerInstance =
         await metaMcpServerPool.getOpenApiServer(namespaceUuid);

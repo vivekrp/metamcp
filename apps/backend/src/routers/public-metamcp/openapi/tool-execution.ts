@@ -11,14 +11,10 @@ export const executeToolWithMiddleware = async (
   res: express.Response,
   toolArguments: Record<string, unknown>,
 ) => {
-  const { namespaceUuid, endpointName } = req;
+  const { namespaceUuid } = req;
   const toolName = req.params.tool_name;
 
   try {
-    console.log(
-      `Tool execution request for ${toolName} in ${endpointName} -> namespace ${namespaceUuid}`,
-    );
-
     // Get or create persistent OpenAPI session for this namespace
     const mcpServerInstance =
       await metaMcpServerPool.getOpenApiServer(namespaceUuid);
