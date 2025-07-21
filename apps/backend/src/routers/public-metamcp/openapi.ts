@@ -1,15 +1,30 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  CallToolRequest,
+  CallToolResult,
   CompatibilityCallToolResultSchema,
+  ListToolsRequest,
   ListToolsResultSchema,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
+import { ConnectedClient } from "@/lib/metamcp";
+
 import { endpointsRepository } from "../../db/repositories/endpoints.repo";
 import { getMcpServers } from "../../lib/metamcp/fetch-metamcp";
 import { mcpServerPool } from "../../lib/metamcp/mcp-server-pool";
+import {
+  createFilterCallToolMiddleware,
+  createFilterListToolsMiddleware,
+} from "../../lib/metamcp/metamcp-middleware/filter-tools.functional";
+import {
+  CallToolHandler,
+  compose,
+  ListToolsHandler,
+  MetaMCPHandlerContext,
+} from "../../lib/metamcp/metamcp-middleware/functional-middleware";
 import { metaMcpServerPool } from "../../lib/metamcp/metamcp-server-pool";
 import { sanitizeName } from "../../lib/metamcp/utils";
 import {
@@ -175,6 +190,182 @@ const generateOpenApiSchema = async (tools: Tool[], endpointName: string) => {
   };
 };
 
+// Original List Tools Handler (adapted from metamcp-proxy.ts)
+const createOriginalListToolsHandler = (
+  sessionId: string,
+  includeInactiveServers: boolean = false,
+): ListToolsHandler => {
+  return async (request, context) => {
+    const serverParams = await getMcpServers(
+      context.namespaceUuid,
+      includeInactiveServers,
+    );
+    const allTools: Tool[] = [];
+
+    await Promise.allSettled(
+      Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
+        const session = await mcpServerPool.getSession(
+          context.sessionId,
+          mcpServerUuid,
+          params,
+        );
+        if (!session) return;
+
+        const capabilities = session.client.getServerCapabilities();
+        if (!capabilities?.tools) return;
+
+        // Use name assigned by user, fallback to name from server
+        const serverName =
+          params.name || session.client.getServerVersion()?.name || "";
+        try {
+          const result = await session.client.request(
+            {
+              method: "tools/list",
+              params: { _meta: request.params?._meta },
+            },
+            ListToolsResultSchema,
+          );
+
+          const toolsWithSource =
+            result.tools?.map((tool) => {
+              const toolName = `${sanitizeName(serverName)}__${tool.name}`;
+              return {
+                ...tool,
+                name: toolName,
+                description: tool.description,
+              };
+            }) || [];
+
+          allTools.push(...toolsWithSource);
+        } catch (error) {
+          console.error(`Error fetching tools from: ${serverName}`, error);
+        }
+      }),
+    );
+
+    return { tools: allTools };
+  };
+};
+
+// Original Call Tool Handler (adapted from metamcp-proxy.ts)
+const createOriginalCallToolHandler = (): CallToolHandler => {
+  const toolToClient: Record<string, ConnectedClient> = {};
+  const toolToServerUuid: Record<string, string> = {};
+
+  return async (request, context) => {
+    const { name, arguments: args } = request.params;
+
+    // Extract the original tool name by removing the server prefix
+    const firstDoubleUnderscoreIndex = name.indexOf("__");
+    if (firstDoubleUnderscoreIndex === -1) {
+      throw new Error(`Invalid tool name format: ${name}`);
+    }
+
+    const serverPrefix = name.substring(0, firstDoubleUnderscoreIndex);
+    const originalToolName = name.substring(firstDoubleUnderscoreIndex + 2);
+
+    // Get server parameters and find the right session for this tool
+    const serverParams = await getMcpServers(context.namespaceUuid);
+    let targetSession = null;
+
+    for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
+      const session = await mcpServerPool.getSession(
+        context.sessionId,
+        mcpServerUuid,
+        params,
+      );
+      if (!session) continue;
+
+      const capabilities = session.client.getServerCapabilities();
+      if (!capabilities?.tools) continue;
+
+      // Use name assigned by user, fallback to name from server
+      const serverName =
+        params.name || session.client.getServerVersion()?.name || "";
+
+      if (sanitizeName(serverName) === serverPrefix) {
+        targetSession = session;
+        toolToClient[name] = session;
+        toolToServerUuid[name] = mcpServerUuid;
+        break;
+      }
+    }
+
+    if (!targetSession) {
+      throw new Error(`Unknown tool: ${name}`);
+    }
+
+    try {
+      // Use the correct schema for tool calls
+      const result = await targetSession.client.request(
+        {
+          method: "tools/call",
+          params: {
+            name: originalToolName,
+            arguments: args || {},
+            _meta: {
+              progressToken: request.params._meta?.progressToken,
+            },
+          },
+        },
+        CompatibilityCallToolResultSchema,
+      );
+
+      // Cast the result to CallToolResult type
+      return result as CallToolResult;
+    } catch (error) {
+      console.error(
+        `Error calling tool "${name}" through ${
+          targetSession.client.getServerVersion()?.name || "unknown"
+        }:`,
+        error,
+      );
+      throw error;
+    }
+  };
+};
+
+// Helper function to create middleware-enabled handlers
+const createMiddlewareEnabledHandlers = (
+  sessionId: string,
+  namespaceUuid: string,
+) => {
+  // Create the handler context
+  const handlerContext: MetaMCPHandlerContext = {
+    namespaceUuid,
+    sessionId,
+  };
+
+  // Create original handlers
+  const originalListToolsHandler = createOriginalListToolsHandler(sessionId);
+  const originalCallToolHandler = createOriginalCallToolHandler();
+
+  // Compose middleware with handlers
+  const listToolsWithMiddleware = compose(
+    createFilterListToolsMiddleware({ cacheEnabled: true }),
+    // Add more middleware here as needed
+    // createLoggingMiddleware(),
+    // createRateLimitingMiddleware(),
+  )(originalListToolsHandler);
+
+  const callToolWithMiddleware = compose(
+    createFilterCallToolMiddleware({
+      cacheEnabled: true,
+      customErrorMessage: (toolName, reason) =>
+        `Access denied to tool "${toolName}": ${reason}`,
+    }),
+    // Add more middleware here as needed
+    // createAuditingMiddleware(),
+    // createAuthorizationMiddleware(),
+  )(originalCallToolHandler);
+
+  return {
+    handlerContext,
+    listToolsWithMiddleware,
+    callToolWithMiddleware,
+  };
+};
+
 // Generic API endpoint that serves the OpenAPI docs UI
 openApiRouter.get(
   "/:endpoint_name/api",
@@ -262,54 +453,23 @@ openApiRouter.get(
           throw new Error("Failed to get MetaMCP server instance from pool");
         }
 
-        // Get server parameters and collect tools from each server
-        const serverParams = await getMcpServers(namespaceUuid);
-        const allTools: Tool[] = [];
+        // Create middleware-enabled handlers
+        const { handlerContext, listToolsWithMiddleware } =
+          createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
 
-        await Promise.allSettled(
-          Object.entries(serverParams).map(async ([mcpServerUuid, params]) => {
-            const session = await mcpServerPool.getSession(
-              sessionId,
-              mcpServerUuid,
-              params,
-            );
-            if (!session) return;
+        // Use middleware-enabled list tools handler
+        const listToolsRequest: ListToolsRequest = {
+          method: "tools/list",
+          params: {},
+        };
 
-            const capabilities = session.client.getServerCapabilities();
-            if (!capabilities?.tools) return;
-
-            // Use name assigned by user, fallback to name from server
-            const serverName =
-              params.name || session.client.getServerVersion()?.name || "";
-
-            try {
-              const result = await session.client.request(
-                {
-                  method: "tools/list",
-                  params: {},
-                },
-                ListToolsResultSchema,
-              );
-
-              const toolsWithSource =
-                result.tools?.map((tool) => {
-                  const toolName = `${sanitizeName(serverName)}__${tool.name}`;
-                  return {
-                    ...tool,
-                    name: toolName,
-                    description: tool.description,
-                  };
-                }) || [];
-
-              allTools.push(...toolsWithSource);
-            } catch (error) {
-              console.error(`Error fetching tools from: ${serverName}`, error);
-            }
-          }),
+        const result = await listToolsWithMiddleware(
+          listToolsRequest,
+          handlerContext,
         );
 
         const openApiSchema = await generateOpenApiSchema(
-          allTools,
+          result.tools || [],
           endpointName,
         );
 
@@ -329,8 +489,8 @@ openApiRouter.get(
   },
 );
 
-// Refactored tool execution logic to avoid duplication
-const executeTool = async (
+// Refactored tool execution logic to use middleware
+const executeToolWithMiddleware = async (
   req: ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
   res: express.Response,
   toolArguments: Record<string, unknown>,
@@ -356,65 +516,32 @@ const executeTool = async (
         throw new Error("Failed to get MetaMCP server instance from pool");
       }
 
-      // Extract the original tool name by removing the server prefix
-      const firstDoubleUnderscoreIndex = toolName.indexOf("__");
-      if (firstDoubleUnderscoreIndex === -1) {
-        return res.status(404).json({
-          error: "Tool not found",
-          message: `Tool '${toolName}' not found - invalid name format`,
-          timestamp: new Date().toISOString(),
-        });
-      }
+      // Create middleware-enabled handlers
+      const { handlerContext, callToolWithMiddleware } =
+        createMiddlewareEnabledHandlers(sessionId, namespaceUuid);
 
-      const serverPrefix = toolName.substring(0, firstDoubleUnderscoreIndex);
-      const originalToolName = toolName.substring(
-        firstDoubleUnderscoreIndex + 2,
-      );
-
-      // Get server parameters and find the right session for this tool
-      const serverParams = await getMcpServers(namespaceUuid);
-      let targetSession = null;
-
-      for (const [mcpServerUuid, params] of Object.entries(serverParams)) {
-        const session = await mcpServerPool.getSession(
-          sessionId,
-          mcpServerUuid,
-          params,
-        );
-        if (!session) continue;
-
-        const capabilities = session.client.getServerCapabilities();
-        if (!capabilities?.tools) continue;
-
-        // Use name assigned by user, fallback to name from server
-        const serverName =
-          params.name || session.client.getServerVersion()?.name || "";
-
-        if (sanitizeName(serverName) === serverPrefix) {
-          targetSession = session;
-          break;
-        }
-      }
-
-      if (!targetSession) {
-        return res.status(404).json({
-          error: "Tool not found",
-          message: `Tool '${toolName}' not found`,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // Execute the tool through the individual MCP client
-      const result = await targetSession.client.request(
-        {
-          method: "tools/call",
-          params: {
-            name: originalToolName,
-            arguments: toolArguments,
-          },
+      // Use middleware-enabled call tool handler
+      const callToolRequest: CallToolRequest = {
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: toolArguments,
         },
-        CompatibilityCallToolResultSchema,
+      };
+
+      const result = await callToolWithMiddleware(
+        callToolRequest,
+        handlerContext,
       );
+
+      // Check if the result indicates an error (from middleware)
+      if (result.isError) {
+        return res.status(403).json({
+          error: "Tool access denied",
+          message: result.content?.[0]?.text || "Tool is inactive",
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       // Return the result directly (simplified format)
       res.json(result);
@@ -457,7 +584,7 @@ openApiRouter.post(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    await executeTool(
+    await executeToolWithMiddleware(
       req as ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
       res,
       req.body || {},
@@ -471,7 +598,7 @@ openApiRouter.get(
   lookupEndpoint,
   authenticateApiKey,
   async (req, res) => {
-    await executeTool(
+    await executeToolWithMiddleware(
       req as ApiKeyAuthenticatedRequest & { params: { tool_name: string } },
       res,
       {},
