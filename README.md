@@ -41,6 +41,7 @@ English | [中文](./README_cn.md)
 - [🚀 Quick Start](#-quick-start)
   - [🐳 Run with Docker Compose (Recommended)](#-run-with-docker-compose-recommended)
   - [💻 Local Development](#-local-development)
+  - [🎮 Start Script Matrix](#-start-script-matrix)
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
 - [🔗 Connect to MetaMCP](#-connect-to-metamcp)
   - [📝 E.g., Cursor via mcp.json](#-eg-cursor-via-mcpjson)
@@ -138,6 +139,36 @@ Still recommend running postgres through docker for easy setup:
 pnpm install
 pnpm dev
 ```
+
+## 🎮 Start Script Matrix
+
+MetaMCP provides multiple start scripts optimized for different scenarios:
+
+| Script | Command | Environment | Build Strategy | Use Case |
+|--------|---------|-------------|----------------|----------|
+| `start` | `pnpm start` | Auto-detected | Smart build (conditional) | **Recommended** - Intelligent startup |
+| `start:smart` | `pnpm start:smart` | Auto-detected | Smart build (conditional) | Same as `start` - detects changes |
+| `start:production` | `pnpm start:production` | Production | Smart build with prod optimizations | Production deployments |
+| `start:dev` | `pnpm start:dev` | Development | Smart build with dev optimizations | Development with build optimization |
+| `start:build` | `pnpm start:build` | Current | Always build + start | Force full rebuild |
+| `start:nobuild` | `pnpm start:nobuild` | Current | Skip build, start only | When build already exists |
+| `dev` | `pnpm dev` | Development | No build (watch mode) | **Development** - Hot reload |
+
+### 📝 Script Descriptions
+
+- **`start` / `start:smart`**: Intelligently determines if a build is needed based on file changes and runs the appropriate build strategy
+- **`start:production`**: Optimized for production with `NODE_ENV=production`, includes production-specific optimizations
+- **`start:dev`**: Optimized for development with `NODE_ENV=development`, includes development-specific optimizations  
+- **`start:build`**: Forces a complete rebuild using Turbo, then starts the application
+- **`start:nobuild`**: Skips the build step entirely and starts the existing built application
+- **`dev`**: Runs in development mode with hot reloading (no build required)
+
+### 🏃‍♂️ Quick Start Recommendations
+
+- **First time setup**: `pnpm start` (will build and start intelligently)
+- **Development**: `pnpm dev` (fastest for active development)
+- **Production**: `pnpm start:production` (optimized for production)
+- **Force rebuild**: `pnpm start:build` (when you need a clean build)
 
 ## 🔌 MCP Protocol Compatibility
 
