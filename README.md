@@ -42,6 +42,7 @@ English | [中文](./README_cn.md)
   - [🐳 Run with Docker Compose (Recommended)](#-run-with-docker-compose-recommended)
   - [💻 Local Development](#-local-development)
   - [🎮 Start Script Matrix](#-start-script-matrix)
+- [🧹 Maintenance Scripts](#-maintenance-scripts)
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
 - [🔗 Connect to MetaMCP](#-connect-to-metamcp)
   - [📝 E.g., Cursor via mcp.json](#-eg-cursor-via-mcpjson)
@@ -169,6 +170,75 @@ MetaMCP provides multiple start scripts optimized for different scenarios:
 - **Development**: `pnpm dev` (fastest for active development)
 - **Production**: `pnpm start:production` (optimized for production)
 - **Force rebuild**: `pnpm start:build` (when you need a clean build)
+
+## 🧹 Maintenance Scripts
+
+MetaMCP provides several cleanup and maintenance scripts to ensure your development environment remains tidy and efficient.
+
+### Cleanup Scripts Overview
+
+#### Individual Cleanup Commands:
+- **`pnpm clean:cache`** - Cleans Turbo cache (`.turbo`) and PNPM store cache
+- **`pnpm clean:builds`** - Removes all build outputs:
+  - `apps/frontend/.next` (Next.js build)
+  - `apps/backend/dist` (Backend TypeScript build)
+  - `packages/*/dist` (All package builds from trpc, zod-types, etc.)
+- **`pnpm clean:deps`** - Removes all `node_modules` directories throughout the monorepo
+- **`pnpm clean:logs`** - Cleans up log files (logs/*.log, metamcp.log, pm2.log)
+
+#### Combined Cleanup Commands:
+- **`pnpm prune`** - Light cleanup (cache + builds only) - good for development
+- **`pnpm clean:all`** - Complete nuclear cleanup (everything above)
+- **`pnpm prune-all`** - Alias for `clean:all` with helpful reminder
+
+### Usage Scenarios
+
+**Development Workflow:**
+```bash
+# Quick cleanup during development
+pnpm prune
+
+# After major changes or when builds are acting weird
+pnpm clean:builds && pnpm build
+```
+
+**Troubleshooting:**
+```bash
+# When you have weird caching issues
+pnpm clean:cache
+
+# When dependencies are acting up
+pnpm clean:deps && pnpm install
+
+# Nuclear option - clean everything
+pnpm clean:all && pnpm install
+```
+
+**CI/CD or Fresh Setup:**
+```bash
+# Complete fresh start
+pnpm prune-all && pnpm install && pnpm build
+```
+
+### What Gets Cleaned:
+
+1. **Cache directories:** `.turbo/` (Turborepo cache)
+2. **Build outputs:**
+   - Frontend: `apps/frontend/.next/`
+   - Backend: `apps/backend/dist/`
+   - Packages: `packages/trpc/dist/`, `packages/zod-types/dist/`
+3. **Dependencies:** `node_modules` directories
+4. **Logs:** `logs/*.log`, `metamcp.log`, `pm2.log`
+5. **PNPM cache:** Via `pnpm store prune`
+
+### Performance Notes:
+
+- **`prune`** is fast and safe for regular use
+- **`clean:all`** is more thorough but requires `pnpm install` afterward
+- Uses efficient `find` command for `node_modules` removal
+- Includes helpful emojis and messages for better UX
+
+These scripts perfectly complement your existing MetaMCP project workflow and should handle all the common cleanup scenarios you'll encounter during development and deployment!
 
 ## 🔌 MCP Protocol Compatibility
 

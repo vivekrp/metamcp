@@ -22,7 +22,14 @@
     "local-restart": "pm2 restart metamcp-dev",
     "local-status": "pm2 status",
     "local-logs": "pm2 logs metamcp-dev",
-    "local-delete": "pm2 delete metamcp-dev"
+    "local-delete": "pm2 delete metamcp-dev",
+    "clean:cache": "rm -rf .turbo && pnpm store prune",
+    "clean:builds": "rm -rf apps/frontend/.next apps/backend/dist packages/*/dist",
+    "clean:deps": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "clean:logs": "rm -rf logs/*.log metamcp.log pm2.log",
+    "clean:all": "pnpm clean:cache && pnpm clean:builds && pnpm clean:deps && pnpm clean:logs && echo '🧹 Complete cleanup finished!'",
+    "prune": "pnpm clean:cache && pnpm clean:builds && echo '🧹 Pruned cache and builds'",
+    "prune-all": "pnpm clean:all && echo '🧹 Full prune completed - run pnpm install to restore'"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
