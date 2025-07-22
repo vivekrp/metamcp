@@ -16,6 +16,11 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
+      // Graceful shutdown configuration
+      kill_timeout: 30000, // 30 seconds for graceful shutdown
+      wait_ready: true,
+      listen_timeout: 10000,
+      shutdown_with_message: true,
     },
   ],
 };

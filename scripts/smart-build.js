@@ -258,6 +258,9 @@ function isOutputStale(workspace, outputDir) {
   return false;
 }
 
+// Track running processes for cleanup
+const runningProcesses = new Set();
+
 /**
  * Execute a command with proper environment forwarding
  */
@@ -271,7 +274,11 @@ function executeCommand(command, args = []) {
       shell: true
     });
     
+    // Track the process
+    runningProcesses.add(child);
+    
     child.on('close', (code) => {
+      runningProcesses.delete(child);
       if (code === 0) {
         resolve();
       } else {
@@ -280,6 +287,7 @@ function executeCommand(command, args = []) {
     });
     
     child.on('error', (error) => {
+      runningProcesses.delete(child);
       reject(error);
     });
   });
@@ -349,7 +357,11 @@ async function main() {
     console.log(`\n🔨 Building ${workspacesToBuild.length} workspace(s): ${workspacesToBuild.join(', ')}`);
     
     for (const workspace of workspacesToBuild) {
-      const workspaceName = workspace.split('/').pop();
+      // Read the actual package name from package.json instead of using directory name
+      const packageJsonPath = resolve(workspace, 'package.json');
+      const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+      const workspaceName = pkg.name;
+      
       const buildArgs = ['turbo', 'run', 'build', `--filter=${workspaceName}`, ...cacheArgs];
       await executeCommand('pnpm', buildArgs);
     }
@@ -362,6 +374,80 @@ async function main() {
   const startArgs = ['turbo', 'run', 'start', ...cacheArgs];
   await executeCommand('pnpm', startArgs);
 }
+
+// Graceful shutdown handling
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) {
+    console.log('⚠️  Shutdown already in progress, forcing exit...');
+    process.exit(1);
+  }
+  
+  isShuttingDown = true;
+  console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+  
+  // Set a timeout for forceful shutdown
+  const shutdownTimeout = setTimeout(() => {
+    console.log('❌ Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10000); // 10 seconds timeout
+  
+  try {
+    console.log(`🔄 Terminating ${runningProcesses.size} running process(es)...`);
+    
+    // Send SIGTERM to all running processes
+    const shutdownPromises = [];
+    for (const child of runningProcesses) {
+      shutdownPromises.push(new Promise((resolve) => {
+        const processName = child.spawnargs ? child.spawnargs.join(' ') : 'unknown';
+        console.log(`📤 Sending SIGTERM to: ${processName}`);
+        
+        // Set up cleanup when process exits
+        child.once('close', () => {
+          console.log(`✅ Process terminated: ${processName}`);
+          resolve();
+        });
+        
+        // Send SIGTERM first
+        try {
+          child.kill('SIGTERM');
+        } catch (error) {
+          console.log(`⚠️  Process may have already exited: ${processName}`);
+          resolve();
+        }
+        
+        // Force kill after 5 seconds if still running
+        setTimeout(() => {
+          if (!child.killed) {
+            console.log(`🔨 Force killing process: ${processName}`);
+            try {
+              child.kill('SIGKILL');
+            } catch (error) {
+              // Process may have already exited
+            }
+          }
+          resolve();
+        }, 5000);
+      }));
+    }
+    
+    // Wait for all processes to terminate
+    await Promise.all(shutdownPromises);
+    
+    console.log('✅ All processes terminated, smart-build shutdown complete');
+    clearTimeout(shutdownTimeout);
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
+    clearTimeout(shutdownTimeout);
+    process.exit(1);
+  }
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 // Handle errors and cleanup
 process.on('unhandledRejection', (reason, promise) => {

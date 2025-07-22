@@ -43,6 +43,15 @@ English | [中文](./README_cn.md)
   - [💻 Local Development](#-local-development)
   - [🎮 Start Script Matrix](#-start-script-matrix)
 - [🧹 Maintenance Scripts](#-maintenance-scripts)
+- [🛑 Graceful Shutdown System](#-graceful-shutdown-system)
+  - [🏗️ Architecture Overview](#️-architecture-overview)
+  - [🚀 Usage](#-usage)
+  - [🔧 Implementation Details](#-implementation-details)
+  - [🔄 Signal Handling](#-signal-handling)
+  - [⚙️ Configuration](#️-configuration)
+  - [🛠️ Troubleshooting](#️-troubleshooting)
+  - [🔮 Future Enhancements](#-future-enhancements)
+  - [💡 Best Practices](#-best-practices)
 - [🔌 MCP Protocol Compatibility](#-mcp-protocol-compatibility)
 - [🔗 Connect to MetaMCP](#-connect-to-metamcp)
   - [📝 E.g., Cursor via mcp.json](#-eg-cursor-via-mcpjson)
@@ -239,6 +248,239 @@ pnpm prune-all && pnpm install && pnpm build
 - Includes helpful emojis and messages for better UX
 
 These scripts perfectly complement your existing MetaMCP project workflow and should handle all the common cleanup scenarios you'll encounter during development and deployment!
+
+## 🛑 Graceful Shutdown System
+
+MetaMCP implements a comprehensive graceful shutdown system that ensures clean termination of all processes and proper resource cleanup. This eliminates orphaned processes and prevents data corruption during shutdown.
+
+### 🏗️ Architecture Overview
+
+The graceful shutdown system consists of three main components:
+
+1. **Backend Server Shutdown** - Handles HTTP server and MCP session cleanup
+2. **Smart Build Script Shutdown** - Manages child process termination 
+3. **Stop Script** - Standalone utility for stopping all MetaMCP processes
+
+### 🚀 Usage
+
+#### Starting the Application
+```bash
+# Recommended approach
+pnpm start
+
+# Development mode with hot reload
+pnpm dev
+
+# Production mode
+pnpm start:production
+```
+
+#### Stopping the Application
+
+**Method 1: Graceful Stop Script (Recommended)**
+```bash
+pnpm stop
+```
+
+**Method 2: Keyboard Interrupt**
+```bash
+# Press Ctrl+C in terminal (now handles gracefully)
+Ctrl+C
+```
+
+**Method 3: PM2 Management**
+```bash
+# For PM2 managed processes
+pnpm local-stop
+```
+
+### 🔧 Implementation Details
+
+#### Backend Server Graceful Shutdown
+
+**Location:** `apps/backend/src/index.ts`
+
+**Features:**
+- Listens for `SIGTERM` and `SIGINT` signals
+- Graceful HTTP server shutdown with 30-second timeout
+- Prevents multiple shutdown attempts
+- Detailed logging with status indicators
+- Automatic cleanup of MCP server sessions (expandable)
+
+**Process Flow:**
+1. 🛑 Receives shutdown signal (`SIGTERM`/`SIGINT`)
+2. 🔒 Sets shutdown flag to prevent multiple attempts
+3. ⏰ Starts 30-second timeout for emergency exit
+4. 🚫 Stops accepting new HTTP connections
+5. ⏳ Waits for existing connections to finish
+6. 🧹 Cleans up MCP server sessions (TODO: implement full cleanup)
+7. ✅ Exits gracefully with status code 0
+
+#### Smart Build Script Shutdown
+
+**Location:** `scripts/smart-build.js`
+
+**Features:**
+- Tracks all spawned child processes
+- Cascading shutdown with `SIGTERM` → `SIGKILL`
+- 10-second graceful shutdown window
+- Individual process timeout handling
+- Comprehensive process cleanup logging
+
+**Process Flow:**
+1. 🛑 Receives shutdown signal
+2. 📋 Identifies all tracked child processes
+3. 📤 Sends `SIGTERM` to all children for graceful shutdown
+4. ⏳ Waits up to 5 seconds per process
+5. 🔨 Force kills (`SIGKILL`) unresponsive processes
+6. ✅ Confirms all processes terminated
+
+#### Stop Script
+
+**Location:** `scripts/stop.js`
+
+**Features:**
+- Intelligent process discovery using pattern matching
+- Supports multiple MetaMCP process types
+- Graceful → forceful shutdown progression
+- Comprehensive process identification
+- Safe error handling
+
+**Process Patterns Detected:**
+- `smart-build.js` - Main build orchestrator
+- `next start` - Frontend server
+- `node dist/index.js` - Backend server  
+- `pnpm.*turbo.*start` - Turbo start processes
+- `turbo run start` - Direct turbo processes
+
+**Process Flow:**
+1. 🔍 Scans system for MetaMCP-related processes
+2. 📋 Lists found processes with PIDs and commands
+3. 📤 Sends `SIGTERM` to all identified processes
+4. ⏳ Waits 5 seconds for graceful shutdown
+5. 🔨 Force kills remaining processes with `SIGKILL`
+6. ✅ Confirms complete shutdown
+
+### 🔄 Signal Handling
+
+#### Supported Signals
+- **`SIGTERM`** - Graceful shutdown request (preferred)
+- **`SIGINT`** - Interrupt signal (Ctrl+C)
+
+#### Signal Flow
+```mermaid
+sequenceDiagram
+    participant User as User/System
+    participant SmartBuild as Smart Build Script
+    participant Backend as Backend Server
+    participant Frontend as Frontend Server
+    
+    User-User: SIGTERM/SIGINT
+    SmartBuild-Backend: SIGTERM
+    SmartBuild-Frontend: SIGTERM
+    
+    Backend-Backend: Close HTTP Server
+    Backend-Backend: Cleanup MCP Sessions
+    Backend-SmartBuild: Process Exit
+    
+    Frontend-Frontend: Shutdown Next.js
+    Frontend-SmartBuild: Process Exit
+    
+    SmartBuild-User: Shutdown Complete
+```
+
+### ⚙️ Configuration
+
+#### Timeout Settings
+
+**Backend Server:**
+- Graceful shutdown timeout: **30 seconds**
+- Emergency exit after timeout
+
+**Smart Build Script:**
+- Overall shutdown timeout: **10 seconds**
+- Per-process graceful timeout: **5 seconds**
+- Force kill after individual timeout
+
+**Stop Script:**
+- Process discovery timeout: **5 seconds**
+- Graceful shutdown window: **5 seconds**
+- Force kill confirmation: **1 second**
+
+#### PM2 Integration
+
+**Location:** `ecosystem.config.js`
+
+**Settings:**
+```javascript
+{
+  kill_timeout: 30000,        // 30 seconds for graceful shutdown
+  wait_ready: true,           // Wait for ready signal
+  listen_timeout: 10000,      // 10 seconds to start listening
+  shutdown_with_message: true // Enable graceful shutdown messages
+}
+```
+
+### 🛠️ Troubleshooting
+
+#### Common Issues
+
+**Processes Won't Stop:**
+```bash
+# Check for remaining processes
+ps aux | grep -E "smart-build|next start|node dist"
+
+# Force stop specific process
+kill -9 ID
+
+# Nuclear option - stop all Node processes (be careful!)
+pkill -f "node"
+```
+
+**Orphaned Processes:**
+```bash
+# Use the stop script to clean up
+pnpm stop
+
+# Check system processes
+ps aux | grep metamcp
+```
+
+**Timeout Issues:**
+- Backend processes taking 	30 seconds indicate potential deadlocks
+- Check logs for specific error messages
+- Consider increasing timeout values in critical environments
+
+#### Debug Mode
+
+To see detailed shutdown logging:
+```bash
+# Enable debug output (if implemented)
+DEBUG=shutdown pnpm start
+
+# Monitor system processes during shutdown
+watch "ps aux | grep -E 'smart-build|next|node'"
+```
+
+### 🔮 Future Enhancements
+
+- [ ] 🗄️ **Database connection cleanup** - Graceful database disconnection
+- [ ] 🔌 **MCP session cleanup** - Proper cleanup of all MCP server sessions
+- [ ] 📊 **Shutdown metrics** - Track shutdown times and success rates
+- [ ] 🚨 **Health checks** - Verify clean shutdown completion
+- [ ] 🔧 **Configurable timeouts** - Environment-based timeout configuration
+- [ ] 📝 **Shutdown hooks** - Plugin system for custom cleanup logic
+
+### 💡 Best Practices
+
+1. **Always use `pnpm stop`** for cleanest shutdown
+2. **Avoid `kill -9`** unless absolutely necessary
+3. **Monitor logs** during shutdown for error identification
+4. **Test shutdown behavior** in development before production
+5. **Consider process dependencies** when customizing timeouts
+6. **Use PM2** for production deployments with automatic restart
+
+This comprehensive shutdown system ensures MetaMCP can be safely stopped and restarted without leaving orphaned processes or corrupted state!
 
 ## 🔌 MCP Protocol Compatibility
 

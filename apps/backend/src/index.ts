@@ -78,7 +78,7 @@ app.use("/mcp-proxy", mcpProxyRouter);
 // Mount tRPC routes
 app.use("/trpc", trpcRouter);
 
-app.listen(12009, async () => {
+const server = app.listen(12009, async () => {
   console.log(`Server is running on port 12009`);
   console.log(`Auth routes available at: http://localhost:12009/api/auth`);
   console.log(
@@ -92,6 +92,54 @@ app.listen(12009, async () => {
   // Initialize idle servers after server starts
   await initializeIdleServers();
 });
+
+// Graceful shutdown handling
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) {
+    console.log('⚠️  Shutdown already in progress, forcing exit...');
+    process.exit(1);
+  }
+  
+  isShuttingDown = true;
+  console.log(`\n🛑 Received ${signal}, starting graceful shutdown...`);
+  
+  // Set a timeout for forceful shutdown
+  const shutdownTimeout = setTimeout(() => {
+    console.log('❌ Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 30000); // 30 seconds timeout
+  
+  try {
+    // Close HTTP server
+    await new Promise((resolve, reject) => {
+      server.close((err) => {
+        if (err) {
+          console.error('❌ Error closing HTTP server:', err);
+          reject(err);
+        } else {
+          console.log('✅ HTTP server closed');
+          resolve();
+        }
+      });
+    });
+    
+    // Add cleanup for MCP servers, database connections, etc. here
+    // TODO: Add proper cleanup for MCP server sessions
+    
+    console.log('✅ Backend server shutdown complete');
+    clearTimeout(shutdownTimeout);
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
+    clearTimeout(shutdownTimeout);
+    process.exit(1);
+  }
+}
 
 app.get("/health", (req, res) => {
   res.json({
