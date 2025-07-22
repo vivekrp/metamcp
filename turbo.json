@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalEnv": [
     "PORT",
@@ -23,9 +23,10 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "start": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "outputs": []
     },
     "lint": {
       "dependsOn": ["^lint"]

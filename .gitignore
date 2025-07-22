@@ -38,3 +38,6 @@ yarn-error.log*
 .cursor/
 .vscode/
 metamcp.log
+logs/metamcp-out.log
+logs/metamcp-error.log
+logs/metamcp-combined.log
